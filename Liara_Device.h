@@ -33,7 +33,7 @@ namespace Liara
             const bool m_EnableValidationLayers = true;
         #endif
 
-        Liara_Device(Liara_Window &window);
+        explicit Liara_Device(Liara_Window &window);
         ~Liara_Device();
 
         // Not copyable or movable
@@ -42,11 +42,11 @@ namespace Liara
         Liara_Device(Liara_Device &&) = delete;
         Liara_Device &operator=(Liara_Device &&) = delete;
 
-        VkCommandPool GetCommandPool() { return m_CommandPool; }
-        VkDevice Device() { return m_Device; }
-        VkSurfaceKHR Surface() { return m_Surface; }
-        VkQueue GraphicsQueue() { return m_GraphicsQueue; }
-        VkQueue PresentQueue() { return m_PresentQueue; }
+        [[nodiscard]] VkCommandPool GetCommandPool() const { return m_CommandPool; }
+        [[nodiscard]] VkDevice GetDevice() const { return m_Device; }
+        [[nodiscard]] VkSurfaceKHR GetSurface() const { return m_Surface; }
+        [[nodiscard]] VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
+        [[nodiscard]] VkQueue GetPresentQueue() const { return m_PresentQueue; }
 
         SwapChainSupportDetails GetSwapChainSupport() { return QuerySwapChainSupport(m_PhysicalDevice); }
         uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
@@ -54,24 +54,15 @@ namespace Liara
         VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
         // Buffer Helper Functions
-        void CreateBuffer(
-            VkDeviceSize size,
-            VkBufferUsageFlags usage,
-            VkMemoryPropertyFlags properties,
-            VkBuffer &buffer,
-            VkDeviceMemory &bufferMemory);
-            VkCommandBuffer beginSingleTimeCommands();
+        void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory);
+        VkCommandBuffer BeginSingleTimeCommands();
         void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
         void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
         void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
 
-        void CreateImageWithInfo(
-            const VkImageCreateInfo &imageInfo,
-            VkMemoryPropertyFlags properties,
-            VkImage &image,
-            VkDeviceMemory &imageMemory);
+        void CreateImageWithInfo(const VkImageCreateInfo &imageInfo, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory);
 
-        VkPhysicalDeviceProperties properties;
+        VkPhysicalDeviceProperties m_Properties;
 
     private:
         void CreateInstance();

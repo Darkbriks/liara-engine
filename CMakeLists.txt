@@ -28,6 +28,8 @@ add_executable(LiaraEngine main.cpp
         Liara_Pipeline.h
         Liara_Device.cpp
         Liara_Device.h
+        Liara_SwapChain.h
+        Liara_SwapChain.cpp
 )
 
 # Link Vulkan, GLFW and GLM

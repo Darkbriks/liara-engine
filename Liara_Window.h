@@ -21,6 +21,7 @@ namespace Liara
         Liara_Window& operator=(const Liara_Window&) = delete;
 
         [[nodiscard]] bool ShouldClose() const { return glfwWindowShouldClose(m_Window); }
+        [[nodiscard]] VkExtent2D GetExtent() const { return { m_width, m_height }; }
 
         void CreateWindowSurface(VkInstance instance, VkSurfaceKHR* surface) const;
 

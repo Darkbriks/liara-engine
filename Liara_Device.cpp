@@ -130,8 +130,8 @@ namespace Liara
             throw std::runtime_error("failed to find a suitable GPU!");
         }
 
-        vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
-        std::cout << "physical device: " << properties.deviceName << std::endl;
+        vkGetPhysicalDeviceProperties(m_PhysicalDevice, &m_Properties);
+        std::cout << "physical device: " << m_Properties.deviceName << std::endl;
     }
 
     void Liara_Device::CreateLogicalDevice()
@@ -435,7 +435,7 @@ namespace Liara
         vkBindBufferMemory(m_Device, buffer, bufferMemory, 0);
     }
 
-    VkCommandBuffer Liara_Device::beginSingleTimeCommands()
+    VkCommandBuffer Liara_Device::BeginSingleTimeCommands()
     {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -471,7 +471,7 @@ namespace Liara
 
     void Liara_Device::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
     {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
         VkBufferCopy copyRegion{};
         copyRegion.srcOffset = 0;  // Optional
@@ -484,7 +484,7 @@ namespace Liara
 
     void Liara_Device::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount)
     {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;

@@ -15,7 +15,6 @@ namespace Liara
     {
         VkViewport m_Viewport;
         VkRect2D m_Scissor;
-        VkPipelineViewportStateCreateInfo m_ViewportInfo;
         VkPipelineInputAssemblyStateCreateInfo m_InputAssemblyInfo;
         VkPipelineRasterizationStateCreateInfo m_RasterizationInfo;
         VkPipelineMultisampleStateCreateInfo m_MultisampleInfo;
@@ -37,6 +36,8 @@ namespace Liara
         void operator=(const Liara_Pipeline&) = delete;
 
         static PipelineConfigInfo DefaultPipelineConfigInfo(uint32_t width, uint32_t height);
+
+        void Bind(VkCommandBuffer commandBuffer) const;
 
     private:
         Liara_Device& m_Device;

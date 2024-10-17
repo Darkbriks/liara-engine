@@ -19,9 +19,9 @@ namespace Liara
 
     Liara_Pipeline::~Liara_Pipeline()
     {
-        vkDestroyShaderModule(m_Device.Device(), m_VertShaderModule, nullptr);
-        vkDestroyShaderModule(m_Device.Device(), m_FragShaderModule, nullptr);
-        vkDestroyPipeline(m_Device.Device(), m_GraphicsPipeline, nullptr);
+        vkDestroyShaderModule(m_Device.GetDevice(), m_VertShaderModule, nullptr);
+        vkDestroyShaderModule(m_Device.GetDevice(), m_FragShaderModule, nullptr);
+        vkDestroyPipeline(m_Device.GetDevice(), m_GraphicsPipeline, nullptr);
     }
 
     PipelineConfigInfo Liara_Pipeline::DefaultPipelineConfigInfo(uint32_t width, uint32_t height)
@@ -41,12 +41,6 @@ namespace Liara
 
         configInfo.m_Scissor.offset = { 0, 0 };
         configInfo.m_Scissor.extent = { width, height };
-
-        configInfo.m_ViewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        configInfo.m_ViewportInfo.viewportCount = 1;
-        configInfo.m_ViewportInfo.pViewports = &configInfo.m_Viewport;
-        configInfo.m_ViewportInfo.scissorCount = 1;
-        configInfo.m_ViewportInfo.pScissors = &configInfo.m_Scissor;
 
         configInfo.m_RasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         configInfo.m_RasterizationInfo.depthClampEnable = VK_FALSE;
@@ -91,6 +85,10 @@ namespace Liara
         return configInfo;
     }
 
+    void Liara_Pipeline::Bind(VkCommandBuffer commandBuffer) const
+    {
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
+    }
 
     std::vector<char> Liara_Pipeline::ReadFile(const std::string &filepath)
     {
@@ -147,13 +145,20 @@ namespace Liara
         vertexInputInfo.pVertexAttributeDescriptions = nullptr;
         vertexInputInfo.pVertexBindingDescriptions = nullptr;
 
+        VkPipelineViewportStateCreateInfo viewportInfo{};
+        viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewportInfo.viewportCount = 1;
+        viewportInfo.pViewports = &configInfo.m_Viewport;
+        viewportInfo.scissorCount = 1;
+        viewportInfo.pScissors = &configInfo.m_Scissor;
+
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2;
         pipelineInfo.pStages = shaderStages;
         pipelineInfo.pVertexInputState = &vertexInputInfo;
         pipelineInfo.pInputAssemblyState = &configInfo.m_InputAssemblyInfo;
-        pipelineInfo.pViewportState = &configInfo.m_ViewportInfo;
+        pipelineInfo.pViewportState = &viewportInfo;
         pipelineInfo.pRasterizationState = &configInfo.m_RasterizationInfo;
         pipelineInfo.pMultisampleState = &configInfo.m_MultisampleInfo;
         pipelineInfo.pColorBlendState = &configInfo.m_ColorBlendInfo;
@@ -167,7 +172,7 @@ namespace Liara
         pipelineInfo.basePipelineIndex = -1;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        if (vkCreateGraphicsPipelines(m_Device.Device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS)
+        if (vkCreateGraphicsPipelines(m_Device.GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create graphics pipeline!");
         }
@@ -181,7 +186,7 @@ namespace Liara
         createInfo.codeSize = code.size();
         createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
-        if (vkCreateShaderModule(m_Device.Device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS)
+        if (vkCreateShaderModule(m_Device.GetDevice(), &createInfo, nullptr, shaderModule) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create shader module!");
         }
