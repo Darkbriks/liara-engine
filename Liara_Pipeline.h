@@ -33,7 +33,7 @@ namespace Liara
         ~Liara_Pipeline();
 
         Liara_Pipeline(const Liara_Pipeline&) = delete;
-        void operator=(const Liara_Pipeline&) = delete;
+        Liara_Pipeline& operator=(const Liara_Pipeline&) = delete;
 
         static PipelineConfigInfo DefaultPipelineConfigInfo(uint32_t width, uint32_t height);
 

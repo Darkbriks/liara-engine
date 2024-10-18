@@ -17,7 +17,7 @@ namespace Liara
         ~Liara_SwapChain();
 
         Liara_SwapChain(const Liara_SwapChain &) = delete;
-        void operator=(const Liara_SwapChain &) = delete;
+        Liara_SwapChain &operator=(const Liara_SwapChain &) = delete;
 
         [[nodiscard]] VkFramebuffer GetFrameBuffer(int index) const { return m_SwapChainFramebuffers[index]; }
         [[nodiscard]] VkRenderPass GetRenderPass() const { return m_RenderPass; }

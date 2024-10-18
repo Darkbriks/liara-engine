@@ -38,7 +38,7 @@ namespace Liara
 
         // Not copyable or movable
         Liara_Device(const Liara_Device &) = delete;
-        void operator=(const Liara_Device &) = delete;
+        Liara_Device &operator=(const Liara_Device &) = delete;
         Liara_Device(Liara_Device &&) = delete;
         Liara_Device &operator=(Liara_Device &&) = delete;
 
