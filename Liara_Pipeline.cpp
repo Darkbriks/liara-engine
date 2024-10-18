@@ -25,23 +25,17 @@ namespace Liara
         vkDestroyPipeline(m_Device.GetDevice(), m_GraphicsPipeline, nullptr);
     }
 
-    PipelineConfigInfo Liara_Pipeline::DefaultPipelineConfigInfo(uint32_t width, uint32_t height)
+    void Liara_Pipeline::DefaultPipelineConfigInfo(PipelineConfigInfo &configInfo)
     {
-        PipelineConfigInfo configInfo{};
-
         configInfo.m_InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         configInfo.m_InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         configInfo.m_InputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
 
-        configInfo.m_Viewport.x = 0.0f;
-        configInfo.m_Viewport.y = 0.0f;
-        configInfo.m_Viewport.width = static_cast<float>(width);
-        configInfo.m_Viewport.height = static_cast<float>(height);
-        configInfo.m_Viewport.minDepth = 0.0f;
-        configInfo.m_Viewport.maxDepth = 1.0f;
-
-        configInfo.m_Scissor.offset = { 0, 0 };
-        configInfo.m_Scissor.extent = { width, height };
+        configInfo.m_ViewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        configInfo.m_ViewportInfo.viewportCount = 1;
+        configInfo.m_ViewportInfo.scissorCount = 1;
+        configInfo.m_ViewportInfo.pViewports = nullptr;
+        configInfo.m_ViewportInfo.pScissors = nullptr;
 
         configInfo.m_RasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         configInfo.m_RasterizationInfo.depthClampEnable = VK_FALSE;
@@ -82,8 +76,22 @@ namespace Liara
         configInfo.m_ColorBlendInfo.blendConstants[2] = 0.0f;
         configInfo.m_ColorBlendInfo.blendConstants[3] = 0.0f;
 
+        configInfo.m_DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        configInfo.m_DepthStencilInfo.depthTestEnable = VK_TRUE;
+        configInfo.m_DepthStencilInfo.depthWriteEnable = VK_TRUE;
+        configInfo.m_DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+        configInfo.m_DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
+        configInfo.m_DepthStencilInfo.minDepthBounds = 0.0f;
+        configInfo.m_DepthStencilInfo.maxDepthBounds = 1.0f;
+        configInfo.m_DepthStencilInfo.stencilTestEnable = VK_FALSE;
+        configInfo.m_DepthStencilInfo.front = {};
+        configInfo.m_DepthStencilInfo.back = {};
 
-        return configInfo;
+        configInfo.m_DynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        configInfo.m_DynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        configInfo.m_DynamicStateInfo.pDynamicStates = configInfo.m_DynamicStateEnables.data();
+        configInfo.m_DynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.m_DynamicStateEnables.size());
+        configInfo.m_DynamicStateInfo.flags = 0;
     }
 
     void Liara_Pipeline::Bind(VkCommandBuffer commandBuffer) const
@@ -139,8 +147,8 @@ namespace Liara
         shaderStages[1].pNext = nullptr;
         shaderStages[1].pSpecializationInfo = nullptr;
 
-        auto bindingDescriptions = Liara_Model::Vertex::GetBindingDescriptions();
-        auto attributeDescriptions = Liara_Model::Vertex::GetAttributeDescriptions();
+        const auto bindingDescriptions = Liara_Model::Vertex::GetBindingDescriptions();
+        const auto attributeDescriptions = Liara_Model::Vertex::GetAttributeDescriptions();
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -149,25 +157,18 @@ namespace Liara
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
         vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
-        VkPipelineViewportStateCreateInfo viewportInfo{};
-        viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportInfo.viewportCount = 1;
-        viewportInfo.pViewports = &configInfo.m_Viewport;
-        viewportInfo.scissorCount = 1;
-        viewportInfo.pScissors = &configInfo.m_Scissor;
-
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2;
         pipelineInfo.pStages = shaderStages;
         pipelineInfo.pVertexInputState = &vertexInputInfo;
         pipelineInfo.pInputAssemblyState = &configInfo.m_InputAssemblyInfo;
-        pipelineInfo.pViewportState = &viewportInfo;
+        pipelineInfo.pViewportState = &configInfo.m_ViewportInfo;
         pipelineInfo.pRasterizationState = &configInfo.m_RasterizationInfo;
         pipelineInfo.pMultisampleState = &configInfo.m_MultisampleInfo;
         pipelineInfo.pColorBlendState = &configInfo.m_ColorBlendInfo;
         pipelineInfo.pDepthStencilState = &configInfo.m_DepthStencilInfo;
-        pipelineInfo.pDynamicState = nullptr;
+        pipelineInfo.pDynamicState = &configInfo.m_DynamicStateInfo;
 
         pipelineInfo.layout = configInfo.m_PipelineLayout;
         pipelineInfo.renderPass = configInfo.m_RenderPass;

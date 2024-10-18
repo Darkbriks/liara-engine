@@ -12,12 +12,13 @@ namespace Liara
 {
     Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D extent) : m_Device{deviceRef}, m_WindowExtent{extent}
     {
-        CreateSwapChain();
-        CreateImageViews();
-        CreateRenderPass();
-        CreateDepthResources();
-        CreateFramebuffers();
-        CreateSyncObjects();
+        Init();
+    }
+
+    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D extent, std::shared_ptr<Liara_SwapChain> oldSwapChain) : m_Device{deviceRef}, m_WindowExtent{extent}, m_OldSwapChain(oldSwapChain)
+    {
+        Init();
+        m_OldSwapChain = nullptr;
     }
 
     Liara_SwapChain::~Liara_SwapChain()
@@ -120,6 +121,17 @@ namespace Liara
         return result;
     }
 
+    void Liara_SwapChain::Init()
+    {
+        CreateSwapChain();
+        CreateImageViews();
+        CreateRenderPass();
+        CreateDepthResources();
+        CreateFramebuffers();
+        CreateSyncObjects();
+    }
+
+
     void Liara_SwapChain::CreateSwapChain()
     {
         SwapChainSupportDetails swapChainSupport = m_Device.GetSwapChainSupport();
@@ -167,7 +179,7 @@ namespace Liara
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
 
-        createInfo.oldSwapchain = VK_NULL_HANDLE;
+        createInfo.oldSwapchain = m_OldSwapChain == nullptr ? VK_NULL_HANDLE : m_OldSwapChain->m_SwapChain;
 
         if (vkCreateSwapchainKHR(m_Device.GetDevice(), &createInfo, nullptr, &m_SwapChain) != VK_SUCCESS)
         {

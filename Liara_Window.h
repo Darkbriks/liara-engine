@@ -22,15 +22,20 @@ namespace Liara
 
         [[nodiscard]] bool ShouldClose() const { return glfwWindowShouldClose(m_Window); }
         [[nodiscard]] VkExtent2D GetExtent() const { return { m_width, m_height }; }
+        [[nodiscard]] bool WasResized() const { return m_resized; }
+
+        void ResetResizedFlag() { m_resized = false; }
 
         void CreateWindowSurface(VkInstance instance, VkSurfaceKHR* surface) const;
 
     private:
+        static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
         GLFWwindow* m_Window;
 
         std::string m_title;
-        const unsigned short m_width;
-        const unsigned short m_height;
+        unsigned short m_width;
+        unsigned short m_height;
+        bool m_resized = false;
 
         void InitWindow();
     };

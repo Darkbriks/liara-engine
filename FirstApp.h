@@ -31,14 +31,17 @@ namespace Liara
         void CreatePipeline();
         void CreatePipelineLayout();
         void CreateCommandBuffers();
+        void FreeCommandBuffers();
         void DrawFrame();
+        void CreateSwapChain();
+        void RecordCommandBuffer(uint32_t imageIndex);
 
         void SierpinskiTriangle(std::vector<Liara_Model::Vertex>& vertices, int depth, Liara_Model::Vertex v0, Liara_Model::Vertex v1, Liara_Model::Vertex v2);
         void LoadModel();
 
         Liara_Window m_Window{ "Hello Vulkan!", WIDTH, HEIGHT };
         Liara_Device m_Device{ m_Window };
-        Liara_SwapChain m_SwapChain{ m_Device, m_Window.GetExtent() };
+        std::unique_ptr<Liara_SwapChain> m_SwapChain;
 
         std::unique_ptr<Liara_Pipeline> m_Pipeline;
         VkPipelineLayout m_PipelineLayout;

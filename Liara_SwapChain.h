@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "Liara_Device.h"
 
 #include <vulkan/vulkan.h>
@@ -14,14 +16,15 @@ namespace Liara
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
         Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent);
+        Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent, std::shared_ptr<Liara_SwapChain> oldSwapChain);
         ~Liara_SwapChain();
 
         Liara_SwapChain(const Liara_SwapChain &) = delete;
         Liara_SwapChain &operator=(const Liara_SwapChain &) = delete;
 
-        [[nodiscard]] VkFramebuffer GetFrameBuffer(int index) const { return m_SwapChainFramebuffers[index]; }
+        [[nodiscard]] VkFramebuffer GetFrameBuffer(const int index) const { return m_SwapChainFramebuffers[index]; }
         [[nodiscard]] VkRenderPass GetRenderPass() const { return m_RenderPass; }
-        [[nodiscard]] VkImageView GetImageView(int index) const { return m_SwapChainImageViews[index]; }
+        [[nodiscard]] VkImageView GetImageView(const int index) const { return m_SwapChainImageViews[index]; }
         [[nodiscard]] size_t ImageCount() const { return m_SwapChainImages.size(); }
         [[nodiscard]] VkFormat GetSwapChainImageFormat() const { return m_SwapChainImageFormat; }
         [[nodiscard]] VkExtent2D GetSwapChainExtent() const { return m_SwapChainExtent; }
@@ -35,6 +38,7 @@ namespace Liara
         VkResult SubmitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex);
 
     private:
+        void Init();
         void CreateSwapChain();
         void CreateImageViews();
         void CreateDepthResources();
@@ -63,6 +67,7 @@ namespace Liara
         VkExtent2D m_WindowExtent;
 
         VkSwapchainKHR m_SwapChain;
+        std::shared_ptr<Liara_SwapChain> m_OldSwapChain;
 
         std::vector<VkSemaphore> m_ImageAvailableSemaphores;
         std::vector<VkSemaphore> m_RenderFinishedSemaphores;
