@@ -124,7 +124,7 @@ namespace Liara
         }
     }
 
-    void FirstApp::SierpinskiTriangle(std::vector<Liara_Model::Vertex> &vertices, int depth, glm::vec2 v0, glm::vec2 v1, glm::vec2 v2)
+    void FirstApp::SierpinskiTriangle(std::vector<Liara_Model::Vertex> &vertices, int depth, Liara_Model::Vertex v0, Liara_Model::Vertex v1, Liara_Model::Vertex v2)
     {
         if (depth <= 0)
         {
@@ -134,9 +134,10 @@ namespace Liara
         }
         else
         {
-            glm::vec2 v01 = (v0 + v1) / 2.0f;
-            glm::vec2 v12 = (v1 + v2) / 2.0f;
-            glm::vec2 v20 = (v2 + v0) / 2.0f;
+            // Calculate midpoints of sides, and interpolate color
+            Liara_Model::Vertex v01 = {(v0.position + v1.position) / 2.0f, (v0.color + v1.color) / 2.0f};
+            Liara_Model::Vertex v12 = {(v1.position + v2.position) / 2.0f, (v1.color + v2.color) / 2.0f};
+            Liara_Model::Vertex v20 = {(v2.position + v0.position) / 2.0f, (v2.color + v0.color) / 2.0f};
 
             SierpinskiTriangle(vertices, depth - 1, v0, v01, v20);
             SierpinskiTriangle(vertices, depth - 1, v01, v1, v12);
@@ -148,13 +149,13 @@ namespace Liara
     void FirstApp::LoadModel()
     {
         /*std::vector<Liara_Model::Vertex> vertices{
-            {{0.0f, -0.5f}},
-            {{0.5f, 0.5f}},
-            {{-0.5f, 0.5f}}
+            {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+            {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
         };*/
 
         std::vector<Liara_Model::Vertex> vertices;
-        SierpinskiTriangle(vertices, 6, {0.0f, -0.5f}, {0.5f, 0.5f}, {-0.5f, 0.5f});
+        SierpinskiTriangle(vertices, 6, {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}}, {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}});
         m_Model = std::make_unique<Liara_Model>(m_Device, vertices);
     }
 

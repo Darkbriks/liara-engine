@@ -33,7 +33,7 @@ namespace Liara
         void CreateCommandBuffers();
         void DrawFrame();
 
-        void SierpinskiTriangle(std::vector<Liara_Model::Vertex>& vertices, int depth, glm::vec2 v0, glm::vec2 v1, glm::vec2 v2);
+        void SierpinskiTriangle(std::vector<Liara_Model::Vertex>& vertices, int depth, Liara_Model::Vertex v0, Liara_Model::Vertex v1, Liara_Model::Vertex v2);
         void LoadModel();
 
         Liara_Window m_Window{ "Hello Vulkan!", WIDTH, HEIGHT };
