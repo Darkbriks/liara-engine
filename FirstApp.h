@@ -9,6 +9,7 @@
 #include "Liara_Pipeline.h"
 #include "Liara_Device.h"
 #include "Liara_SwapChain.h"
+#include "Liara_Model.h"
 
 namespace Liara
 {
@@ -32,6 +33,9 @@ namespace Liara
         void CreateCommandBuffers();
         void DrawFrame();
 
+        void SierpinskiTriangle(std::vector<Liara_Model::Vertex>& vertices, int depth, glm::vec2 v0, glm::vec2 v1, glm::vec2 v2);
+        void LoadModel();
+
         Liara_Window m_Window{ "Hello Vulkan!", WIDTH, HEIGHT };
         Liara_Device m_Device{ m_Window };
         Liara_SwapChain m_SwapChain{ m_Device, m_Window.GetExtent() };
@@ -39,5 +43,6 @@ namespace Liara
         std::unique_ptr<Liara_Pipeline> m_Pipeline;
         VkPipelineLayout m_PipelineLayout;
         std::vector<VkCommandBuffer> m_CommandBuffers;
+        std::unique_ptr<Liara_Model> m_Model;
     };
 }

@@ -11,6 +11,7 @@ namespace Liara
 {
     FirstApp::FirstApp()
     {
+        LoadModel();
         CreatePipelineLayout();
         CreatePipeline();
         CreateCommandBuffers();
@@ -96,7 +97,8 @@ namespace Liara
             vkCmdBeginRenderPass(m_CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
             m_Pipeline->Bind(m_CommandBuffers[i]);
-            vkCmdDraw(m_CommandBuffers[i], 3, 1, 0, 0);
+            m_Model->Bind(m_CommandBuffers[i]);
+            m_Model->Draw(m_CommandBuffers[i]);
 
             vkCmdEndRenderPass(m_CommandBuffers[i]);
             if (vkEndCommandBuffer(m_CommandBuffers[i]) != VK_SUCCESS)
@@ -120,6 +122,40 @@ namespace Liara
         {
             throw std::runtime_error("Failed to submit command buffer!");
         }
+    }
+
+    void FirstApp::SierpinskiTriangle(std::vector<Liara_Model::Vertex> &vertices, int depth, glm::vec2 v0, glm::vec2 v1, glm::vec2 v2)
+    {
+        if (depth <= 0)
+        {
+            vertices.push_back({v0});
+            vertices.push_back({v1});
+            vertices.push_back({v2});
+        }
+        else
+        {
+            glm::vec2 v01 = (v0 + v1) / 2.0f;
+            glm::vec2 v12 = (v1 + v2) / 2.0f;
+            glm::vec2 v20 = (v2 + v0) / 2.0f;
+
+            SierpinskiTriangle(vertices, depth - 1, v0, v01, v20);
+            SierpinskiTriangle(vertices, depth - 1, v01, v1, v12);
+            SierpinskiTriangle(vertices, depth - 1, v20, v12, v2);
+        }
+    }
+
+
+    void FirstApp::LoadModel()
+    {
+        /*std::vector<Liara_Model::Vertex> vertices{
+            {{0.0f, -0.5f}},
+            {{0.5f, 0.5f}},
+            {{-0.5f, 0.5f}}
+        };*/
+
+        std::vector<Liara_Model::Vertex> vertices;
+        SierpinskiTriangle(vertices, 6, {0.0f, -0.5f}, {0.5f, 0.5f}, {-0.5f, 0.5f});
+        m_Model = std::make_unique<Liara_Model>(m_Device, vertices);
     }
 
 }
