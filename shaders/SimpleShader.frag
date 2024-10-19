@@ -2,7 +2,9 @@
 
 layout (location = 0) out vec4 fragColor; // Cette ligne permet de définir la sortie du shader
 
-layout(push_constant) uniform PushConstant {
+layout(push_constant) uniform PushConstant
+{
+    mat2 transform;
     vec2 offset;
     vec3 color;
 } pushConstant;

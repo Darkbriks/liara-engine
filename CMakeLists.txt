@@ -32,6 +32,7 @@ add_executable(LiaraEngine main.cpp
         Liara_SwapChain.cpp
         Liara_Model.cpp
         Liara_Model.h
+        Liara_GameObject.h
 )
 
 # Link Vulkan, GLFW and GLM

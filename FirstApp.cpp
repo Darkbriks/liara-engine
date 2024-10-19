@@ -10,18 +10,20 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 
 namespace Liara
 {
     struct SimplePushConstantData
     {
+        glm::mat2 transform{1.0f};
         glm::vec2 offset;
         alignas(16) glm::vec3 color;
     };
 
     FirstApp::FirstApp()
     {
-        LoadModel();
+        LoadGameObjects();
         CreatePipelineLayout();
         CreateSwapChain();
         CreateCommandBuffers();
@@ -162,9 +164,6 @@ namespace Liara
 
     void FirstApp::RecordCommandBuffer(const uint32_t imageIndex)
     {
-        static uint32_t frame = 0;
-        frame = (frame + 1) % 1000;
-
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -200,18 +199,7 @@ namespace Liara
         vkCmdSetViewport(m_CommandBuffers[imageIndex], 0, 1, &viewport);
         vkCmdSetScissor(m_CommandBuffers[imageIndex], 0, 1, &scissor);
 
-        m_Pipeline->Bind(m_CommandBuffers[imageIndex]);
-        m_Model->Bind(m_CommandBuffers[imageIndex]);
-
-        for (int j = 0; j < 4; j++)
-        {
-            SimplePushConstantData push{};
-            push.offset = {-0.75f + frame * 0.002f, -0.4f + j * 0.25f};
-            push.color = {0.0f, 0.0f, 0.2f + 0.2f * j};
-            vkCmdPushConstants(m_CommandBuffers[imageIndex], m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
-
-            m_Model->Draw(m_CommandBuffers[imageIndex]);
-        }
+        RenderGameObjects(m_CommandBuffers[imageIndex]);
 
         vkCmdEndRenderPass(m_CommandBuffers[imageIndex]);
         if (vkEndCommandBuffer(m_CommandBuffers[imageIndex]) != VK_SUCCESS)
@@ -241,16 +229,78 @@ namespace Liara
         }
     }
 
-    void FirstApp::LoadModel()
+    void FirstApp::LoadGameObjects()
     {
+        // A basic triangle
         /*std::vector<Liara_Model::Vertex> vertices{
             {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
             {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
             {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
-        };*/
+        };
+        const auto model = std::make_shared<Liara_Model>(m_Device, vertices);
+        auto triangle = Liara_GameObject::CreateGameObject();
+        triangle.m_Model = model;
+        m_GameObjects.push_back(std::move(triangle));*/
 
-        std::vector<Liara_Model::Vertex> vertices;
-        SierpinskiTriangle(vertices, 6, {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}}, {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}});
-        m_Model = std::make_unique<Liara_Model>(m_Device, vertices);
+        // A Sierpinski triangle
+        /*std::vector<Liara_Model::Vertex> vertices;
+        SierpinskiTriangle(vertices, 5, {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}}, {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}});
+        const auto model = std::make_shared<Liara_Model>(m_Device, vertices);
+        auto triangle = Liara_GameObject::CreateGameObject();
+        triangle.m_Model = model;
+        triangle.m_color = {0.0f, 0.8f, 1.0f};
+        m_GameObjects.push_back(std::move(triangle));*/
+
+        // A bunch of triangles
+        std::vector<Liara_Model::Vertex> vertices{
+            {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+            {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+        };
+        auto model = std::make_shared<Liara_Model>(m_Device, vertices);
+
+        std::vector<glm::vec3> colors{
+            {1.f, .7f, .73f},
+            {1.f, .87f, .73f},
+            {1.f, 1.f, .73f},
+            {.73f, 1.f, .8f},
+            {.73, .88f, 1.f}
+        };
+
+        for (auto& color : colors) { color = glm::pow(color, glm::vec3{2.2f}); }
+
+        for (int i = 0; i < 40; i++)
+        {
+            auto triangle = Liara_GameObject::CreateGameObject();
+            triangle.m_Model = model;
+            triangle.m_Transform.scale = glm::vec2(.5f) + i * 0.025f;
+            triangle.m_Transform.rotation = i * glm::pi<float>() * .025f;
+            triangle.m_color = colors[i % colors.size()];
+            m_GameObjects.push_back(std::move(triangle));
+        }
     }
+
+    void FirstApp::RenderGameObjects(VkCommandBuffer commandBuffer)
+    {
+        int i = 0;
+        for (auto& obj : m_GameObjects)
+        {
+            i++;
+            obj.m_Transform.rotation = glm::mod<float>(obj.m_Transform.rotation + 0.001f * i, 2.f * glm::pi<float>());
+        }
+
+        m_Pipeline->Bind(commandBuffer);
+
+        for (auto& obj : m_GameObjects)
+        {
+            SimplePushConstantData push{};
+            push.offset = obj.m_Transform.position;
+            push.color = obj.m_color;
+            push.transform = obj.m_Transform.GetMat2();
+            vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
+            obj.m_Model->Bind(commandBuffer);
+            obj.m_Model->Draw(commandBuffer);
+        }
+    }
+
 }

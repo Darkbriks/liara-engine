@@ -5,11 +5,11 @@
 #pragma once
 #include <memory>
 
+#include "Liara_GameObject.h"
 #include "Liara_Window.h"
 #include "Liara_Pipeline.h"
 #include "Liara_Device.h"
 #include "Liara_SwapChain.h"
-#include "Liara_Model.h"
 
 namespace Liara
 {
@@ -35,9 +35,10 @@ namespace Liara
         void DrawFrame();
         void CreateSwapChain();
         void RecordCommandBuffer(uint32_t imageIndex);
+        void LoadGameObjects();
+        void RenderGameObjects(VkCommandBuffer commandBuffer);
 
         void SierpinskiTriangle(std::vector<Liara_Model::Vertex>& vertices, int depth, Liara_Model::Vertex v0, Liara_Model::Vertex v1, Liara_Model::Vertex v2);
-        void LoadModel();
 
         Liara_Window m_Window{ "Hello Vulkan!", WIDTH, HEIGHT };
         Liara_Device m_Device{ m_Window };
@@ -46,6 +47,6 @@ namespace Liara
         std::unique_ptr<Liara_Pipeline> m_Pipeline;
         VkPipelineLayout m_PipelineLayout;
         std::vector<VkCommandBuffer> m_CommandBuffers;
-        std::unique_ptr<Liara_Model> m_Model;
+        std::vector<Liara_GameObject> m_GameObjects;
     };
 }
