@@ -7,8 +7,18 @@
 #include <array>
 #include <stdexcept>
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+
 namespace Liara
 {
+    struct SimplePushConstantData
+    {
+        glm::vec2 offset;
+        alignas(16) glm::vec3 color;
+    };
+
     FirstApp::FirstApp()
     {
         LoadModel();
@@ -47,12 +57,14 @@ namespace Liara
 
     void FirstApp::CreatePipelineLayout()
     {
+        VkPushConstantRange pushConstantRange{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData)};
+
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 0;
         pipelineLayoutInfo.pSetLayouts = nullptr;
-        pipelineLayoutInfo.pushConstantRangeCount = 0;
-        pipelineLayoutInfo.pPushConstantRanges = nullptr;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
         if (vkCreatePipelineLayout(m_Device.GetDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create pipeline layout!");
@@ -150,6 +162,9 @@ namespace Liara
 
     void FirstApp::RecordCommandBuffer(const uint32_t imageIndex)
     {
+        static uint32_t frame = 0;
+        frame = (frame + 1) % 1000;
+
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -166,7 +181,7 @@ namespace Liara
         renderPassInfo.renderArea.extent = m_SwapChain->GetSwapChainExtent();
 
         std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {0.1f, 0.1f, 0.1f, 1.0f};
+        clearValues[0].color = {0.01f, 0.01f, 0.01f, 1.0f};
         clearValues[1].depthStencil = {1.0f, 0};
 
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -187,7 +202,16 @@ namespace Liara
 
         m_Pipeline->Bind(m_CommandBuffers[imageIndex]);
         m_Model->Bind(m_CommandBuffers[imageIndex]);
-        m_Model->Draw(m_CommandBuffers[imageIndex]);
+
+        for (int j = 0; j < 4; j++)
+        {
+            SimplePushConstantData push{};
+            push.offset = {-0.75f + frame * 0.002f, -0.4f + j * 0.25f};
+            push.color = {0.0f, 0.0f, 0.2f + 0.2f * j};
+            vkCmdPushConstants(m_CommandBuffers[imageIndex], m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
+
+            m_Model->Draw(m_CommandBuffers[imageIndex]);
+        }
 
         vkCmdEndRenderPass(m_CommandBuffers[imageIndex]);
         if (vkEndCommandBuffer(m_CommandBuffers[imageIndex]) != VK_SUCCESS)
