@@ -7,7 +7,6 @@
 
 namespace Liara
 {
-
     struct SwapChainSupportDetails
     {
         VkSurfaceCapabilitiesKHR m_Capabilities;

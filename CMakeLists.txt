@@ -22,8 +22,6 @@ include_directories(${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${GLM_INCLUDE_DI
 add_executable(LiaraEngine main.cpp
         Liara_Window.h
         Liara_Window.cpp
-        FirstApp.h
-        FirstApp.cpp
         Liara_Pipeline.cpp
         Liara_Pipeline.h
         Liara_Device.cpp
@@ -33,6 +31,16 @@ add_executable(LiaraEngine main.cpp
         Liara_Model.cpp
         Liara_Model.h
         Liara_GameObject.h
+        Liara_Renderer.cpp
+        Liara_Renderer.h
+        SimpleRenderSystem.cpp
+        SimpleRenderSystem.h
+        Apps/FirstApp/FirstApp.h
+        Apps/FirstApp/FirstApp.cpp
+        Apps/SierpinskiApp/SierpinskiApp.h
+        Apps/SierpinskiApp/SierpinskiApp.cpp
+        Apps/GravityApp/GravityPhysicsSystem.h
+        Apps/GravityApp/GravityVecFieldApp.cpp
 )
 
 # Link Vulkan, GLFW and GLM

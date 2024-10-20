@@ -5,17 +5,16 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
-#include <set>
 #include <stdexcept>
 
 namespace Liara
 {
-    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D extent) : m_Device{deviceRef}, m_WindowExtent{extent}
+    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent) : m_Device{deviceRef}, m_WindowExtent{windowExtent}
     {
         Init();
     }
 
-    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D extent, std::shared_ptr<Liara_SwapChain> oldSwapChain) : m_Device{deviceRef}, m_WindowExtent{extent}, m_OldSwapChain(oldSwapChain)
+    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent, std::shared_ptr<Liara_SwapChain> oldSwapChain) : m_Device{deviceRef}, m_WindowExtent{windowExtent}, m_OldSwapChain(oldSwapChain)
     {
         Init();
         m_OldSwapChain = nullptr;
@@ -23,7 +22,7 @@ namespace Liara
 
     Liara_SwapChain::~Liara_SwapChain()
     {
-        for (auto imageView: m_SwapChainImageViews) { vkDestroyImageView(m_Device.GetDevice(), imageView, nullptr); }
+        for (const auto imageView: m_SwapChainImageViews) { vkDestroyImageView(m_Device.GetDevice(), imageView, nullptr); }
         m_SwapChainImageViews.clear();
 
         if (m_SwapChain != nullptr)
@@ -39,7 +38,7 @@ namespace Liara
             vkFreeMemory(m_Device.GetDevice(), m_DepthImageMemorys[i], nullptr);
         }
 
-        for (auto framebuffer: m_SwapChainFramebuffers) { vkDestroyFramebuffer(m_Device.GetDevice(), framebuffer, nullptr); }
+        for (const auto framebuffer: m_SwapChainFramebuffers) { vkDestroyFramebuffer(m_Device.GetDevice(), framebuffer, nullptr); }
 
         vkDestroyRenderPass(m_Device.GetDevice(), m_RenderPass, nullptr);
 
@@ -61,7 +60,7 @@ namespace Liara
             VK_TRUE,
             std::numeric_limits<uint64_t>::max());
 
-        VkResult result = vkAcquireNextImageKHR(
+        const VkResult result = vkAcquireNextImageKHR(
             m_Device.GetDevice(),
             m_SwapChain,
             std::numeric_limits<uint64_t>::max(),
@@ -83,8 +82,8 @@ namespace Liara
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSemaphore waitSemaphores[] = {m_ImageAvailableSemaphores[m_CurrentFrame]};
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        const VkSemaphore waitSemaphores[] = {m_ImageAvailableSemaphores[m_CurrentFrame]};
+        constexpr VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
@@ -108,13 +107,13 @@ namespace Liara
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
 
-        VkSwapchainKHR swapChains[] = {m_SwapChain};
+        const VkSwapchainKHR swapChains[] = {m_SwapChain};
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
 
         presentInfo.pImageIndices = imageIndex;
 
-        auto result = vkQueuePresentKHR(m_Device.GetPresentQueue(), &presentInfo);
+        const auto result = vkQueuePresentKHR(m_Device.GetPresentQueue(), &presentInfo);
 
         m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
@@ -158,7 +157,7 @@ namespace Liara
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
         QueueFamilyIndices indices = m_Device.FindPhysicalQueueFamilies();
-        uint32_t queueFamilyIndices[] = {indices.m_GraphicsFamily, indices.m_PresentFamily};
+        const uint32_t queueFamilyIndices[] = {indices.m_GraphicsFamily, indices.m_PresentFamily};
 
         if (indices.m_GraphicsFamily != indices.m_PresentFamily)
         {
@@ -258,14 +257,14 @@ namespace Liara
         subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
         VkSubpassDependency dependency = {};
+        dependency.dstSubpass = 0;
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
         dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
         dependency.srcAccessMask = 0;
         dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency.dstSubpass = 0;
-        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-        std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
+        const std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
         VkRenderPassCreateInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -307,7 +306,8 @@ namespace Liara
 
     void Liara_SwapChain::CreateDepthResources()
     {
-        VkFormat depthFormat = FindDepthFormat();
+        const VkFormat depthFormat = FindDepthFormat();
+        m_SwapChainDepthFormat = depthFormat;
         VkExtent2D swapChainExtent = GetSwapChainExtent();
 
         m_DepthImages.resize(ImageCount());

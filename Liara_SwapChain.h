@@ -37,6 +37,11 @@ namespace Liara
         VkResult AcquireNextImage(uint32_t *imageIndex);
         VkResult SubmitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex);
 
+        [[nodiscard]] bool CompareSwapFormat(const Liara_SwapChain& swap_chain) const
+        {
+            return swap_chain.m_SwapChainDepthFormat == m_SwapChainDepthFormat && swap_chain.m_SwapChainImageFormat == m_SwapChainImageFormat;
+        }
+
     private:
         void Init();
         void CreateSwapChain();
@@ -52,6 +57,7 @@ namespace Liara
         [[nodiscard]] VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) const;
 
         VkFormat m_SwapChainImageFormat;
+        VkFormat m_SwapChainDepthFormat;
         VkExtent2D m_SwapChainExtent;
 
         std::vector<VkFramebuffer> m_SwapChainFramebuffers;

@@ -16,7 +16,7 @@ namespace Liara
         glm::vec2 scale{1.0f, 1.0f};
         float rotation{0.0f};
 
-        glm::mat2 GetMat2() const
+        [[nodiscard]] glm::mat2 GetMat2() const
         {
             const float cos = std::cos(rotation);
             const float sin = std::sin(rotation);
@@ -24,6 +24,12 @@ namespace Liara
             const glm::mat2 scaleMat = {{scale.x, 0.0f}, {0.0f, scale.y}};
             return rotationMat * scaleMat;
         }
+    };
+
+    struct RigidBody2dComponent
+    {
+        glm::vec2 velocity;
+        float mass{1.0f};
     };
 
     class Liara_GameObject
@@ -45,6 +51,7 @@ namespace Liara
         [[nodiscard]] id_t GetId() const { return m_Id; }
 
         Transform2D m_Transform{};
+        RigidBody2dComponent m_RigidBody{};
         std::shared_ptr<Liara_Model> m_Model{};
         glm::vec3 m_color{};
 
