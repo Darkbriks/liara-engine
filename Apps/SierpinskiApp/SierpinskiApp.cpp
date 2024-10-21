@@ -20,6 +20,8 @@ namespace Liara
 
     void SierpinskiApp::Run()
     {
+        Liara_Camera camera {};
+        camera.SetOrthographicProjection(-1, 1, -1, 1, -1, 1);
         const SimpleRenderSystem render_system{m_Device, m_Renderer.GetSwapChainRenderPass()};
 
         while (!m_Window.ShouldClose())
@@ -29,7 +31,7 @@ namespace Liara
             if (const auto commandBuffer = m_Renderer.BeginFrame())
             {
                 m_Renderer.BeginSwapChainRenderPass(commandBuffer);
-                render_system.RenderGameObjects(commandBuffer, m_GameObjects);
+                render_system.RenderGameObjects(commandBuffer, m_GameObjects, camera);
                 m_Renderer.EndSwapChainRenderPass(commandBuffer);
                 m_Renderer.EndFrame();
             }

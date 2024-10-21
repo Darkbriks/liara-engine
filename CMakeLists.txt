@@ -40,6 +40,8 @@ add_executable(LiaraEngine main.cpp
         Apps/SierpinskiApp/SierpinskiApp.h
         Apps/SierpinskiApp/SierpinskiApp.cpp
         Apps/FirstApp/CubeModel.h
+        Liara_Camera.cpp
+        Liara_Camera.h
 )
 
 # Link Vulkan, GLFW and GLM

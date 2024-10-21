@@ -5,6 +5,7 @@
 #pragma once
 #include <memory>
 
+#include "Liara_Camera.h"
 #include "Liara_Device.h"
 #include "Liara_GameObject.h"
 #include "Liara_Pipeline.h"
@@ -19,7 +20,7 @@ namespace Liara
         SimpleRenderSystem(const SimpleRenderSystem&) = delete;
         SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
 
-        void RenderGameObjects(VkCommandBuffer commandBuffer, std::vector<Liara_GameObject> &game_objects) const;
+        void RenderGameObjects(VkCommandBuffer commandBuffer, std::vector<Liara_GameObject> &game_objects, const Liara_Camera &camera) const;
 
     private:
         void CreatePipelineLayout();

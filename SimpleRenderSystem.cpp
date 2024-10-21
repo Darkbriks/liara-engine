@@ -31,7 +31,7 @@ namespace Liara
         vkDestroyPipelineLayout(m_Device.GetDevice(), m_PipelineLayout, nullptr);
     }
 
-    void SimpleRenderSystem::RenderGameObjects(VkCommandBuffer commandBuffer, std::vector<Liara_GameObject> &game_objects) const
+    void SimpleRenderSystem::RenderGameObjects(VkCommandBuffer commandBuffer, std::vector<Liara_GameObject> &game_objects, const Liara_Camera &camera) const
     {
         m_Pipeline->Bind(commandBuffer);
 
@@ -42,7 +42,7 @@ namespace Liara
 
             SimplePushConstantData push{};
             push.color = obj.m_color;
-            push.transform = obj.m_Transform.GetMat4();
+            push.transform = camera.GetProjectionMatrix() * obj.m_Transform.GetMat4();
             vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
             obj.m_Model->Bind(commandBuffer);
             obj.m_Model->Draw(commandBuffer);
