@@ -39,8 +39,7 @@ add_executable(LiaraEngine main.cpp
         Apps/FirstApp/FirstApp.cpp
         Apps/SierpinskiApp/SierpinskiApp.h
         Apps/SierpinskiApp/SierpinskiApp.cpp
-        Apps/GravityApp/GravityPhysicsSystem.h
-        Apps/GravityApp/GravityVecFieldApp.cpp
+        Apps/FirstApp/CubeModel.h
 )
 
 # Link Vulkan, GLFW and GLM

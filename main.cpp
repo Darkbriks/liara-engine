@@ -1,4 +1,4 @@
-#include "Apps/GravityApp/GravityVecFieldApp.h"
+#include "Apps/FirstApp/FirstApp.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -8,7 +8,7 @@ int main()
 {
     try
     {
-        Liara::GravityVecFieldApp app;
+        Liara::FirstApp app;
         app.Run();
     }
     catch (const std::exception& e)

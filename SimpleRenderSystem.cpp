@@ -16,8 +16,7 @@ namespace Liara
 {
     struct SimplePushConstantData
     {
-        glm::mat2 transform{1.0f};
-        glm::vec2 offset;
+        glm::mat4 transform{1.0f};
         alignas(16) glm::vec3 color;
     };
 
@@ -38,10 +37,12 @@ namespace Liara
 
         for (auto& obj : game_objects)
         {
+            obj.m_Transform.rotation.y = glm::mod(obj.m_Transform.rotation.y + 0.005f, glm::two_pi<float>());
+            obj.m_Transform.rotation.x = glm::mod(obj.m_Transform.rotation.x + 0.004f, glm::two_pi<float>());
+
             SimplePushConstantData push{};
-            push.offset = obj.m_Transform.position;
             push.color = obj.m_color;
-            push.transform = obj.m_Transform.GetMat2();
+            push.transform = obj.m_Transform.GetMat4();
             vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
             obj.m_Model->Bind(commandBuffer);
             obj.m_Model->Draw(commandBuffer);

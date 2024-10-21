@@ -1,15 +1,16 @@
 #version 450
 
-layout (location = 0) out vec4 fragColor; // Cette ligne permet de définir la sortie du shader
+layout(location = 0) in vec3 fragColor;
+
+layout (location = 0) out vec4 outColor;
 
 layout(push_constant) uniform PushConstant
 {
-    mat2 transform;
-    vec2 offset;
+    mat4 transform;
     vec3 color;
 } pushConstant;
 
 void main()
 {
-    fragColor = vec4(pushConstant.color, 1.0); // Cette ligne permet de définir la couleur de chaque pixel
+    outColor = vec4(fragColor, 1.0);
 }

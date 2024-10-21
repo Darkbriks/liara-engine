@@ -42,7 +42,7 @@ namespace Liara
     {
         // A Sierpinski triangle
         std::vector<Liara_Model::Vertex> vertices;
-        SierpinskiTriangle(vertices, 5, {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}}, {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}});
+        SierpinskiTriangle(vertices, 5, {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}, {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}});
         const auto model = std::make_shared<Liara_Model>(m_Device, vertices);
         auto triangle = Liara_GameObject::CreateGameObject();
         triangle.m_Model = model;
