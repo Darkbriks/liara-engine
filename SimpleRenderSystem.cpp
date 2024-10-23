@@ -35,6 +35,8 @@ namespace Liara
     {
         m_Pipeline->Bind(commandBuffer);
 
+        auto projectionView = camera.GetProjectionMatrix() * camera.GetViewMatrix();
+
         for (auto& obj : game_objects)
         {
             obj.m_Transform.rotation.y = glm::mod(obj.m_Transform.rotation.y + 0.005f, glm::two_pi<float>());
@@ -42,7 +44,7 @@ namespace Liara
 
             SimplePushConstantData push{};
             push.color = obj.m_color;
-            push.transform = camera.GetProjectionMatrix() * obj.m_Transform.GetMat4();
+            push.transform = projectionView * obj.m_Transform.GetMat4();
             vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
             obj.m_Model->Bind(commandBuffer);
             obj.m_Model->Draw(commandBuffer);

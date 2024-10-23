@@ -25,6 +25,8 @@ namespace Liara
     void FirstApp::Run()
     {
         Liara_Camera camera {};
+        //camera.SetViewDirection(glm::vec3(0.1f), glm::vec3(0.5f, 0.0f, 1.0f));
+        //camera.SetViewTarget(glm::vec3(-1.0f, -2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 2.5f));
         const SimpleRenderSystem render_system{m_Device, m_Renderer.GetSwapChainRenderPass()};
 
         while (!m_Window.ShouldClose())
@@ -32,7 +34,7 @@ namespace Liara
             glfwPollEvents();
             const float aspect = m_Renderer.GetAspectRatio();
             //camera.SetOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
-            camera.SetPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 10.0f);
+            camera.SetPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 100.0f);
 
             if (const auto commandBuffer = m_Renderer.BeginFrame())
             {
