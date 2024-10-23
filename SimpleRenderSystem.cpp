@@ -39,9 +39,6 @@ namespace Liara
 
         for (auto& obj : game_objects)
         {
-            obj.m_Transform.rotation.y = glm::mod(obj.m_Transform.rotation.y + 0.005f, glm::two_pi<float>());
-            obj.m_Transform.rotation.x = glm::mod(obj.m_Transform.rotation.x + 0.004f, glm::two_pi<float>());
-
             SimplePushConstantData push{};
             push.color = obj.m_color;
             push.transform = projectionView * obj.m_Transform.GetMat4();

@@ -3,6 +3,8 @@
 //
 
 #include "FirstApp.h"
+#include "CubeModel.h"
+#include "../../Listener/KeybordMovementController.h"
 #include "../../SimpleRenderSystem.h"
 
 #include <array>
@@ -10,10 +12,7 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
-
-#include "CubeModel.h"
+#include <chrono>
 
 namespace Liara
 {
@@ -24,14 +23,26 @@ namespace Liara
 
     void FirstApp::Run()
     {
-        Liara_Camera camera {};
-        //camera.SetViewDirection(glm::vec3(0.1f), glm::vec3(0.5f, 0.0f, 1.0f));
-        //camera.SetViewTarget(glm::vec3(-1.0f, -2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 2.5f));
         const SimpleRenderSystem render_system{m_Device, m_Renderer.GetSwapChainRenderPass()};
+
+        Liara_Camera camera {};
+
+        auto player = Liara_GameObject::CreateGameObject();
+        KeybordMovementController cameraController{};
+
+        auto currentTime = std::chrono::high_resolution_clock::now();
 
         while (!m_Window.ShouldClose())
         {
             glfwPollEvents();
+
+            auto newTime = std::chrono::high_resolution_clock::now();
+            float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+            currentTime = newTime;
+
+            cameraController.moveInPlaneXZ(m_Window.GetWindow(), frameTime, player);
+            camera.SetViewYXZ(player.m_Transform.position, player.m_Transform.rotation);
+
             const float aspect = m_Renderer.GetAspectRatio();
             //camera.SetOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
             camera.SetPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 100.0f);

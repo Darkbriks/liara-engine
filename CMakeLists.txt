@@ -42,6 +42,8 @@ add_executable(LiaraEngine main.cpp
         Apps/FirstApp/CubeModel.h
         Liara_Camera.cpp
         Liara_Camera.h
+        Listener/KeybordMovementController.cpp
+        Listener/KeybordMovementController.h
 )
 
 # Link Vulkan, GLFW and GLM
