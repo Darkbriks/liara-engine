@@ -1,4 +1,4 @@
-#include "Apps/FirstApp/FirstApp.h"
+#include "app/FirstApp/FirstApp.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -8,7 +8,7 @@ int main()
 {
     try
     {
-        Liara::FirstApp app;
+        FirstApp app;
         app.Run();
     }
     catch (const std::exception& e)
