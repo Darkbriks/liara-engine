@@ -1,10 +1,10 @@
 include(./.env.cmake OPTIONAL RESULT_VARIABLE LOCAL_ENV)
 message(STATUS "Local .env.cmake: ${LOCAL_ENV}")
 
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.22) # 3.29 is required for CMAKE_GENERATOR_PLATFORM
 
 set(NAME LiaraEngine)
-set(LIARA_VERSION 0.0.15)
+set(LIARA_VERSION 0.15.0)
 
 message(STATUS "using ${CMAKE_GENERATOR}")
 if (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
@@ -86,15 +86,17 @@ endif()
 # Find all vertex and fragment sources within shaders directory
 # taken from VBlancos vulkan tutorial
 # https://github.com/vblanco20-1/vulkan-guide/blob/all-chapters/CMakeLists.txt
-find_program(GLSL_VALIDATOR glslangValidator HINTS
-        ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}
-        /usr/bin
-        /usr/local/bin
-        ${VULKAN_SDK_PATH}/Bin
-        ${VULKAN_SDK_PATH}/Bin32
-        $ENV{VULKAN_SDK}/Bin/
-        $ENV{VULKAN_SDK}/Bin32/
-)
+if (NOT DEFINED GLSL_VALIDATOR)
+    find_program(GLSL_VALIDATOR glslangValidator HINTS
+            ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}
+            /usr/bin
+            /usr/local/bin
+            ${VULKAN_SDK_PATH}/Bin
+            ${VULKAN_SDK_PATH}/Bin32
+            $ENV{VULKAN_SDK}/Bin/
+            $ENV{VULKAN_SDK}/Bin32/
+    )
+endif ()
 
 # get all .vert and .frag files in shaders directory
 file(GLOB_RECURSE GLSL_SOURCE_FILES "${PROJECT_SOURCE_DIR}/shaders/*.frag" "${PROJECT_SOURCE_DIR}/shaders/*.vert")

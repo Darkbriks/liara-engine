@@ -1,5 +1,7 @@
 #include "Liara_Model.h"
 
+#include <cstring>
+
 #ifndef ENGINE_DIR
 #define ENGINE_DIR "../"
 #endif
