@@ -41,9 +41,9 @@ void SierpinskiApp::Run()
 void SierpinskiApp::LoadGameObjects()
 {
     // A Sierpinski triangle
-    std::vector<Liara::Graphics::Liara_Model::Vertex> vertices;
-    SierpinskiTriangle(vertices, 5, {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}, {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}});
-    const auto model = std::make_shared<Liara::Graphics::Liara_Model>(m_Device, vertices);
+    Liara::Graphics::Liara_Model::Builder builder{};
+    SierpinskiTriangle(builder.vertices, 5, {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}, {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}});
+    const auto model = std::make_shared<Liara::Graphics::Liara_Model>(m_Device, builder);
     auto triangle = Liara::Core::Liara_GameObject::CreateGameObject();
     triangle.m_Model = model;
     triangle.m_color = {0.0f, 0.8f, 1.0f};

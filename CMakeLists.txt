@@ -4,7 +4,7 @@ message(STATUS "Local .env.cmake: ${LOCAL_ENV}")
 cmake_minimum_required(VERSION 3.22) # 3.29 is required for CMAKE_GENERATOR_PLATFORM
 
 set(NAME LiaraEngine)
-set(LIARA_VERSION 0.15.0)
+set(LIARA_VERSION 0.16.0)
 
 message(STATUS "using ${CMAKE_GENERATOR}")
 if (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")

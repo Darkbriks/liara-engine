@@ -20,21 +20,34 @@ namespace Liara::Graphics
             static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
         };
 
-        Liara_Model(Liara_Device& device, const std::vector<Vertex>& vertices);
+        struct Builder
+        {
+            std::vector<Vertex> vertices{};
+            std::vector<uint32_t> indices{};
+        };
+
+        Liara_Model(Liara_Device& device, const Builder& builder);
         ~Liara_Model();
 
         Liara_Model(const Liara_Model&) = delete;
         Liara_Model& operator=(const Liara_Model&) = delete;
 
-        void Bind(VkCommandBuffer commandBuffer);
-        void Draw(VkCommandBuffer commandBuffer);
+        void Bind(VkCommandBuffer commandBuffer) const;
+        void Draw(VkCommandBuffer commandBuffer) const;
 
     private:
         void CreateVertexBuffer(const std::vector<Vertex>& vertices);
+        void CreateIndexBuffer(const std::vector<uint32_t>& indices);
 
         Liara_Device& m_Device;
+
         VkBuffer m_VertexBuffer;
         VkDeviceMemory m_VertexBufferMemory;
         uint32_t m_VertexCount;
+
+        bool m_HasIndexBuffer = false;
+        VkBuffer m_IndexBuffer;
+        VkDeviceMemory m_IndexBufferMemory;
+        uint32_t m_IndexCount;
     };
 } // Liara

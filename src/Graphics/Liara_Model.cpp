@@ -8,40 +8,83 @@
 
 namespace Liara::Graphics
 {
-    Liara_Model::Liara_Model(Liara_Device& device, const std::vector<Vertex>& vertices) : m_Device(device)
+    Liara_Model::Liara_Model(Liara_Device& device, const Builder& builder) : m_Device(device)
     {
-        CreateVertexBuffer(vertices);
+        CreateVertexBuffer(builder.vertices);
+        CreateIndexBuffer(builder.indices);
     }
 
     Liara_Model::~Liara_Model()
     {
         vkDestroyBuffer(m_Device.GetDevice(), m_VertexBuffer, nullptr);
         vkFreeMemory(m_Device.GetDevice(), m_VertexBufferMemory, nullptr);
+
+        if (m_HasIndexBuffer)
+        {
+            vkDestroyBuffer(m_Device.GetDevice(), m_IndexBuffer, nullptr);
+            vkFreeMemory(m_Device.GetDevice(), m_IndexBufferMemory, nullptr);
+        }
     }
 
     void Liara_Model::CreateVertexBuffer(const std::vector<Vertex> &vertices)
     {
         m_VertexCount = static_cast<uint32_t>(vertices.size());
         assert(m_VertexCount >= 3 && "Vertex count must be at least 3!");
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * m_VertexCount;
-        m_Device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_VertexBuffer, m_VertexBufferMemory);
+        const VkDeviceSize bufferSize = sizeof(vertices[0]) * m_VertexCount;
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        m_Device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
         void* data;
-        vkMapMemory(m_Device.GetDevice(), m_VertexBufferMemory, 0, bufferSize, 0, &data);
+        vkMapMemory(m_Device.GetDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
         memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-        vkUnmapMemory(m_Device.GetDevice(), m_VertexBufferMemory);
+        vkUnmapMemory(m_Device.GetDevice(), stagingBufferMemory);
+
+        m_Device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_VertexBufferMemory);
+        m_Device.CopyBuffer(stagingBuffer, m_VertexBuffer, bufferSize);
+
+        vkDestroyBuffer(m_Device.GetDevice(), stagingBuffer, nullptr);
+        vkFreeMemory(m_Device.GetDevice(), stagingBufferMemory, nullptr);
     }
 
-    void Liara_Model::Bind(VkCommandBuffer commandBuffer)
+    void Liara_Model::CreateIndexBuffer(const std::vector<uint32_t> &indices)
     {
-        VkBuffer buffers[] = { m_VertexBuffer };
-        VkDeviceSize offsets[] = { 0 };
+        m_IndexCount = static_cast<uint32_t>(indices.size());
+        m_HasIndexBuffer = m_IndexCount > 0;
+        if (!m_HasIndexBuffer) { return; }
+
+        const VkDeviceSize bufferSize = sizeof(indices[0]) * m_IndexCount;
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        m_Device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void *data;
+        vkMapMemory(m_Device.GetDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
+        vkUnmapMemory(m_Device.GetDevice(), stagingBufferMemory);
+
+        m_Device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
+        m_Device.CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
+
+        vkDestroyBuffer(m_Device.GetDevice(), stagingBuffer, nullptr);
+        vkFreeMemory(m_Device.GetDevice(), stagingBufferMemory, nullptr);
+    }
+
+
+    void Liara_Model::Bind(VkCommandBuffer commandBuffer) const
+    {
+        const VkBuffer buffers[] = { m_VertexBuffer };
+        constexpr VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+        if (m_HasIndexBuffer) { vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32); }
     }
 
-    void Liara_Model::Draw(VkCommandBuffer commandBuffer)
+    void Liara_Model::Draw(VkCommandBuffer commandBuffer) const
     {
-        vkCmdDraw(commandBuffer, m_VertexCount, 1, 0, 0);
+        if (m_HasIndexBuffer) { vkCmdDrawIndexed(commandBuffer, m_IndexCount, 1, 0, 0, 0); }
+        else{ vkCmdDraw(commandBuffer, m_VertexCount, 1, 0, 0); }
     }
 
     std::vector<VkVertexInputBindingDescription> Liara_Model::Vertex::GetBindingDescriptions()

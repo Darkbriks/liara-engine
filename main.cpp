@@ -1,7 +1,6 @@
 #include "app/FirstApp/FirstApp.h"
 
 #include <iostream>
-#include <stdexcept>
 #include <cstdlib>
 
 int main()
