@@ -3,7 +3,6 @@
 //
 
 #include "FirstApp.h"
-#include "CubeModel.h"
 #include "Listener/KeybordMovementController.h"
 #include "Systems/SimpleRenderSystem.h"
 
@@ -59,7 +58,7 @@ void FirstApp::Run()
 
 void FirstApp::LoadGameObjects()
 {
-    const std::shared_ptr<Liara::Graphics::Liara_Model> model = CubeModel::CreateCubeModelWithIndex(m_Device, {0.0f, 0.0f, 0.0f});
+    const std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/cube.obj");
     auto cube = Liara::Core::Liara_GameObject::CreateGameObject();
     cube.m_Model = model;
     cube.m_Transform.position = {0.0f, 0.0f, 2.5f};

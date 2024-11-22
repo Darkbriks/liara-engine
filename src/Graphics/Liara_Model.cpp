@@ -1,10 +1,31 @@
 #include "Liara_Model.h"
+#include "Core/Liara_Utils.h"
 
 #include <cstring>
+#include <unordered_map>
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <../external/tiny_obj_loader/tiny_obj_loader.h>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 #ifndef ENGINE_DIR
 #define ENGINE_DIR "../"
 #endif
+
+namespace std
+{
+    template<> struct hash<Liara::Graphics::Liara_Model::Vertex>
+    {
+        size_t operator()(Liara::Graphics::Liara_Model::Vertex const& vertex) const noexcept
+        {
+            size_t seed = 0;
+            Liara::Core::HashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv);
+            return seed;
+        }
+    };
+}
 
 namespace Liara::Graphics
 {
@@ -12,6 +33,13 @@ namespace Liara::Graphics
     {
         CreateVertexBuffer(builder.vertices);
         CreateIndexBuffer(builder.indices);
+    }
+
+    std::unique_ptr<Liara_Model> Liara_Model::CreateModelFromFile(Liara_Device &device, const std::string &filename)
+    {
+        Builder builder{};
+        builder.LoadModel(filename);
+        return std::make_unique<Liara_Model>(device, builder);
     }
 
     Liara_Model::~Liara_Model()
@@ -104,4 +132,77 @@ namespace Liara::Graphics
             {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)}
         };
     }
+
+    void Liara_Model::Builder::LoadModel(const std::string &filename)
+    {
+        tinyobj::attrib_t attrib;
+        std::vector<tinyobj::shape_t> shapes;
+        std::vector<tinyobj::material_t> materials;
+        std::string warn, err;
+
+        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, (std::string(ENGINE_DIR) + filename).c_str()))
+        {
+            throw std::runtime_error(warn + err);
+        }
+
+        vertices.clear();
+        indices.clear();
+
+        std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+        for (const auto &shape : shapes)
+        {
+            for (const auto &index : shape.mesh.indices)
+            {
+                Vertex vertex{};
+
+                if (index.vertex_index >= 0)
+                {
+                    vertex.position = {
+                        attrib.vertices[3 * index.vertex_index + 0],
+                        attrib.vertices[3 * index.vertex_index + 1],
+                        attrib.vertices[3 * index.vertex_index + 2]
+                    };
+
+                    if (auto colorIndex = 3 * index.vertex_index + 2; colorIndex < attrib.colors.size())
+                    {
+                        vertex.color = {
+                            attrib.colors[colorIndex + 0],
+                            attrib.colors[colorIndex + 1],
+                            attrib.colors[colorIndex + 2]
+                        };
+                    }
+                    else
+                    {
+                        vertex.color = {1.0f, 1.0f, 1.0f}; // Set default color if no color data is present
+                    }
+                }
+
+                if (index.normal_index >= 0)
+                {
+                    vertex.normal = {
+                        attrib.normals[3 * index.normal_index + 0],
+                        attrib.normals[3 * index.normal_index + 1],
+                        attrib.normals[3 * index.normal_index + 2]
+                    };
+                }
+
+                if (index.texcoord_index >= 0)
+                {
+                    vertex.uv = {
+                        attrib.texcoords[2 * index.texcoord_index + 0],
+                        attrib.texcoords[2 * index.texcoord_index + 1]
+                    };
+                }
+
+                if (uniqueVertices.count(vertex) == 0)
+                {
+                    uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                    vertices.push_back(vertex);
+                }
+                indices.push_back(uniqueVertices[vertex]);
+            }
+        }
+    }
+
 } // Liara
