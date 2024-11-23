@@ -58,10 +58,10 @@ void FirstApp::Run()
 
 void FirstApp::LoadGameObjects()
 {
-    const std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/cube.obj");
+    const std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/smooth_vase.obj");
     auto cube = Liara::Core::Liara_GameObject::CreateGameObject();
     cube.m_Model = model;
-    cube.m_Transform.position = {0.0f, 0.0f, 2.5f};
-    cube.m_Transform.scale = {0.5f, 0.5f, 0.5f};
+    cube.m_Transform.position = {0.0f, 0.5f, 2.5f};
+    cube.m_Transform.scale = glm::vec3(3.0f);
     m_GameObjects.push_back(std::move(cube));
 }

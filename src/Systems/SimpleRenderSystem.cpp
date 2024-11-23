@@ -1,8 +1,6 @@
-//
-// Created by antoi on 20/10/2024.
-//
-
 #include "SimpleRenderSystem.h"
+#include "Core/Liara_GameObject.h"
+#include "Core/Components/TransformComponent3d.h"
 
 #include <stdexcept>
 
@@ -16,7 +14,7 @@ namespace Liara::Systems
     struct SimplePushConstantData
     {
         glm::mat4 transform{1.0f};
-        alignas(16) glm::vec3 color;
+        glm::mat4 normalMatrix{1.0f};
     };
 
     SimpleRenderSystem::SimpleRenderSystem(Graphics::Liara_Device& device, VkRenderPass render_pass) : m_Device(device)
@@ -39,8 +37,9 @@ namespace Liara::Systems
         for (auto& obj : game_objects)
         {
             SimplePushConstantData push{};
-            push.color = obj.m_color;
-            push.transform = projectionView * obj.m_Transform.GetMat4();
+            auto modelMatrix = obj.m_Transform.GetMat4();
+            push.transform = projectionView * modelMatrix;
+            push.normalMatrix = obj.m_Transform.GetNormalMatrix();
             vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
             obj.m_Model->Bind(commandBuffer);
             obj.m_Model->Draw(commandBuffer);

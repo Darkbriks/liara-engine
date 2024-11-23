@@ -29,6 +29,6 @@ namespace Liara::Systems
 
         Graphics::Liara_Device& m_Device;
         std::unique_ptr<Graphics::Liara_Pipeline> m_Pipeline;
-        VkPipelineLayout m_PipelineLayout;
+        VkPipelineLayout m_PipelineLayout{};
     };
 } // Liara
