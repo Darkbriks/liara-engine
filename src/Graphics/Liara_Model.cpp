@@ -164,18 +164,11 @@ namespace Liara::Graphics
                         attrib.vertices[3 * index.vertex_index + 2]
                     };
 
-                    if (auto colorIndex = 3 * index.vertex_index + 2; colorIndex < attrib.colors.size())
-                    {
-                        vertex.color = {
-                            attrib.colors[colorIndex + 0],
-                            attrib.colors[colorIndex + 1],
-                            attrib.colors[colorIndex + 2]
-                        };
-                    }
-                    else
-                    {
-                        vertex.color = {1.0f, 1.0f, 1.0f}; // Set default color if no color data is present
-                    }
+                    vertex.color ={
+                        attrib.colors[3 * index.vertex_index + 0],
+                        attrib.colors[3 * index.vertex_index + 1],
+                        attrib.colors[3 * index.vertex_index + 2]
+                    };
                 }
 
                 if (index.normal_index >= 0)
