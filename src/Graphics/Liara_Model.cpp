@@ -42,38 +42,33 @@ namespace Liara::Graphics
         return std::make_unique<Liara_Model>(device, builder);
     }
 
-    Liara_Model::~Liara_Model()
-    {
-        vkDestroyBuffer(m_Device.GetDevice(), m_VertexBuffer, nullptr);
-        vkFreeMemory(m_Device.GetDevice(), m_VertexBufferMemory, nullptr);
-
-        if (m_HasIndexBuffer)
-        {
-            vkDestroyBuffer(m_Device.GetDevice(), m_IndexBuffer, nullptr);
-            vkFreeMemory(m_Device.GetDevice(), m_IndexBufferMemory, nullptr);
-        }
-    }
-
     void Liara_Model::CreateVertexBuffer(const std::vector<Vertex> &vertices)
     {
         m_VertexCount = static_cast<uint32_t>(vertices.size());
         assert(m_VertexCount >= 3 && "Vertex count must be at least 3!");
         const VkDeviceSize bufferSize = sizeof(vertices[0]) * m_VertexCount;
+        constexpr uint32_t vertexSize = sizeof(vertices[0]);
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        m_Device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        Liara_Buffer stagingBuffer{
+            m_Device,
+            vertexSize,
+            m_VertexCount,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        };
 
-        void* data;
-        vkMapMemory(m_Device.GetDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-        vkUnmapMemory(m_Device.GetDevice(), stagingBufferMemory);
+        stagingBuffer.map();
+        stagingBuffer.writeToBuffer(vertices.data());
 
-        m_Device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_VertexBufferMemory);
-        m_Device.CopyBuffer(stagingBuffer, m_VertexBuffer, bufferSize);
+        m_VertexBuffer = std::make_unique<Liara_Buffer>(
+            m_Device,
+            vertexSize,
+            m_VertexCount,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
 
-        vkDestroyBuffer(m_Device.GetDevice(), stagingBuffer, nullptr);
-        vkFreeMemory(m_Device.GetDevice(), stagingBufferMemory, nullptr);
+        m_Device.CopyBuffer(stagingBuffer.getBuffer(), m_VertexBuffer->getBuffer(), bufferSize);
     }
 
     void Liara_Model::CreateIndexBuffer(const std::vector<uint32_t> &indices)
@@ -83,30 +78,36 @@ namespace Liara::Graphics
         if (!m_HasIndexBuffer) { return; }
 
         const VkDeviceSize bufferSize = sizeof(indices[0]) * m_IndexCount;
+        constexpr uint32_t indexSize = sizeof(indices[0]);
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        m_Device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        Liara_Buffer stagingBuffer{
+            m_Device,
+            indexSize,
+            m_IndexCount,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        };
 
-        void *data;
-        vkMapMemory(m_Device.GetDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
-        vkUnmapMemory(m_Device.GetDevice(), stagingBufferMemory);
+        stagingBuffer.map();
+        stagingBuffer.writeToBuffer(indices.data());
 
-        m_Device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
-        m_Device.CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
+        m_IndexBuffer = std::make_unique<Liara_Buffer>(
+            m_Device,
+            indexSize,
+            m_IndexCount,
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
 
-        vkDestroyBuffer(m_Device.GetDevice(), stagingBuffer, nullptr);
-        vkFreeMemory(m_Device.GetDevice(), stagingBufferMemory, nullptr);
+        m_Device.CopyBuffer(stagingBuffer.getBuffer(), m_IndexBuffer->getBuffer(), bufferSize);
     }
-
 
     void Liara_Model::Bind(VkCommandBuffer commandBuffer) const
     {
-        const VkBuffer buffers[] = { m_VertexBuffer };
+        const VkBuffer buffers[] = { m_VertexBuffer->getBuffer() };
         constexpr VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-        if (m_HasIndexBuffer) { vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32); }
+        if (m_HasIndexBuffer) { vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32); }
     }
 
     void Liara_Model::Draw(VkCommandBuffer commandBuffer) const
@@ -142,7 +143,7 @@ namespace Liara::Graphics
         std::vector<tinyobj::material_t> materials;
         std::string warn, err;
 
-        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, (std::string(ENGINE_DIR) + filename).c_str()))
+        if (!LoadObj(&attrib, &shapes, &materials, &warn, &err, (std::string(ENGINE_DIR) + filename).c_str()))
         {
             throw std::runtime_error(warn + err);
         }

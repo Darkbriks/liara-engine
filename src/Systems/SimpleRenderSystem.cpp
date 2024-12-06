@@ -28,11 +28,11 @@ namespace Liara::Systems
         vkDestroyPipelineLayout(m_Device.GetDevice(), m_PipelineLayout, nullptr);
     }
 
-    void SimpleRenderSystem::RenderGameObjects(VkCommandBuffer commandBuffer, std::vector<Core::Liara_GameObject> &game_objects, const Core::Liara_Camera &camera) const
+    void SimpleRenderSystem::RenderGameObjects(Core::FrameInfo &frame_info, std::vector<Core::Liara_GameObject> &game_objects) const
     {
-        m_Pipeline->Bind(commandBuffer);
+        m_Pipeline->Bind(frame_info.m_CommandBuffer);
 
-        auto projectionView = camera.GetProjectionMatrix() * camera.GetViewMatrix();
+        auto projectionView = frame_info.m_Camera.GetProjectionMatrix() * frame_info.m_Camera.GetViewMatrix();
 
         for (auto& obj : game_objects)
         {
@@ -40,9 +40,9 @@ namespace Liara::Systems
             auto modelMatrix = obj.m_Transform.GetMat4();
             push.transform = projectionView * modelMatrix;
             push.normalMatrix = obj.m_Transform.GetNormalMatrix();
-            vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
-            obj.m_Model->Bind(commandBuffer);
-            obj.m_Model->Draw(commandBuffer);
+            vkCmdPushConstants(frame_info.m_CommandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
+            obj.m_Model->Bind(frame_info.m_CommandBuffer);
+            obj.m_Model->Draw(frame_info.m_CommandBuffer);
         }
     }
 

@@ -1,7 +1,3 @@
-//
-// Created by antoi on 15/10/2024.
-//
-
 #pragma once
 
 #include "Graphics/Liara_Device.h"

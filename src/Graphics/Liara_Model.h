@@ -1,5 +1,7 @@
 #pragma once
+
 #include "Liara_Device.h"
+#include "Liara_Buffer.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -37,7 +39,7 @@ namespace Liara::Graphics
         };
 
         Liara_Model(Liara_Device& device, const Builder& builder);
-        ~Liara_Model();
+        ~Liara_Model() = default;
 
         Liara_Model(const Liara_Model&) = delete;
         Liara_Model& operator=(const Liara_Model&) = delete;
@@ -53,13 +55,11 @@ namespace Liara::Graphics
 
         Liara_Device& m_Device;
 
-        VkBuffer m_VertexBuffer{};
-        VkDeviceMemory m_VertexBufferMemory{};
+        std::unique_ptr<Liara_Buffer> m_VertexBuffer;
         uint32_t m_VertexCount{};
 
         bool m_HasIndexBuffer = false;
-        VkBuffer m_IndexBuffer{};
-        VkDeviceMemory m_IndexBufferMemory{};
+        std::unique_ptr<Liara_Buffer> m_IndexBuffer;
         uint32_t m_IndexCount{};
     };
 } // Liara

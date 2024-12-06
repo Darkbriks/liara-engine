@@ -1,13 +1,11 @@
-//
-// Created by antoi on 20/10/2024.
-//
-
 #pragma once
+
 #include <memory>
 #include <vulkan/vulkan_core.h>
 
 #include "Core/Liara_Camera.h"
 #include "Core/Liara_GameObject.h"
+#include "Core/FrameInfo.h"
 #include "Graphics/Liara_Device.h"
 #include "Graphics/Liara_Pipeline.h"
 
@@ -21,7 +19,7 @@ namespace Liara::Systems
         SimpleRenderSystem(const SimpleRenderSystem&) = delete;
         SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
 
-        void RenderGameObjects(VkCommandBuffer commandBuffer, std::vector<Core::Liara_GameObject> &game_objects, const Core::Liara_Camera &camera) const;
+        void RenderGameObjects(Core::FrameInfo &frame_info, std::vector<Core::Liara_GameObject> &game_objects) const;
 
     private:
         void CreatePipelineLayout();

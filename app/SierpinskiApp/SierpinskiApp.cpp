@@ -14,7 +14,7 @@ SierpinskiApp::SierpinskiApp()
     LoadGameObjects();
 }
 
-SierpinskiApp::~SierpinskiApp() {}
+SierpinskiApp::~SierpinskiApp() = default;
 
 void SierpinskiApp::Run()
 {
@@ -28,8 +28,11 @@ void SierpinskiApp::Run()
 
         if (const auto commandBuffer = m_Renderer.BeginFrame())
         {
+            const int frameIndex = static_cast<int>(m_Renderer.GetFrameIndex());
+            Liara::Core::FrameInfo frameInfo{frameIndex, 0, commandBuffer, camera};
+
             m_Renderer.BeginSwapChainRenderPass(commandBuffer);
-            render_system.RenderGameObjects(commandBuffer, m_GameObjects, camera);
+            render_system.RenderGameObjects(frameInfo, m_GameObjects);
             m_Renderer.EndSwapChainRenderPass(commandBuffer);
             m_Renderer.EndFrame();
         }

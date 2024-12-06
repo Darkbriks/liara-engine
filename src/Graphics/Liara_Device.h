@@ -20,7 +20,7 @@ namespace Liara::Graphics
         uint32_t m_PresentFamily;
         bool m_GraphicsFamilyHasValue = false;
         bool m_PresentFamilyHasValue = false;
-        bool IsComplete() { return m_GraphicsFamilyHasValue && m_PresentFamilyHasValue; }
+        [[nodiscard]] bool IsComplete() const { return m_GraphicsFamilyHasValue && m_PresentFamilyHasValue; }
     };
 
     class Liara_Device
