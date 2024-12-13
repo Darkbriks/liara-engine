@@ -13,13 +13,13 @@ namespace Liara::Systems
 {
     struct SimplePushConstantData
     {
-        glm::mat4 transform{1.0f};
+        glm::mat4 modelMatrix{1.0f};
         glm::mat4 normalMatrix{1.0f};
     };
 
-    SimpleRenderSystem::SimpleRenderSystem(Graphics::Liara_Device& device, VkRenderPass render_pass) : m_Device(device)
+    SimpleRenderSystem::SimpleRenderSystem(Graphics::Liara_Device& device, VkRenderPass render_pass, VkDescriptorSetLayout descriptor_set_layout) : m_Device(device)
     {
-        CreatePipelineLayout();
+        CreatePipelineLayout(descriptor_set_layout);
         CreatePipeline(render_pass);
     }
 
@@ -28,17 +28,25 @@ namespace Liara::Systems
         vkDestroyPipelineLayout(m_Device.GetDevice(), m_PipelineLayout, nullptr);
     }
 
-    void SimpleRenderSystem::RenderGameObjects(Core::FrameInfo &frame_info, std::vector<Core::Liara_GameObject> &game_objects) const
+    void SimpleRenderSystem::RenderGameObjects(const Core::FrameInfo &frame_info, const std::vector<Core::Liara_GameObject> &game_objects) const
     {
         m_Pipeline->Bind(frame_info.m_CommandBuffer);
 
-        auto projectionView = frame_info.m_Camera.GetProjectionMatrix() * frame_info.m_Camera.GetViewMatrix();
+        vkCmdBindDescriptorSets(
+            frame_info.m_CommandBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            m_PipelineLayout,
+            0,
+            1,
+            &frame_info.m_GlobalDescriptorSet,
+            0,
+            nullptr
+        );
 
         for (auto& obj : game_objects)
         {
             SimplePushConstantData push{};
-            auto modelMatrix = obj.m_Transform.GetMat4();
-            push.transform = projectionView * modelMatrix;
+            push.modelMatrix = obj.m_Transform.GetMat4();
             push.normalMatrix = obj.m_Transform.GetNormalMatrix();
             vkCmdPushConstants(frame_info.m_CommandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
             obj.m_Model->Bind(frame_info.m_CommandBuffer);
@@ -46,14 +54,18 @@ namespace Liara::Systems
         }
     }
 
-    void SimpleRenderSystem::CreatePipelineLayout()
+    void SimpleRenderSystem::CreatePipelineLayout(VkDescriptorSetLayout descriptor_set_layout)
     {
-        VkPushConstantRange pushConstantRange{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData)};
+        VkPushConstantRange pushConstantRange{
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData)
+        };
+
+        const std::vector<VkDescriptorSetLayout> layouts = {descriptor_set_layout};
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 0;
-        pipelineLayoutInfo.pSetLayouts = nullptr;
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+        pipelineLayoutInfo.pSetLayouts = layouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = 1;
         pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
         if (vkCreatePipelineLayout(m_Device.GetDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)

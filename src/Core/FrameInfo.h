@@ -2,8 +2,6 @@
 
 #include "Liara_Camera.h"
 
-#include <vulkan/vulkan.h>
-
 namespace Liara::Core
 {
     struct FrameInfo
@@ -12,5 +10,6 @@ namespace Liara::Core
         float m_DeltaTime;
         VkCommandBuffer m_CommandBuffer;
         Liara_Camera &m_Camera;
+        VkDescriptorSet m_GlobalDescriptorSet;
     };
 }

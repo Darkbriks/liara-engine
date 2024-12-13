@@ -4,7 +4,6 @@
 #include "Graphics/Liara_Buffer.h"
 #include "Graphics/Ubo/GlobalUbo.h"
 
-#include <array>
 #include <stdexcept>
 
 #define GLM_FORCE_RADIANS
@@ -14,6 +13,10 @@
 
 FirstApp::FirstApp()
 {
+    m_globalDescriptorPool = Liara::Graphics::Descriptors::Liara_DescriptorPool::Builder(m_Device)
+                             .SetMaxSets(Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
+                             .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
+                             .Build();
     LoadGameObjects();
 }
 
@@ -32,7 +35,20 @@ void FirstApp::Run()
         uboBuffer->map();
     }
 
-    const Liara::Systems::SimpleRenderSystem render_system{m_Device, m_Renderer.GetSwapChainRenderPass()};
+    auto globalSetLayout = Liara::Graphics::Descriptors::Liara_DescriptorSetLayout::Builder(m_Device)
+        .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+        .Build();
+
+    std::vector<VkDescriptorSet> globalDescriptorSets(Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT);
+    for (size_t i = 0; i < globalDescriptorSets.size(); i++)
+    {
+        auto bufferInfo = uboBuffers[i]->descriptorInfo();
+        Liara::Graphics::Descriptors::Liara_DescriptorWriter(*globalSetLayout, *m_globalDescriptorPool)
+            .WriteBuffer(0, &bufferInfo)
+            .Build(globalDescriptorSets[i]);
+    }
+
+    const Liara::Systems::SimpleRenderSystem render_system{m_Device, m_Renderer.GetSwapChainRenderPass(), globalSetLayout->GetDescriptorSetLayout()};
 
     Liara::Core::Liara_Camera camera {};
 
@@ -59,13 +75,16 @@ void FirstApp::Run()
         if (const auto commandBuffer = m_Renderer.BeginFrame())
         {
             const int frameIndex = static_cast<int>(m_Renderer.GetFrameIndex());
-            Liara::Core::FrameInfo frameInfo{frameIndex, frameTime, commandBuffer, camera};
+            Liara::Core::FrameInfo frameInfo{frameIndex, frameTime, commandBuffer, camera, globalDescriptorSets[frameIndex]};
 
             // Update
             Liara::Graphics::Ubo::GlobalUbo ubo{};
             ubo.projectionView = camera.GetProjectionMatrix() * camera.GetViewMatrix();
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
-            uboBuffers[frameIndex]->flush();
+            if (auto result = uboBuffers[frameIndex]->flush(); result != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to flush buffer");
+            }
 
             // Render
             m_Renderer.BeginSwapChainRenderPass(commandBuffer);

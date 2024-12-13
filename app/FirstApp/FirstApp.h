@@ -3,6 +3,7 @@
 #include "Graphics/Liara_Device.h"
 #include "Graphics/Liara_Renderer.h"
 #include "Core/Liara_GameObject.h"
+#include "Graphics/Descriptors/Liara_Descriptor.h"
 #include "Plateform/Liara_Window.h"
 
 class FirstApp
@@ -24,5 +25,8 @@ private:
     Liara::Plateform::Liara_Window m_Window{ "Test App With Vulkan", WIDTH, HEIGHT };
     Liara::Graphics::Liara_Device m_Device{ m_Window };
     Liara::Graphics::Liara_Renderer m_Renderer{m_Window, m_Device};
+
+    // Note: Order of declaration matters
+    std::unique_ptr<Liara::Graphics::Descriptors::Liara_DescriptorPool> m_globalDescriptorPool{};
     std::vector<Liara::Core::Liara_GameObject> m_GameObjects;
 };
