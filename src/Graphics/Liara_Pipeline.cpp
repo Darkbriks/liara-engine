@@ -1,7 +1,3 @@
-//
-// Created by antoi on 15/10/2024.
-//
-
 #include "Liara_Pipeline.h"
 #include "Liara_Model.h"
 
@@ -96,6 +92,9 @@ namespace Liara::Graphics
         configInfo.m_DynamicStateInfo.pDynamicStates = configInfo.m_DynamicStateEnables.data();
         configInfo.m_DynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.m_DynamicStateEnables.size());
         configInfo.m_DynamicStateInfo.flags = 0;
+
+        configInfo.m_BindingDescriptions = Liara_Model::Vertex::GetBindingDescriptions();
+        configInfo.m_AttributeDescriptions = Liara_Model::Vertex::GetAttributeDescriptions();
     }
 
     void Liara_Pipeline::Bind(VkCommandBuffer commandBuffer) const
@@ -152,8 +151,8 @@ namespace Liara::Graphics
         shaderStages[1].pNext = nullptr;
         shaderStages[1].pSpecializationInfo = nullptr;
 
-        const auto bindingDescriptions = Liara_Model::Vertex::GetBindingDescriptions();
-        const auto attributeDescriptions = Liara_Model::Vertex::GetAttributeDescriptions();
+        const auto& bindingDescriptions = configInfo.m_BindingDescriptions;
+        const auto& attributeDescriptions = configInfo.m_AttributeDescriptions;
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -189,7 +188,7 @@ namespace Liara::Graphics
 
     }
 
-    void Liara_Pipeline::CreateShaderModule(const std::vector<char> &code, VkShaderModule *shaderModule)
+    void Liara_Pipeline::CreateShaderModule(const std::vector<char> &code, VkShaderModule *shaderModule) const
     {
         VkShaderModuleCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -201,6 +200,4 @@ namespace Liara::Graphics
             throw std::runtime_error("Failed to create shader module!");
         }
     }
-
-
 } // Liara

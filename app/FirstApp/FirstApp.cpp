@@ -9,7 +9,10 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <chrono>
+#include <iostream>
 #include <numeric>
+
+#include "Systems/PointLightSystem.h"
 
 FirstApp::FirstApp()
 {
@@ -36,7 +39,7 @@ void FirstApp::Run()
     }
 
     auto globalSetLayout = Liara::Graphics::Descriptors::Liara_DescriptorSetLayout::Builder(m_Device)
-        .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+        .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
         .Build();
 
     std::vector<VkDescriptorSet> globalDescriptorSets(Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -49,10 +52,12 @@ void FirstApp::Run()
     }
 
     const Liara::Systems::SimpleRenderSystem render_system{m_Device, m_Renderer.GetSwapChainRenderPass(), globalSetLayout->GetDescriptorSetLayout()};
+    const Liara::Systems::PointLightSystem pointLightSystem{m_Device, m_Renderer.GetSwapChainRenderPass(), globalSetLayout->GetDescriptorSetLayout()};
 
     Liara::Core::Liara_Camera camera {};
 
     auto player = Liara::Core::Liara_GameObject::CreateGameObject();
+    player.m_Transform.position.z = -2.5f;
     Liara::Listener::KeybordMovementController cameraController{};
 
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -75,11 +80,15 @@ void FirstApp::Run()
         if (const auto commandBuffer = m_Renderer.BeginFrame())
         {
             const int frameIndex = static_cast<int>(m_Renderer.GetFrameIndex());
-            Liara::Core::FrameInfo frameInfo{frameIndex, frameTime, commandBuffer, camera, globalDescriptorSets[frameIndex]};
+            Liara::Core::FrameInfo frameInfo{
+                frameIndex, frameTime, commandBuffer, camera, globalDescriptorSets[frameIndex], m_GameObjects
+            };
 
             // Update
             Liara::Graphics::Ubo::GlobalUbo ubo{};
-            ubo.projectionView = camera.GetProjectionMatrix() * camera.GetViewMatrix();
+            ubo.projection = camera.GetProjectionMatrix();
+            ubo.view = camera.GetViewMatrix();
+            pointLightSystem.Update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             if (auto result = uboBuffers[frameIndex]->flush(); result != VK_SUCCESS)
             {
@@ -88,7 +97,8 @@ void FirstApp::Run()
 
             // Render
             m_Renderer.BeginSwapChainRenderPass(commandBuffer);
-            render_system.RenderGameObjects(frameInfo, m_GameObjects);
+            render_system.RenderGameObjects(frameInfo);
+            pointLightSystem.Render(frameInfo);
             m_Renderer.EndSwapChainRenderPass(commandBuffer);
             m_Renderer.EndFrame();
         }
@@ -99,10 +109,50 @@ void FirstApp::Run()
 
 void FirstApp::LoadGameObjects()
 {
-    const std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/smooth_vase.obj");
-    auto cube = Liara::Core::Liara_GameObject::CreateGameObject();
-    cube.m_Model = model;
-    cube.m_Transform.position = {0.0f, 0.5f, 2.5f};
-    cube.m_Transform.scale = glm::vec3(3.0f);
-    m_GameObjects.push_back(std::move(cube));
+    std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/flat_vase.obj");
+    auto flatVase = Liara::Core::Liara_GameObject::CreateGameObject();
+    flatVase.m_Model = model;
+    flatVase.m_Transform.position = {-.5f, .5f, 0.f};
+    flatVase.m_Transform.scale = {3.f, 1.5f, 3.f};
+    m_GameObjects.emplace(flatVase.GetId(), std::move(flatVase));
+
+    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/smooth_vase.obj");
+    auto smoothVase = Liara::Core::Liara_GameObject::CreateGameObject();
+    smoothVase.m_Model = model;
+    smoothVase.m_Transform.position = {.5f, .5f, 0.f};
+    smoothVase.m_Transform.scale = {3.f, 1.5f, 3.f};
+    m_GameObjects.emplace(smoothVase.GetId(), std::move(smoothVase));
+
+    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/quad.obj");
+    auto floor = Liara::Core::Liara_GameObject::CreateGameObject();
+    floor.m_Model = model;
+    floor.m_Transform.position = {0.f, .5f, 0.f};
+    floor.m_Transform.scale = {3.f, 1.f, 3.f};
+    m_GameObjects.emplace(floor.GetId(), std::move(floor));
+
+    {
+        auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.2f);
+        m_GameObjects.emplace(pointLight.GetId(), std::move(pointLight));
+    }
+
+    std::vector<glm::vec3> lightColors{
+        {1.f, .1f, .1f},
+        {.1f, .1f, 1.f},
+        {.1f, 1.f, .1f},
+        {1.f, 1.f, .1f},
+        {.1f, 1.f, 1.f},
+        //{1.f, 1.f, 1.f}
+    };
+
+    for (int i = 0; i < lightColors.size(); i++)
+    {
+        auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.2f);
+        pointLight.m_color = lightColors[i];
+        auto rotateLight = glm::rotate(
+            glm::mat4(1.f),
+            (i * glm::two_pi<float>()) / lightColors.size(),
+            {0.f, -1.f, 0.f});
+        pointLight.m_Transform.position = glm::vec3(rotateLight * glm::vec4(-1.f, -0.3f, -1.f, 1.f));
+        m_GameObjects.emplace(pointLight.GetId(), std::move(pointLight));
+    }
 }

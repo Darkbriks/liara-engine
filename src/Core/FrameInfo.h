@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Liara_Camera.h"
+#include "Liara_GameObject.h"
 
 namespace Liara::Core
 {
@@ -11,5 +12,6 @@ namespace Liara::Core
         VkCommandBuffer m_CommandBuffer;
         Liara_Camera &m_Camera;
         VkDescriptorSet m_GlobalDescriptorSet;
+        Liara_GameObject::Map &m_GameObjects;
     };
 }

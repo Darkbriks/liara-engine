@@ -1,7 +1,3 @@
-//
-// Created by antoi on 15/10/2024.
-//
-
 #pragma once
 
 #include "Liara_Device.h"
@@ -16,6 +12,9 @@ namespace Liara::Graphics
     {
         PipelineConfigInfo(const PipelineConfigInfo&) = delete;
         PipelineConfigInfo& operator=(const PipelineConfigInfo&) = delete;
+
+        std::vector<VkVertexInputBindingDescription> m_BindingDescriptions;
+        std::vector<VkVertexInputAttributeDescription> m_AttributeDescriptions;
 
         VkPipelineViewportStateCreateInfo m_ViewportInfo;
         VkPipelineInputAssemblyStateCreateInfo m_InputAssemblyInfo;
@@ -55,6 +54,6 @@ namespace Liara::Graphics
 
         void CreateGraphicsPipeline(const std::string& vertFilepath, const std::string& fragFilepath, const PipelineConfigInfo& configInfo);
 
-        void CreateShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
+        void CreateShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) const;
     };
 } // Liara

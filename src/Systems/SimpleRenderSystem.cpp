@@ -28,7 +28,7 @@ namespace Liara::Systems
         vkDestroyPipelineLayout(m_Device.GetDevice(), m_PipelineLayout, nullptr);
     }
 
-    void SimpleRenderSystem::RenderGameObjects(const Core::FrameInfo &frame_info, const std::vector<Core::Liara_GameObject> &game_objects) const
+    void SimpleRenderSystem::RenderGameObjects(const Core::FrameInfo &frame_info) const
     {
         m_Pipeline->Bind(frame_info.m_CommandBuffer);
 
@@ -43,8 +43,10 @@ namespace Liara::Systems
             nullptr
         );
 
-        for (auto& obj : game_objects)
+        for (auto& [fst, snd] : frame_info.m_GameObjects)
         {
+            auto& obj = snd;
+            if (!obj.m_Model) { continue; }
             SimplePushConstantData push{};
             push.modelMatrix = obj.m_Transform.GetMat4();
             push.normalMatrix = obj.m_Transform.GetNormalMatrix();
@@ -56,7 +58,7 @@ namespace Liara::Systems
 
     void SimpleRenderSystem::CreatePipelineLayout(VkDescriptorSetLayout descriptor_set_layout)
     {
-        VkPushConstantRange pushConstantRange{
+        constexpr VkPushConstantRange pushConstantRange{
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData)
         };
 

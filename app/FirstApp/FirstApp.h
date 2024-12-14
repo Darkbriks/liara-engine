@@ -28,5 +28,5 @@ private:
 
     // Note: Order of declaration matters
     std::unique_ptr<Liara::Graphics::Descriptors::Liara_DescriptorPool> m_globalDescriptorPool{};
-    std::vector<Liara::Core::Liara_GameObject> m_GameObjects;
+    Liara::Core::Liara_GameObject::Map m_GameObjects;
 };
