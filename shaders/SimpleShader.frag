@@ -16,7 +16,8 @@ layout(set = 0, binding = 0) uniform GlobalUbo
 {
     mat4 projection;
     mat4 view;
-    vec4 ambientLightColor; // w is intensity
+    vec4 directionalLightDirection; // xyz is direction, w is intensity
+    vec4 directionalLightColor; // w is ambient intensity
     PointLight pointLights[10]; // TODO: Use a Specialization Constant
     int numLights;
 } ubo;
@@ -29,8 +30,12 @@ layout(push_constant) uniform PushConstant
 
 void main()
 {
-    vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
+    vec3 ambientLight = ubo.directionalLightColor.xyz * ubo.directionalLightColor.w;
+
     vec3 surfaceNormal = normalize(fragNormalWorld);
+    vec3 lightDir = normalize(ubo.directionalLightDirection.xyz);
+    float diffuseFactor = max(dot(surfaceNormal, lightDir), 0.0);
+    vec3 diffuseLight = ubo.directionalLightColor.xyz * diffuseFactor * ubo.directionalLightDirection.w;
 
     for (int i = 0; i < ubo.numLights; i++)
     {
@@ -43,5 +48,5 @@ void main()
         diffuseLight += intensity * cosAngIncidence;
     }
 
-    outColor = vec4(diffuseLight * fragColor, 1.0);
+    outColor = vec4(fragColor * (ambientLight + diffuseLight), 1.0);
 }

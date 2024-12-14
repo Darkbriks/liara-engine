@@ -13,7 +13,8 @@ layout(set = 0, binding = 0) uniform GlobalUbo
 {
     mat4 projection;
     mat4 view;
-    vec4 ambientLightColor;
+    vec4 directionalLightDirection; // xyz is direction, w is intensity
+    vec4 directionalLightColor; // w is ambient intensity
     PointLight pointLights[10]; // TODO: Use a Specialization Constant
     int numLights;
 } ubo;
