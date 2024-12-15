@@ -1,7 +1,3 @@
-//
-// Created by antoi on 21/10/2024.
-//
-
 #include "Liara_Camera.h"
 
 #include <cassert>
@@ -52,6 +48,20 @@ namespace Liara::Core
         m_ViewMatrix[3][0] = -glm::dot(u, position);
         m_ViewMatrix[3][1] = -glm::dot(v, position);
         m_ViewMatrix[3][2] = -glm::dot(w, position);
+
+        m_InverseViewMatrix = glm::mat4{1.f};
+        m_InverseViewMatrix[0][0] = u.x;
+        m_InverseViewMatrix[0][1] = u.y;
+        m_InverseViewMatrix[0][2] = u.z;
+        m_InverseViewMatrix[1][0] = v.x;
+        m_InverseViewMatrix[1][1] = v.y;
+        m_InverseViewMatrix[1][2] = v.z;
+        m_InverseViewMatrix[2][0] = w.x;
+        m_InverseViewMatrix[2][1] = w.y;
+        m_InverseViewMatrix[2][2] = w.z;
+        m_InverseViewMatrix[3][0] = position.x;
+        m_InverseViewMatrix[3][1] = position.y;
+        m_InverseViewMatrix[3][2] = position.z;
     }
 
     void Liara_Camera::SetViewTarget(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)
@@ -83,5 +93,19 @@ namespace Liara::Core
         m_ViewMatrix[3][0] = -glm::dot(u, position);
         m_ViewMatrix[3][1] = -glm::dot(v, position);
         m_ViewMatrix[3][2] = -glm::dot(w, position);
+
+        m_InverseViewMatrix = glm::mat4{1.f};
+        m_InverseViewMatrix[0][0] = u.x;
+        m_InverseViewMatrix[0][1] = u.y;
+        m_InverseViewMatrix[0][2] = u.z;
+        m_InverseViewMatrix[1][0] = v.x;
+        m_InverseViewMatrix[1][1] = v.y;
+        m_InverseViewMatrix[1][2] = v.z;
+        m_InverseViewMatrix[2][0] = w.x;
+        m_InverseViewMatrix[2][1] = w.y;
+        m_InverseViewMatrix[2][2] = w.z;
+        m_InverseViewMatrix[3][0] = position.x;
+        m_InverseViewMatrix[3][1] = position.y;
+        m_InverseViewMatrix[3][2] = position.z;
     }
 } // Liara

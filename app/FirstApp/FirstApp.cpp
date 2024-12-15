@@ -88,6 +88,7 @@ void FirstApp::Run()
             Liara::Graphics::Ubo::GlobalUbo ubo{};
             ubo.projection = camera.GetProjectionMatrix();
             ubo.view = camera.GetViewMatrix();
+            ubo.inverseView = camera.GetInverseViewMatrix();
             pointLightSystem.Update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             if (auto result = uboBuffers[frameIndex]->flush(); result != VK_SUCCESS)
@@ -130,10 +131,10 @@ void FirstApp::LoadGameObjects()
     floor.m_Transform.scale = {3.f, 1.f, 3.f};
     m_GameObjects.emplace(floor.GetId(), std::move(floor));
 
-    {
+    /*{
         auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.2f);
         m_GameObjects.emplace(pointLight.GetId(), std::move(pointLight));
-    }
+    }*/
 
     std::vector<glm::vec3> lightColors{
         {1.f, .1f, .1f},

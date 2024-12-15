@@ -13,6 +13,8 @@ namespace Liara::Graphics
         PipelineConfigInfo(const PipelineConfigInfo&) = delete;
         PipelineConfigInfo& operator=(const PipelineConfigInfo&) = delete;
 
+        VkSpecializationInfo m_SpecializationInfo;
+
         std::vector<VkVertexInputBindingDescription> m_BindingDescriptions;
         std::vector<VkVertexInputAttributeDescription> m_AttributeDescriptions;
 

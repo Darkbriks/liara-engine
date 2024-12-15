@@ -11,6 +11,8 @@ const vec2 OFFSETS[6] = vec2[](
 
 layout(location = 0) out vec2 fragOffset;
 
+layout(constant_id = 0) const uint MAX_LIGHTS = 10;
+
 struct PointLight
 {
     vec4 position; // ignore w
@@ -21,9 +23,10 @@ layout(set = 0, binding = 0) uniform GlobalUbo
 {
     mat4 projection;
     mat4 view;
+    mat4 inverseView;
     vec4 directionalLightDirection; // xyz is direction, w is intensity
     vec4 directionalLightColor; // w is ambient intensity
-    PointLight pointLights[10]; // TODO: Use a Specialization Constant
+    PointLight pointLights[MAX_LIGHTS];
     int numLights;
 } ubo;
 

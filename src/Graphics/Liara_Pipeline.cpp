@@ -6,6 +6,8 @@
 #include <iostream>
 #include <cassert>
 
+#include "SpecConstant/SpecializationConstant.h"
+
 #ifndef ENGINE_DIR
 #define ENGINE_DIR "../"
 #endif
@@ -95,6 +97,9 @@ namespace Liara::Graphics
 
         configInfo.m_BindingDescriptions = Liara_Model::Vertex::GetBindingDescriptions();
         configInfo.m_AttributeDescriptions = Liara_Model::Vertex::GetAttributeDescriptions();
+
+        // Specialization Constants
+        configInfo.m_SpecializationInfo = SpecConstant::SpecConstant::GetSpecializationInfo();
     }
 
     void Liara_Pipeline::Bind(VkCommandBuffer commandBuffer) const
@@ -141,7 +146,7 @@ namespace Liara::Graphics
         shaderStages[0].pName = "main";
         shaderStages[0].flags = 0;
         shaderStages[0].pNext = nullptr;
-        shaderStages[0].pSpecializationInfo = nullptr;
+        shaderStages[0].pSpecializationInfo = &configInfo.m_SpecializationInfo;
 
         shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -149,7 +154,7 @@ namespace Liara::Graphics
         shaderStages[1].pName = "main";
         shaderStages[1].flags = 0;
         shaderStages[1].pNext = nullptr;
-        shaderStages[1].pSpecializationInfo = nullptr;
+        shaderStages[1].pSpecializationInfo = &configInfo.m_SpecializationInfo;
 
         const auto& bindingDescriptions = configInfo.m_BindingDescriptions;
         const auto& attributeDescriptions = configInfo.m_AttributeDescriptions;
