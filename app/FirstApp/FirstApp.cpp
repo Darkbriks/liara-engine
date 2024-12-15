@@ -110,21 +110,21 @@ void FirstApp::Run()
 
 void FirstApp::LoadGameObjects()
 {
-    std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/flat_vase.obj");
+    std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/smooth_vase.obj", 32);
     auto flatVase = Liara::Core::Liara_GameObject::CreateGameObject();
     flatVase.m_Model = model;
     flatVase.m_Transform.position = {-.5f, .5f, 0.f};
     flatVase.m_Transform.scale = {3.f, 1.5f, 3.f};
     m_GameObjects.emplace(flatVase.GetId(), std::move(flatVase));
 
-    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/smooth_vase.obj");
+    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/smooth_vase.obj", 4);
     auto smoothVase = Liara::Core::Liara_GameObject::CreateGameObject();
     smoothVase.m_Model = model;
     smoothVase.m_Transform.position = {.5f, .5f, 0.f};
     smoothVase.m_Transform.scale = {3.f, 1.5f, 3.f};
     m_GameObjects.emplace(smoothVase.GetId(), std::move(smoothVase));
 
-    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/quad.obj");
+    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/quad.obj", 512);
     auto floor = Liara::Core::Liara_GameObject::CreateGameObject();
     floor.m_Model = model;
     floor.m_Transform.position = {0.f, .5f, 0.f};

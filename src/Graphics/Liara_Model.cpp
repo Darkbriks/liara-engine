@@ -8,6 +8,7 @@
 #include <../external/tiny_obj_loader/tiny_obj_loader.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
+#include <iostream>
 #include <glm/gtx/hash.hpp>
 
 #ifndef ENGINE_DIR
@@ -21,7 +22,7 @@ namespace std
         size_t operator()(Liara::Graphics::Liara_Model::Vertex const& vertex) const noexcept
         {
             size_t seed = 0;
-            Liara::Core::HashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv);
+            Liara::Core::HashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv, vertex.specularExponent);
             return seed;
         }
     };
@@ -35,10 +36,10 @@ namespace Liara::Graphics
         CreateIndexBuffer(builder.indices);
     }
 
-    std::unique_ptr<Liara_Model> Liara_Model::CreateModelFromFile(Liara_Device &device, const std::string &filename)
+    std::unique_ptr<Liara_Model> Liara_Model::CreateModelFromFile(Liara_Device &device, const std::string &filename, const uint32_t specularExponent)
     {
         Builder builder{};
-        builder.LoadModel(filename);
+        builder.LoadModel(filename, specularExponent);
         return std::make_unique<Liara_Model>(device, builder);
     }
 
@@ -132,11 +133,12 @@ namespace Liara::Graphics
             {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
             {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
             {2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-            {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)}
+            {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
+             {4, 0, VK_FORMAT_R32_UINT, offsetof(Vertex, specularExponent)}
         };
     }
 
-    void Liara_Model::Builder::LoadModel(const std::string &filename)
+    void Liara_Model::Builder::LoadModel(const std::string &filename, const uint32_t specularExponent)
     {
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
@@ -172,6 +174,8 @@ namespace Liara::Graphics
                         attrib.colors[3 * index.vertex_index + 1],
                         attrib.colors[3 * index.vertex_index + 2]
                     };
+
+                    vertex.specularExponent = specularExponent;
                 }
 
                 if (index.normal_index >= 0)
@@ -200,5 +204,4 @@ namespace Liara::Graphics
             }
         }
     }
-
 } // Liara

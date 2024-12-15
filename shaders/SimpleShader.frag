@@ -3,6 +3,7 @@
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec3 fragPosWorld;
 layout(location = 2) in vec3 fragNormalWorld;
+layout(location = 3) flat in uint fragSpecularExponent; // TODO : Use a material property instead of this
 
 layout (location = 0) out vec4 outColor;
 
@@ -48,7 +49,7 @@ void main()
     /*vec3 halfAngle = normalize(lightDir + viewDirection);
     float blinnTerm = dot(surfaceNormal, halfAngle);
     blinnTerm = clamp(blinnTerm, 0.0, 1.0);
-    blinnTerm = pow(blinnTerm, 512.0); // Higer values -> sharper highlights ; TODO : Use a material property instead of hardcoded value
+    blinnTerm = pow(blinnTerm, fragSpecularExponent); // Higer values -> sharper highlights ; TODO : Use a material property instead of hardcoded value
     specularLight += ubo.directionalLightColor.xyz * blinnTerm;*/
 
     for (int i = 0; i < ubo.numLights; i++)
@@ -67,7 +68,7 @@ void main()
         vec3 halfAngle = normalize(directionToLight + viewDirection);
         float blinnTerm = dot(surfaceNormal, halfAngle);
         blinnTerm = clamp(blinnTerm, 0.0, 1.0);
-        blinnTerm = pow(blinnTerm, 128.0); // Higer values -> sharper highlights ; TODO : Use a material property instead of hardcoded value
+        blinnTerm = pow(blinnTerm, fragSpecularExponent); // Higer values -> sharper highlights ; TODO : Use a material property instead of hardcoded value
         specularLight += intensity * blinnTerm;
     }
 

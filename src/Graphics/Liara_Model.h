@@ -20,13 +20,14 @@ namespace Liara::Graphics
             glm::vec3 color;
             glm::vec3 normal;
             glm::vec2 uv;
+            uint32_t specularExponent; // TODO : Bad way to do this, but it's just for waiting for the texture system
 
             static std::vector<VkVertexInputBindingDescription> GetBindingDescriptions();
             static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
 
             bool operator==(const Vertex& other) const
             {
-                return position == other.position && color == other.color && normal == other.normal && uv == other.uv;
+                return position == other.position && color == other.color && normal == other.normal && uv == other.uv && specularExponent == other.specularExponent;
             }
         };
 
@@ -35,7 +36,7 @@ namespace Liara::Graphics
             std::vector<Vertex> vertices{};
             std::vector<uint32_t> indices{};
 
-            void LoadModel(const std::string& filename);
+            void LoadModel(const std::string& filename, uint32_t specularExponent);
         };
 
         Liara_Model(Liara_Device& device, const Builder& builder);
@@ -44,7 +45,8 @@ namespace Liara::Graphics
         Liara_Model(const Liara_Model&) = delete;
         Liara_Model& operator=(const Liara_Model&) = delete;
 
-        static std::unique_ptr<Liara_Model> CreateModelFromFile(Liara_Device& device, const std::string& filename);
+        // TODO : Remove specularExponent, and use a texture based value
+        static std::unique_ptr<Liara_Model> CreateModelFromFile(Liara_Device& device, const std::string& filename, uint32_t specularExponent = 1);
 
         void Bind(VkCommandBuffer commandBuffer) const;
         void Draw(VkCommandBuffer commandBuffer) const;
