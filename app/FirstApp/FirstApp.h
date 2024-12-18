@@ -3,7 +3,7 @@
 #include "Graphics/Liara_Device.h"
 #include "Graphics/Liara_Renderer.h"
 #include "Core/Liara_GameObject.h"
-#include "Graphics/Descriptors/Liara_Descriptor.h"
+#include "Graphics/Descriptors/Liara_Descriptor2.h"
 #include "Plateform/Liara_Window.h"
 
 class FirstApp
@@ -27,6 +27,7 @@ private:
     Liara::Graphics::Liara_Renderer m_Renderer{m_Window, m_Device};
 
     // Note: Order of declaration matters
-    std::unique_ptr<Liara::Graphics::Descriptors::Liara_DescriptorPool> m_globalDescriptorPool{};
+    std::unique_ptr<Liara::Graphics::Descriptors::Liara_DescriptorAllocator> m_descriptorAllocator{};
+    std::unique_ptr<Liara::Graphics::Descriptors::Liara_DescriptorLayoutCache> m_descriptorLayoutCache{};
     Liara::Core::Liara_GameObject::Map m_GameObjects;
 };

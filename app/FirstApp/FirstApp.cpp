@@ -3,6 +3,7 @@
 #include "Systems/SimpleRenderSystem.h"
 #include "Graphics/Liara_Buffer.h"
 #include "Graphics/Ubo/GlobalUbo.h"
+#include "Systems/PointLightSystem.h"
 
 #include <stdexcept>
 
@@ -12,14 +13,15 @@
 #include <iostream>
 #include <numeric>
 
-#include "Systems/PointLightSystem.h"
-
 FirstApp::FirstApp()
 {
-    m_globalDescriptorPool = Liara::Graphics::Descriptors::Liara_DescriptorPool::Builder(m_Device)
-                             .SetMaxSets(Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
-                             .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
-                             .Build();
+    m_descriptorAllocator = Liara::Graphics::Descriptors::Liara_DescriptorAllocator::Builder(m_Device)
+                            .SetMaxSets(Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
+                            .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
+                            .Build();
+
+    m_descriptorLayoutCache = Liara::Graphics::Descriptors::Liara_DescriptorLayoutCache::Builder(m_Device).Build();
+
     LoadGameObjects();
 }
 
@@ -38,21 +40,18 @@ void FirstApp::Run()
         uboBuffer->map();
     }
 
-    auto globalSetLayout = Liara::Graphics::Descriptors::Liara_DescriptorSetLayout::Builder(m_Device)
-        .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-        .Build();
-
+    VkDescriptorSetLayout globalSetLayout;
     std::vector<VkDescriptorSet> globalDescriptorSets(Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT);
     for (size_t i = 0; i < globalDescriptorSets.size(); i++)
     {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
-        Liara::Graphics::Descriptors::Liara_DescriptorWriter(*globalSetLayout, *m_globalDescriptorPool)
-            .WriteBuffer(0, &bufferInfo)
-            .Build(globalDescriptorSets[i]);
+        Liara::Graphics::Descriptors::Liara_DescriptorBuilder(*m_descriptorLayoutCache, *m_descriptorAllocator)
+            .BindBuffer(0, &bufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+            .Build(globalDescriptorSets[i], globalSetLayout);
     }
 
-    const Liara::Systems::SimpleRenderSystem render_system{m_Device, m_Renderer.GetSwapChainRenderPass(), globalSetLayout->GetDescriptorSetLayout()};
-    const Liara::Systems::PointLightSystem pointLightSystem{m_Device, m_Renderer.GetSwapChainRenderPass(), globalSetLayout->GetDescriptorSetLayout()};
+    const Liara::Systems::SimpleRenderSystem render_system{ m_Device, m_Renderer.GetSwapChainRenderPass(), globalSetLayout };
+    const Liara::Systems::PointLightSystem pointLightSystem{ m_Device, m_Renderer.GetSwapChainRenderPass(), globalSetLayout };
 
     Liara::Core::Liara_Camera camera {};
 
@@ -110,21 +109,21 @@ void FirstApp::Run()
 
 void FirstApp::LoadGameObjects()
 {
-    std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/smooth_vase.obj", 32);
+    std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/smooth_vase.obj", 32);
     auto flatVase = Liara::Core::Liara_GameObject::CreateGameObject();
     flatVase.m_Model = model;
     flatVase.m_Transform.position = {-.5f, .5f, 0.f};
     flatVase.m_Transform.scale = {3.f, 1.5f, 3.f};
     m_GameObjects.emplace(flatVase.GetId(), std::move(flatVase));
 
-    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/smooth_vase.obj", 4);
+    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/smooth_vase.obj", 2048);
     auto smoothVase = Liara::Core::Liara_GameObject::CreateGameObject();
     smoothVase.m_Model = model;
     smoothVase.m_Transform.position = {.5f, .5f, 0.f};
     smoothVase.m_Transform.scale = {3.f, 1.5f, 3.f};
     m_GameObjects.emplace(smoothVase.GetId(), std::move(smoothVase));
 
-    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/quad.obj", 512);
+    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/quad.obj", 512);
     auto floor = Liara::Core::Liara_GameObject::CreateGameObject();
     floor.m_Model = model;
     floor.m_Transform.position = {0.f, .5f, 0.f};
