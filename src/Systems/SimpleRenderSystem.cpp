@@ -1,13 +1,15 @@
 #include "SimpleRenderSystem.h"
+#include "Core/FrameInfo.h"
 #include "Core/Liara_GameObject.h"
 #include "Core/Components/TransformComponent3d.h"
-
-#include <stdexcept>
+#include "Graphics/Liara_Model.h"
+#include "Graphics/Liara_Pipeline.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
+#include <stdexcept>
 
 namespace Liara::Systems
 {
@@ -28,7 +30,7 @@ namespace Liara::Systems
         vkDestroyPipelineLayout(m_Device.GetDevice(), m_PipelineLayout, nullptr);
     }
 
-    void SimpleRenderSystem::RenderGameObjects(const Core::FrameInfo &frame_info) const
+    void SimpleRenderSystem::Render(const Core::FrameInfo &frame_info) const
     {
         m_Pipeline->Bind(frame_info.m_CommandBuffer);
 

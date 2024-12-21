@@ -1,110 +1,23 @@
 #include "FirstApp.h"
 #include "Listener/KeybordMovementController.h"
-#include "Systems/SimpleRenderSystem.h"
-#include "Graphics/Liara_Buffer.h"
-#include "Graphics/Ubo/GlobalUbo.h"
-#include "Systems/PointLightSystem.h"
-
-#include <stdexcept>
+#include "Core/FrameInfo.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <chrono>
-#include <iostream>
-#include <numeric>
 
-FirstApp::FirstApp()
+FirstApp::FirstApp() : Liara_App("First App", 800, 600)
 {
-    m_descriptorAllocator = Liara::Graphics::Descriptors::Liara_DescriptorAllocator::Builder(m_Device)
-                            .SetMaxSets(Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
-                            .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
-                            .Build();
-
-    m_descriptorLayoutCache = Liara::Graphics::Descriptors::Liara_DescriptorLayoutCache::Builder(m_Device).Build();
-
     LoadGameObjects();
+
+    m_Player = std::make_unique<Liara::Core::Liara_GameObject>(Liara::Core::Liara_GameObject::CreateGameObject());
+    m_Player->m_Transform.position.z = -2.5f;
+    m_Controller = Liara::Listener::KeybordMovementController{};
 }
 
-void FirstApp::Run()
+void FirstApp::ProcessInput(const float frameTime)
 {
-    std::vector<std::unique_ptr<Liara::Graphics::Liara_Buffer>> uboBuffers(Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT);
-    for (auto &uboBuffer : uboBuffers)
-    {
-        uboBuffer = std::make_unique<Liara::Graphics::Liara_Buffer>(
-            m_Device,
-            sizeof(Liara::Graphics::Ubo::GlobalUbo),
-            1,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-        );
-        uboBuffer->map();
-    }
-
-    VkDescriptorSetLayout globalSetLayout;
-    std::vector<VkDescriptorSet> globalDescriptorSets(Liara::Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT);
-    for (size_t i = 0; i < globalDescriptorSets.size(); i++)
-    {
-        auto bufferInfo = uboBuffers[i]->descriptorInfo();
-        Liara::Graphics::Descriptors::Liara_DescriptorBuilder(*m_descriptorLayoutCache, *m_descriptorAllocator)
-            .BindBuffer(0, &bufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-            .Build(globalDescriptorSets[i], globalSetLayout);
-    }
-
-    const Liara::Systems::SimpleRenderSystem render_system{ m_Device, m_Renderer.GetSwapChainRenderPass(), globalSetLayout };
-    const Liara::Systems::PointLightSystem pointLightSystem{ m_Device, m_Renderer.GetSwapChainRenderPass(), globalSetLayout };
-
-    Liara::Core::Liara_Camera camera {};
-
-    auto player = Liara::Core::Liara_GameObject::CreateGameObject();
-    player.m_Transform.position.z = -2.5f;
-    Liara::Listener::KeybordMovementController cameraController{};
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-
-    while (!m_Window.ShouldClose())
-    {
-        glfwPollEvents();
-
-        auto newTime = std::chrono::high_resolution_clock::now();
-        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
-        currentTime = newTime;
-
-        cameraController.moveInPlaneXZ(m_Window.GetWindow(), frameTime, player);
-        camera.SetViewYXZ(player.m_Transform.position, player.m_Transform.rotation);
-
-        const float aspect = m_Renderer.GetAspectRatio();
-        //camera.SetOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
-        camera.SetPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 100.0f);
-
-        if (const auto commandBuffer = m_Renderer.BeginFrame())
-        {
-            const int frameIndex = static_cast<int>(m_Renderer.GetFrameIndex());
-            Liara::Core::FrameInfo frameInfo{
-                frameIndex, frameTime, commandBuffer, camera, globalDescriptorSets[frameIndex], m_GameObjects
-            };
-
-            // Update
-            Liara::Graphics::Ubo::GlobalUbo ubo{};
-            ubo.projection = camera.GetProjectionMatrix();
-            ubo.view = camera.GetViewMatrix();
-            ubo.inverseView = camera.GetInverseViewMatrix();
-            pointLightSystem.Update(frameInfo, ubo);
-            uboBuffers[frameIndex]->writeToBuffer(&ubo);
-            if (auto result = uboBuffers[frameIndex]->flush(); result != VK_SUCCESS)
-            {
-                throw std::runtime_error("Failed to flush buffer");
-            }
-
-            // Render
-            m_Renderer.BeginSwapChainRenderPass(commandBuffer);
-            render_system.RenderGameObjects(frameInfo);
-            pointLightSystem.Render(frameInfo);
-            m_Renderer.EndSwapChainRenderPass(commandBuffer);
-            m_Renderer.EndFrame();
-        }
-    }
-
-    vkDeviceWaitIdle(m_Device.GetDevice());
+    m_Controller.moveInPlaneXZ(m_Window.GetWindow(), frameTime, *m_Player);
+    m_Camera.SetViewYXZ(m_Player->m_Transform.position, m_Player->m_Transform.rotation);
 }
 
 void FirstApp::LoadGameObjects()
@@ -130,11 +43,6 @@ void FirstApp::LoadGameObjects()
     floor.m_Transform.scale = {3.f, 1.f, 3.f};
     m_GameObjects.emplace(floor.GetId(), std::move(floor));
 
-    /*{
-        auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.2f);
-        m_GameObjects.emplace(pointLight.GetId(), std::move(pointLight));
-    }*/
-
     std::vector<glm::vec3> lightColors{
         {1.f, .1f, .1f},
         {.1f, .1f, 1.f},
@@ -150,7 +58,7 @@ void FirstApp::LoadGameObjects()
         pointLight.m_color = lightColors[i];
         auto rotateLight = glm::rotate(
             glm::mat4(1.f),
-            (i * glm::two_pi<float>()) / lightColors.size(),
+            (static_cast<float>(i) * glm::two_pi<float>()) / static_cast<float>(lightColors.size()),
             {0.f, -1.f, 0.f});
         pointLight.m_Transform.position = glm::vec3(rotateLight * glm::vec4(-1.f, -0.3f, -1.f, 1.f));
         m_GameObjects.emplace(pointLight.GetId(), std::move(pointLight));

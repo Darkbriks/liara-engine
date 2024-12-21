@@ -3,22 +3,21 @@
 #include <memory>
 #include <vulkan/vulkan_core.h>
 
-#include "Core/Liara_GameObject.h"
-#include "Core/FrameInfo.h"
-#include "Graphics/Liara_Device.h"
-#include "Graphics/Liara_Pipeline.h"
+#include "Liara_System.h"
+
+namespace Liara::Graphics { class Liara_Pipeline; class Liara_Device; }
+namespace Liara::Graphics::Ubo { struct GlobalUbo; }
 
 namespace Liara::Systems
 {
-    class SimpleRenderSystem
+    class SimpleRenderSystem final : public Liara_System
     {
     public:
         SimpleRenderSystem(Graphics::Liara_Device& device, VkRenderPass render_pass, VkDescriptorSetLayout descriptor_set_layout);
-        ~SimpleRenderSystem();
-        SimpleRenderSystem(const SimpleRenderSystem&) = delete;
-        SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
+        ~SimpleRenderSystem() override;
 
-        void RenderGameObjects(const Core::FrameInfo &frame_info) const;
+        void Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) const override {}
+        void Render(const Core::FrameInfo &frame_info) const override;
 
     private:
         void CreatePipelineLayout(VkDescriptorSetLayout descriptor_set_layout);
@@ -28,4 +27,4 @@ namespace Liara::Systems
         std::unique_ptr<Graphics::Liara_Pipeline> m_Pipeline;
         VkPipelineLayout m_PipelineLayout{};
     };
-} // Liara
+}

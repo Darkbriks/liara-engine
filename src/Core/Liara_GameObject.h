@@ -5,7 +5,6 @@
 
 #include "Graphics/Liara_Model.h"
 #include "Components/TransformComponent3d.h"
-#include "Components/RigidBody2dComponent.h"
 #include "Components/PointLightComponent.h"
 
 // TODO: Check Entity Component System
@@ -43,7 +42,6 @@ namespace Liara::Core
         Component::TransformComponent3d m_Transform{};
         glm::vec3 m_color{};
 
-        //Component::RigidBody2dComponent m_RigidBody{};
         std::unique_ptr<Component::PointLightComponent> m_PointLight{};
         std::shared_ptr<Graphics::Liara_Model> m_Model{};
 
