@@ -9,7 +9,7 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-FirstApp::FirstApp() : Liara_App("First App", 800, 600)
+FirstApp::FirstApp() : Liara_App("First App", 1920, 1080)
 {
     LoadGameObjects();
 
@@ -56,6 +56,15 @@ void FirstApp::LoadGameObjects()
     floor.m_Transform.position = {0.f, .5f, 0.f};
     floor.m_Transform.scale = {3.f, 1.f, 3.f};
     m_GameObjects.emplace(floor.GetId(), std::move(floor));
+
+    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/concept_td.obj", 1024);
+    auto concept = Liara::Core::Liara_GameObject::CreateGameObject();
+    concept.m_Model = model;
+    concept.m_Transform.position = {0.f, .75f, 0.f};
+    concept.m_Transform.rotation = {0.f, 0.f, glm::radians(180.f)};
+    concept.m_Transform.scale = {0.25f, 0.25f, 0.25f};
+    m_GameObjects.emplace(concept.GetId(), std::move(concept));
+
 
     std::vector<glm::vec3> lightColors{
         {1.f, .1f, .1f},

@@ -1,6 +1,8 @@
 #include "Liara_Model.h"
 #include "Core/Liara_Utils.h"
+#include "Core/FrameInfo.h"
 
+#include <chrono>
 #include <cstring>
 #include <unordered_map>
 
@@ -8,7 +10,6 @@
 #include <../external/tiny_obj_loader/tiny_obj_loader.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
-#include <iostream>
 #include <glm/gtx/hash.hpp>
 
 #ifndef ENGINE_DIR
@@ -113,8 +114,16 @@ namespace Liara::Graphics
 
     void Liara_Model::Draw(VkCommandBuffer commandBuffer) const
     {
+        g_FrameStats.m_TriangleCount += m_IndexCount / 3;
+        g_FrameStats.m_VertexCount += m_VertexCount;
+        g_FrameStats.m_DrawCallCount++;
+
+        const auto start = std::chrono::high_resolution_clock::now();
         if (m_HasIndexBuffer) { vkCmdDrawIndexed(commandBuffer, m_IndexCount, 1, 0, 0, 0); }
         else{ vkCmdDraw(commandBuffer, m_VertexCount, 1, 0, 0); }
+        const auto end = std::chrono::high_resolution_clock::now();
+
+        g_FrameStats.m_MeshDrawTime += std::chrono::duration<float, std::milli>(end - start).count();
     }
 
     std::vector<VkVertexInputBindingDescription> Liara_Model::Vertex::GetBindingDescriptions()

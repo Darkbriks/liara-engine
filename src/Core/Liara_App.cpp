@@ -39,6 +39,8 @@ namespace Liara::Core
 
         while (!m_Window.ShouldClose())
         {
+            g_FrameStats.Reset();
+
             glfwPollEvents();
 
             auto newTime = std::chrono::high_resolution_clock::now();
