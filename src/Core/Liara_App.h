@@ -33,6 +33,8 @@ namespace Liara::Core
 
         virtual void Run();
 
+        void AddSystem(std::unique_ptr<Systems::Liara_System> system) { m_Systems.push_back(std::move(system)); }
+
     protected:
         virtual void Init();
 

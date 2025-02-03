@@ -7,13 +7,13 @@
 namespace Liara::Core { struct FrameInfo; }
 namespace Liara::Graphics::Ubo { struct GlobalUbo; }
 
-namespace Liara::Core
+namespace Liara::Core::ImGuiElements
 {
-    class ImGuiElementExample final : public ImGuiElementDemo
+    class Example final : public Demo
     {
     public:
-        ImGuiElementExample() = default;
-        ~ImGuiElementExample() override = default;
+        Example() = default;
+        ~Example() override = default;
 
         void Draw(const FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) override
         {

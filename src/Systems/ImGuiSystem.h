@@ -33,8 +33,8 @@ namespace Liara::Systems
         void Render(const Core::FrameInfo &frame_info) const override;
 
         void AddElement(std::unique_ptr<Core::ImGuiElement> element) { m_Elements.push_back(std::move(element)); }
-        void AddDemoElement() { m_Elements.push_back(std::make_unique<Core::ImGuiElementDemo>()); }
-        void AddExampleElement() { m_Elements.push_back(std::make_unique<Core::ImGuiElementExample>()); }
+        void AddDemoElement() { m_Elements.push_back(std::make_unique<Core::ImGuiElements::Demo>()); }
+        void AddExampleElement() { m_Elements.push_back(std::make_unique<Core::ImGuiElements::Example>()); }
 
     private:
         static bool IMGUI_INITIALIZED;

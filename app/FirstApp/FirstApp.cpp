@@ -1,6 +1,10 @@
 #include "FirstApp.h"
 #include "Listener/KeybordMovementController.h"
 #include "Core/FrameInfo.h"
+#include "Core/ImGui/ImGuiElementEngineStats.h"
+#include "Systems/ImGuiSystem.h"
+#include "Systems/PointLightSystem.h"
+#include "Systems/SimpleRenderSystem.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -19,6 +23,16 @@ void FirstApp::ProcessInput(const float frameTime)
     m_Controller.moveInPlaneXZ(m_Window.GetWindow(), frameTime, *m_Player);
     m_Camera.SetViewYXZ(m_Player->m_Transform.position, m_Player->m_Transform.rotation);
 }
+
+void FirstApp::InitSystems()
+{
+    AddSystem(std::make_unique<Liara::Systems::SimpleRenderSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
+    AddSystem(std::make_unique<Liara::Systems::PointLightSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
+    auto imguiSystem = std::make_unique<Liara::Systems::ImGuiSystem>(m_Window, m_Device, m_Renderer.GetSwapChainRenderPass(), m_Renderer.GetImageCount());
+    imguiSystem->AddElement(std::make_unique<Liara::Core::ImGuiElements::EngineStats>());
+    AddSystem(std::move(imguiSystem));
+}
+
 
 void FirstApp::LoadGameObjects()
 {

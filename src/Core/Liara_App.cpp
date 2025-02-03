@@ -110,10 +110,7 @@ namespace Liara::Core
     {
         m_Systems.push_back(std::make_unique<Systems::SimpleRenderSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
         m_Systems.push_back(std::make_unique<Systems::PointLightSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
-        //m_Systems.push_back(std::make_unique<Systems::ImGuiSystem>(m_Window, m_Device, m_Renderer.GetSwapChainRenderPass(), m_Renderer.GetImageCount()));
-        auto imguiSystem = std::make_unique<Systems::ImGuiSystem>(m_Window, m_Device, m_Renderer.GetSwapChainRenderPass(), m_Renderer.GetImageCount());
-        imguiSystem->AddExampleElement();
-        m_Systems.push_back(std::move(imguiSystem));
+        m_Systems.push_back(std::make_unique<Systems::ImGuiSystem>(m_Window, m_Device, m_Renderer.GetSwapChainRenderPass(), m_Renderer.GetImageCount()));
     }
 
     void Liara_App::InitCamera()
