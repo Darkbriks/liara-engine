@@ -2,53 +2,46 @@
 
 #include <memory>
 #include <vulkan/vulkan_core.h>
+#include <imgui.h>
+
 #include "Liara_System.h"
 #include "Core/FrameInfo.h"
+#include "Core/ImGui/ImGuiElement.h"
+#include "Core/ImGui/ImGuiElementDemo.h"
+#include "Core/ImGui/ImGuiElementExample.h"
 #include "Graphics/Liara_Device.h"
 #include "Graphics/Liara_Pipeline.h"
 
-#include <imgui.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
-#include <stdexcept>
-
-// This whole class is only necessary right now because it needs to manage the descriptor pool
-// because we haven't set one up anywhere else in the application, and we manage the
-// example state, otherwise all the functions could just be static helper functions if you prefered
 namespace Liara::Systems
 {
-    static void check_vk_result(const VkResult err)
+    static void CheckVkResult(const VkResult err)
     {
         if (err == 0) return;
         fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
         if (err < 0) abort();
     }
 
-    class LveImgui
+    class ImGuiSystem final : public Liara_System
     {
     public:
-        LveImgui(Plateform::Liara_Window& window, Graphics::Liara_Device& device, VkRenderPass renderPass, uint32_t imageCount);
+        ImGuiSystem(const Plateform::Liara_Window& window, Graphics::Liara_Device& device, VkRenderPass renderPass, uint32_t imageCount);
+        ~ImGuiSystem() override;
 
-        ~LveImgui();
+        static void NewFrame();
 
-        void newFrame();
+        void Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) override;
+        void Render(const Core::FrameInfo &frame_info) const override;
 
-        void render(VkCommandBuffer commandBuffer);
-
-        // Example state
-        bool show_demo_window = true;
-        bool show_another_window = false;
-        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-        void runExample();
+        void AddElement(std::unique_ptr<Core::ImGuiElement> element) { m_Elements.push_back(std::move(element)); }
+        void AddDemoElement() { m_Elements.push_back(std::make_unique<Core::ImGuiElementDemo>()); }
+        void AddExampleElement() { m_Elements.push_back(std::make_unique<Core::ImGuiElementExample>()); }
 
     private:
-        Graphics::Liara_Device& lveDevice;
+        static bool IMGUI_INITIALIZED;
 
-        // We haven't yet covered descriptor pools in the tutorial series
-        // so I'm just going to create one for just imgui and store it here for now.
-        // maybe its preferred to have a separate descriptor pool for imgui anyway,
-        // I haven't looked into imgui best practices at all.
+        Graphics::Liara_Device& lveDevice;
         VkDescriptorPool descriptorPool;
+
+        std::vector<std::unique_ptr<Core::ImGuiElement>> m_Elements;
     };
-} // namespace lve
+}

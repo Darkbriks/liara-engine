@@ -12,7 +12,7 @@
 #include <string>
 
 namespace Liara::Systems {
-    class LveImgui;
+    class ImGuiSystem;
 }
 
 namespace Liara::Core { struct FrameInfo; }
@@ -40,7 +40,6 @@ namespace Liara::Core
         virtual void InitDescriptorSets();
         virtual void InitSystems();
         virtual void InitCamera();
-        virtual void InitImGui();
         virtual void LateInit() {}
 
         virtual void SetProjection(float aspect);
@@ -54,7 +53,7 @@ namespace Liara::Core
     private:
         void MasterProcessInput(float frameTime);
         void MasterUpdate(const FrameInfo& frameInfo);
-        void MasterRender(VkCommandBuffer commandBuffer, const FrameInfo &frameInfo, Systems::LveImgui& lveImgui);
+        void MasterRender(VkCommandBuffer commandBuffer, const FrameInfo &frameInfo);
 
     protected:
         Plateform::Liara_Window m_Window;

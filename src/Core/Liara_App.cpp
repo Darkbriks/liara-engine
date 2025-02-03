@@ -5,6 +5,7 @@
 #include "Systems/Liara_System.h"
 #include "Systems/PointLightSystem.h"
 #include "Systems/SimpleRenderSystem.h"
+#include "Systems/ImGuiSystem.h"
 #include "Graphics/Liara_SwapChain.h"
 
 #define GLM_FORCE_RADIANS
@@ -12,12 +13,7 @@
 
 #include <chrono>
 #include <iostream>
-
 #include <imgui.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
-
-#include "Systems/ImGuiSystem.h"
 
 namespace Liara::Core
 {
@@ -39,13 +35,6 @@ namespace Liara::Core
     {
         Init();
 
-        // create imgui, and pass in dependencies
-        Systems::LveImgui lveImgui{
-            m_Window,
-            m_Device,
-            m_Renderer.GetSwapChainRenderPass(),
-            m_Renderer.GetImageCount()};
-
         auto currentTime = std::chrono::high_resolution_clock::now();
 
         while (!m_Window.ShouldClose())
@@ -63,8 +52,7 @@ namespace Liara::Core
 
             if (const auto commandBuffer = m_Renderer.BeginFrame())
             {
-                lveImgui.newFrame();
-                lveImgui.runExample();
+                Systems::ImGuiSystem::NewFrame();
 
                 const int frameIndex = static_cast<int>(m_Renderer.GetFrameIndex());
                 FrameInfo frameInfo{
@@ -72,7 +60,7 @@ namespace Liara::Core
                 };
 
                 MasterUpdate(frameInfo);
-                MasterRender(commandBuffer, frameInfo, lveImgui);
+                MasterRender(commandBuffer, frameInfo);
                 m_Renderer.EndFrame();
             }
         }
@@ -122,16 +110,15 @@ namespace Liara::Core
     {
         m_Systems.push_back(std::make_unique<Systems::SimpleRenderSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
         m_Systems.push_back(std::make_unique<Systems::PointLightSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
+        //m_Systems.push_back(std::make_unique<Systems::ImGuiSystem>(m_Window, m_Device, m_Renderer.GetSwapChainRenderPass(), m_Renderer.GetImageCount()));
+        auto imguiSystem = std::make_unique<Systems::ImGuiSystem>(m_Window, m_Device, m_Renderer.GetSwapChainRenderPass(), m_Renderer.GetImageCount());
+        imguiSystem->AddExampleElement();
+        m_Systems.push_back(std::move(imguiSystem));
     }
 
     void Liara_App::InitCamera()
     {
         m_Camera = Liara_Camera{};
-    }
-
-    void Liara_App::InitImGui()
-    {
-
     }
 
     void Liara_App::SetProjection(const float aspect)
@@ -162,14 +149,12 @@ namespace Liara::Core
         }
     }
 
-    void Liara_App::MasterRender(VkCommandBuffer commandBuffer, const FrameInfo& frameInfo, Systems::LveImgui& lveImgui)
+    void Liara_App::MasterRender(VkCommandBuffer commandBuffer, const FrameInfo& frameInfo)
     {
         m_Renderer.BeginSwapChainRenderPass(commandBuffer);
 
         Render(frameInfo);
         for (const auto& system: m_Systems) { system->Render(frameInfo); }
-
-        lveImgui.render(commandBuffer);
 
         m_Renderer.EndSwapChainRenderPass(commandBuffer);
     }

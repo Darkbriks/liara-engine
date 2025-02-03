@@ -1,6 +1,5 @@
 #include "ImGuiSystem.h"
 #include "Core/FrameInfo.h"
-#include "Graphics/Liara_Pipeline.h"
 #include "Graphics/Liara_Device.h"
 
 #include <vulkan/vulkan.h>
@@ -11,15 +10,12 @@
 
 namespace Liara::Systems
 {
-    // ok this just initializes imgui using the provided integration files. So in our case we need to
-    // initialize the vulkan and glfw imgui implementations, since that's what our engine is built
-    // using.
-    LveImgui::LveImgui(
-        Plateform::Liara_Window& window, Graphics::Liara_Device& device, VkRenderPass renderPass, uint32_t imageCount)
-        : lveDevice{device}
+    bool ImGuiSystem::IMGUI_INITIALIZED = false;
+
+    ImGuiSystem::ImGuiSystem(const Plateform::Liara_Window& window, Graphics::Liara_Device& device, const VkRenderPass renderPass, const uint32_t imageCount): lveDevice{device}
     {
-        // set up a descriptor pool stored on this instance, see header for more comments on this.
-        VkDescriptorPoolSize pool_sizes[] = {
+        // set up a descriptor pool stored on this instance
+        const VkDescriptorPoolSize pool_sizes[] = {
             {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
             {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
@@ -36,7 +32,7 @@ namespace Liara::Systems
         pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
-        pool_info.poolSizeCount = (uint32_t) IM_ARRAYSIZE(pool_sizes);
+        pool_info.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(pool_sizes));
         pool_info.pPoolSizes = pool_sizes;
         if (vkCreateDescriptorPool(device.GetDevice(), &pool_info, nullptr, &descriptorPool) != VK_SUCCESS)
         {
@@ -46,7 +42,7 @@ namespace Liara::Systems
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
+        const ImGuiIO& io = ImGui::GetIO();
         (void) io;
         // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
         // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -68,53 +64,53 @@ namespace Liara::Systems
         // pipeline cache is a potential future optimization, ignoring for now
         init_info.PipelineCache = VK_NULL_HANDLE;
         init_info.DescriptorPool = descriptorPool;
-        // todo, I should probably get around to integrating a memory allocator library such as Vulkan
-        // memory allocator (VMA) sooner than later. We don't want to have to update adding an allocator
-        // in a ton of locations.
         init_info.Allocator = VK_NULL_HANDLE;
         init_info.MinImageCount = 2;
         init_info.ImageCount = imageCount;
-        init_info.CheckVkResultFn = check_vk_result;
-
+        init_info.CheckVkResultFn = CheckVkResult;
         init_info.RenderPass = renderPass;
 
-        //ImGui_ImplVulkan_Init(&init_info, renderPass);
         ImGui_ImplVulkan_Init(&init_info);
 
         // upload fonts, this is done by recording and submitting a one time use command buffer
         // which can be done easily bye using some existing helper functions on the lve device object
-        auto commandBuffer = device.BeginSingleTimeCommands();
-        ImGui_ImplVulkan_CreateFontsTexture(/*commandBuffer*/);
+        const auto commandBuffer = device.BeginSingleTimeCommands();
+        ImGui_ImplVulkan_CreateFontsTexture();
         device.EndSingleTimeCommands(commandBuffer);
         //ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+        IMGUI_INITIALIZED = true;
     }
 
-    LveImgui::~LveImgui()
+    ImGuiSystem::~ImGuiSystem()
     {
-        vkDestroyDescriptorPool(lveDevice.GetDevice(), descriptorPool, nullptr);
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
+        vkDestroyDescriptorPool(lveDevice.GetDevice(), descriptorPool, nullptr);
     }
 
-    void LveImgui::newFrame()
+    void ImGuiSystem::NewFrame()
     {
+        if (!IMGUI_INITIALIZED) { return; }
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
     }
 
-    // this tells imgui that we're done setting up the current frame,
-    // then gets the draw data from imgui and uses it to record to the provided
-    // command buffer the necessary draw commands
-    void LveImgui::render(VkCommandBuffer commandBuffer)
+    void ImGuiSystem::Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo)
+    {
+        for (const auto& element: m_Elements) { element->Draw(frame_info, ubo); }
+    }
+
+    void ImGuiSystem::Render(const Core::FrameInfo &frame_info) const
     {
         ImGui::Render();
         ImDrawData* drawdata = ImGui::GetDrawData();
-        ImGui_ImplVulkan_RenderDrawData(drawdata, commandBuffer);
+        ImGui_ImplVulkan_RenderDrawData(drawdata, frame_info.m_CommandBuffer);
     }
 
-    void LveImgui::runExample()
+    /*void ImGuiSystem::RunExample()
     {
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can
         // browse its code to learn more about Dear ImGui!).
@@ -128,16 +124,12 @@ namespace Liara::Systems
 
             ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text(
-                "This is some useful text."); // Display some text (you can use a format strings too)
-            ImGui::Checkbox(
-                "Demo Window",
-                &show_demo_window); // Edit bools storing our window open/close state
+            ImGui::Text("This is some useful text."); // Display some text (you can use a format strings too)
+            ImGui::Checkbox("Demo Window", &show_demo_window); // Edit bools storing our window open/close state
             ImGui::Checkbox("Another Window", &show_another_window);
 
             ImGui::SliderFloat("float", &f, 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color",
-                              (float*) &clear_color); // Edit 3 floats representing a color
+            ImGui::ColorEdit3("clear color", reinterpret_cast<float*>(&clear_color)); // Edit 3 floats representing a color
 
             if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true
                 // when edited/activated)
@@ -145,23 +137,18 @@ namespace Liara::Systems
             ImGui::SameLine();
             ImGui::Text("counter = %d", counter);
 
-            ImGui::Text(
-                "Application average %.3f ms/frame (%.1f FPS)",
-                1000.0f / ImGui::GetIO().Framerate,
-                ImGui::GetIO().Framerate);
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
         }
 
         // 3. Show another simple window.
         if (show_another_window)
         {
-            ImGui::Begin(
-                "Another Window",
-                &show_another_window); // Pass a pointer to our bool variable (the window will have a
+            ImGui::Begin("Another Window", &show_another_window); // Pass a pointer to our bool variable (the window will have a
             // closing button that will clear the bool when clicked)
             ImGui::Text("Hello from another window!");
             if (ImGui::Button("Close Me")) show_another_window = false;
             ImGui::End();
         }
-    }
+    }*/
 }
