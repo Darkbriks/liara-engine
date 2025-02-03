@@ -11,6 +11,10 @@
 #include <memory>
 #include <string>
 
+namespace Liara::Systems {
+    class ImGuiSystem;
+}
+
 namespace Liara::Core { struct FrameInfo; }
 
 namespace Liara::Core
@@ -28,6 +32,8 @@ namespace Liara::Core
         Liara_App& operator=(const Liara_App&) = delete;
 
         virtual void Run();
+
+        void AddSystem(std::unique_ptr<Systems::Liara_System> system) { m_Systems.push_back(std::move(system)); }
 
     protected:
         virtual void Init();

@@ -46,6 +46,9 @@ namespace Liara::Graphics
         [[nodiscard]] VkSurfaceKHR GetSurface() const { return m_Surface; }
         [[nodiscard]] VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
         [[nodiscard]] VkQueue GetPresentQueue() const { return m_PresentQueue; }
+        [[nodiscard]] VkInstance GetInstance() const { return m_Instance; }
+        [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
+        [[nodiscard]] uint32_t GetGraphicsQueueFamily() { return FindPhysicalQueueFamilies().m_GraphicsFamily; }
 
         SwapChainSupportDetails GetSwapChainSupport() { return QuerySwapChainSupport(m_PhysicalDevice); }
         uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);

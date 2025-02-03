@@ -12,6 +12,7 @@ public:
 
 protected:
     void ProcessInput(float frameTime) override;
+    void InitSystems() override;
 
 private:
     void LoadGameObjects();

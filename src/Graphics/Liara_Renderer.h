@@ -22,6 +22,7 @@ namespace Liara::Graphics
 
         [[nodiscard]] VkRenderPass GetSwapChainRenderPass() const { return  m_SwapChain->GetRenderPass(); }
         [[nodiscard]] float GetAspectRatio() const { return m_SwapChain->ExtentAspectRatio(); }
+        [[nodiscard]] uint32_t GetImageCount() const { return m_SwapChain->ImageCount(); }
         [[nodiscard]] uint32_t GetFrameIndex() const
         {
             assert(m_IsFrameStarted && "Cannot get frame index when frame not in progress");

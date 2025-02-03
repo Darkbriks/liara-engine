@@ -16,7 +16,7 @@ namespace Liara::Systems
         SimpleRenderSystem(Graphics::Liara_Device& device, VkRenderPass render_pass, VkDescriptorSetLayout descriptor_set_layout);
         ~SimpleRenderSystem() override;
 
-        void Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) const override {}
+        void Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) override {}
         void Render(const Core::FrameInfo &frame_info) const override;
 
     private:

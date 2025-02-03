@@ -32,7 +32,7 @@ namespace Liara::Systems
         vkDestroyPipelineLayout(m_Device.GetDevice(), m_PipelineLayout, nullptr);
     }
 
-    void PointLightSystem::Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) const
+    void PointLightSystem::Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo)
     {
         auto rotateLight = glm::rotate(glm::mat4(1.f), frame_info.m_DeltaTime, {0.f, -1.f, 0.f});
 

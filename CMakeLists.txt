@@ -61,6 +61,23 @@ else()
     message(STATUS "Using glfw lib at: ${GLFW_LIB}")
 endif()
 
+# 3. ImGui
+if (DEFINED IMGUI_PATH)
+    message(STATUS "Using ImGui path specified in .env")
+    include_directories(${IMGUI_PATH})
+    file(GLOB IMGUI_SOURCES
+            "${IMGUI_PATH}/*.cpp"
+            "${IMGUI_PATH}/backends/*.cpp"
+    )
+else()
+    message(STATUS "Using ImGui from external")
+    include_directories(external/imgui)
+    file(GLOB IMGUI_SOURCES
+            "external/imgui/*.cpp"
+            "external/imgui/backends/*.cpp"
+    )
+endif()
+
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h" "app/*.cpp" "app/*.h" "main.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -71,7 +88,8 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CM
 
 if (WIN32)
     message(STATUS "CREATING BUILD FOR WINDOWS")
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src ${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${GLM_PATH})
+    target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES})
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src ${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${GLM_PATH} ${IMGUI_PATH})
     target_link_directories(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES} ${GLFW_LIB})
     target_link_libraries(${PROJECT_NAME} glfw3 vulkan-1)
 

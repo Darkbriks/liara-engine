@@ -5,6 +5,7 @@
 #include "Systems/Liara_System.h"
 #include "Systems/PointLightSystem.h"
 #include "Systems/SimpleRenderSystem.h"
+#include "Systems/ImGuiSystem.h"
 #include "Graphics/Liara_SwapChain.h"
 
 #define GLM_FORCE_RADIANS
@@ -12,6 +13,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <imgui.h>
 
 namespace Liara::Core
 {
@@ -37,6 +39,8 @@ namespace Liara::Core
 
         while (!m_Window.ShouldClose())
         {
+            g_FrameStats.Reset();
+
             glfwPollEvents();
 
             auto newTime = std::chrono::high_resolution_clock::now();
@@ -50,6 +54,8 @@ namespace Liara::Core
 
             if (const auto commandBuffer = m_Renderer.BeginFrame())
             {
+                Systems::ImGuiSystem::NewFrame();
+
                 const int frameIndex = static_cast<int>(m_Renderer.GetFrameIndex());
                 FrameInfo frameInfo{
                     frameIndex, frameTime, commandBuffer, m_Camera, m_GlobalDescriptorSets[frameIndex], m_GameObjects
@@ -106,6 +112,7 @@ namespace Liara::Core
     {
         m_Systems.push_back(std::make_unique<Systems::SimpleRenderSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
         m_Systems.push_back(std::make_unique<Systems::PointLightSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
+        m_Systems.push_back(std::make_unique<Systems::ImGuiSystem>(m_Window, m_Device, m_Renderer.GetSwapChainRenderPass(), m_Renderer.GetImageCount()));
     }
 
     void Liara_App::InitCamera()
