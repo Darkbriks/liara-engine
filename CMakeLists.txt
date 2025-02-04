@@ -78,6 +78,17 @@ else()
     )
 endif()
 
+# 4. TinyObjLoader
+if (DEFINED TINYOBJ_PATH)
+    message(STATUS "Using TinyObjLoader path specified in .env")
+    include_directories(${TINYOBJ_PATH})
+    file(GLOB_RECURSE TINYOBJ_SOURCES "${TINYOBJ_PATH}/*.h")
+else()
+    message(STATUS "Using TinyObjLoader from external")
+    include_directories(external/tiny_obj_loader)
+    file(GLOB_RECURSE TINYOBJ_SOURCES "external/tiny_obj_loader/*.h")
+endif()
+
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h" "app/*.cpp" "app/*.h" "main.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -88,14 +99,15 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CM
 
 if (WIN32)
     message(STATUS "CREATING BUILD FOR WINDOWS")
-    target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES})
+    target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES} ${TINYOBJ_SOURCES})
     target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src ${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${GLM_PATH} ${IMGUI_PATH})
     target_link_directories(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES} ${GLFW_LIB})
     target_link_libraries(${PROJECT_NAME} glfw3 vulkan-1)
 
 elseif (UNIX)
     message(STATUS "CREATING BUILD FOR UNIX")
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src ${TINYOBJ_PATH})
+    target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES} ${TINYOBJ_SOURCES})
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src)
     target_link_libraries(${PROJECT_NAME} glfw ${Vulkan_LIBRARIES})
 endif()
 
