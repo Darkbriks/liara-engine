@@ -1,9 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <vulkan/vulkan_core.h>
-#include <imgui.h>
-
 #include "Liara_System.h"
 #include "Core/FrameInfo.h"
 #include "Core/ImGui/ImGuiElement.h"
@@ -14,13 +10,6 @@
 
 namespace Liara::Systems
 {
-    static void CheckVkResult(const VkResult err)
-    {
-        if (err == 0) return;
-        fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
-        if (err < 0) abort();
-    }
-
     class ImGuiSystem final : public Liara_System
     {
     public:

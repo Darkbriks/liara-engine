@@ -1,11 +1,7 @@
-//
-// Created by antoi on 15/10/2024.
-//
-
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 
 #include <string>
@@ -21,18 +17,18 @@ namespace Liara::Plateform
         Liara_Window(const Liara_Window&) = delete;
         Liara_Window& operator=(const Liara_Window&) = delete;
 
-        [[nodiscard]] bool ShouldClose() const { return glfwWindowShouldClose(m_Window); }
+        [[nodiscard]] bool ShouldClose() const { return SDL_QuitRequested(); }
         [[nodiscard]] VkExtent2D GetExtent() const { return { m_width, m_height }; }
         [[nodiscard]] bool WasResized() const { return m_resized; }
-        [[nodiscard]] GLFWwindow* GetWindow() const { return m_Window; }
+        [[nodiscard]] SDL_Window* GetWindow() const { return m_Window; }
 
         void ResetResizedFlag() { m_resized = false; }
 
         void CreateWindowSurface(VkInstance instance, VkSurfaceKHR* surface) const;
 
     private:
-        static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
-        GLFWwindow* m_Window;
+        static void FramebufferResizeCallback(SDL_Window* window, int width, int height);
+        SDL_Window* m_Window{};
 
         std::string m_title;
         unsigned short m_width;
@@ -40,5 +36,6 @@ namespace Liara::Plateform
         bool m_resized = false;
 
         void InitWindow();
+        int EventCallback(void *userdata, const SDL_Event *event);
     };
 }

@@ -1,7 +1,7 @@
 include(./.env.cmake OPTIONAL RESULT_VARIABLE LOCAL_ENV)
 message(STATUS "Local .env.cmake: ${LOCAL_ENV}")
 
-cmake_minimum_required(VERSION 3.22) # 3.29 is required for CMAKE_GENERATOR_PLATFORM
+cmake_minimum_required(VERSION 3.22)
 
 set(NAME LiaraEngine)
 set(LIARA_VERSION 0.16.0)
@@ -21,10 +21,10 @@ project(${NAME} VERSION ${LIARA_VERSION})
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 1. Set VULKAN_SDK_PATH in ..env.cmake to target specific vulkan version
+# 1. Vulkan
 if (DEFINED VULKAN_SDK_PATH)
-    set(Vulkan_INCLUDE_DIRS "${VULKAN_SDK_PATH}/Include") # 1.1 Make sure this include path is correct
-    set(Vulkan_LIBRARIES "${VULKAN_SDK_PATH}/Lib") # 1.2 Make sure lib path is correct
+    set(Vulkan_INCLUDE_DIRS "${VULKAN_SDK_PATH}/Include")
+    set(Vulkan_LIBRARIES "${VULKAN_SDK_PATH}/Lib")
     set(Vulkan_FOUND "True")
 else()
     find_package(Vulkan REQUIRED) # throws error if could not find Vulkan
@@ -36,46 +36,24 @@ else()
     message(STATUS "Using vulkan lib at: ${Vulkan_LIBRARIES}")
 endif()
 
-# 2. Set GLFW_PATH in .env.cmake to target specific glfw
-if (DEFINED GLFW_PATH)
-    message(STATUS "Using GLFW path specified in .env")
-    set(GLFW_INCLUDE_DIRS "${GLFW_PATH}/include")
-    if (MSVC)
-        set(GLFW_LIB "${GLFW_PATH}/lib-vc2019") # 2.1 Update lib-vc2019 to use same version as your visual studio
-    elseif (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
-        message(STATUS "USING MINGW")
-        set(GLFW_LIB "${GLFW_PATH}/lib-mingw-w64") # 2.1 make sure matches glfw mingw subdirectory
-    elseif (CMAKE_GENERATOR STREQUAL "Ninja")
-        set(GLFW_LIB "${GLFW_PATH}/lib-mingw-w64") # 2.1 make sure matches glfw mingw subdirectory
-    else()
-        set(GLFW_LIB "${GLFW_PATH}/lib") # 2.1 make sure matches glfw mingw subdirectory
-    endif()
+# 2. SDL
+if (DEFINED SDL_PATH)
+    message(STATUS "Using SDL path specified in .env")
+    add_subdirectory(${SDL_PATH})
 else()
-    find_package(glfw3 3.3 REQUIRED)
-    set(GLFW_LIB glfw)
-    message(STATUS "Found GLFW")
-endif()
-if (NOT GLFW_LIB)
-    message(FATAL_ERROR "Could not find GLFW library!")
-else()
-    message(STATUS "Using glfw lib at: ${GLFW_LIB}")
+    message(STATUS "Using SDL from external")
+    add_subdirectory(external/SDL2-2.30.8)
 endif()
 
 # 3. ImGui
 if (DEFINED IMGUI_PATH)
     message(STATUS "Using ImGui path specified in .env")
     include_directories(${IMGUI_PATH})
-    file(GLOB IMGUI_SOURCES
-            "${IMGUI_PATH}/*.cpp"
-            "${IMGUI_PATH}/backends/*.cpp"
-    )
+    file(GLOB IMGUI_SOURCES "${IMGUI_PATH}/*.cpp" "${IMGUI_PATH}/backends/*.cpp")
 else()
     message(STATUS "Using ImGui from external")
     include_directories(external/imgui)
-    file(GLOB IMGUI_SOURCES
-            "external/imgui/*.cpp"
-            "external/imgui/backends/*.cpp"
-    )
+    file(GLOB IMGUI_SOURCES "external/imgui/*.cpp" "external/imgui/backends/*.cpp")
 endif()
 
 # 4. TinyObjLoader
@@ -89,26 +67,33 @@ else()
     file(GLOB_RECURSE TINYOBJ_SOURCES "external/tiny_obj_loader/*.h")
 endif()
 
+# 5. FMT
+if (DEFINED FMT_PATH)
+    message(STATUS "Using FMT path specified in .env")
+    add_subdirectory(${FMT_PATH})
+else()
+    message(STATUS "Using FMT from external")
+    add_subdirectory(external/fmt-11.1.3)
+endif()
+
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h" "app/*.cpp" "app/*.h" "main.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
-
 if (WIN32)
     message(STATUS "CREATING BUILD FOR WINDOWS")
     target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES} ${TINYOBJ_SOURCES})
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src ${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${GLM_PATH} ${IMGUI_PATH})
-    target_link_directories(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES} ${GLFW_LIB})
-    target_link_libraries(${PROJECT_NAME} glfw3 vulkan-1)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src ${Vulkan_INCLUDE_DIRS})
+    target_link_directories(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} vulkan-1 SDL2::SDL2 fmt::fmt)
 
 elseif (UNIX)
     message(STATUS "CREATING BUILD FOR UNIX")
     target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES} ${TINYOBJ_SOURCES})
     target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src)
-    target_link_libraries(${PROJECT_NAME} glfw ${Vulkan_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} SDL2::SDL2 fmt::fmt)
 endif()
 
 ############## Build SHADERS #######################

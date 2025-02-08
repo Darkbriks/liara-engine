@@ -15,7 +15,7 @@ namespace Liara::Graphics
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
         Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent);
-        Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent, std::shared_ptr<Liara_SwapChain> oldSwapChain);
+        Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent, const std::shared_ptr<Liara_SwapChain>& oldSwapChain);
         ~Liara_SwapChain();
 
         Liara_SwapChain(const Liara_SwapChain &) = delete;
@@ -33,8 +33,8 @@ namespace Liara::Graphics
         [[nodiscard]] float ExtentAspectRatio() const { return static_cast<float>(m_SwapChainExtent.width) / static_cast<float>(m_SwapChainExtent.height); }
         [[nodiscard]] VkFormat FindDepthFormat() const;
 
-        VkResult AcquireNextImage(uint32_t *imageIndex);
-        VkResult SubmitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex);
+        VkResult AcquireNextImage(uint32_t *imageIndex) const;
+        VkResult SubmitCommandBuffers(const VkCommandBuffer *buffers, const uint32_t *imageIndex);
 
         [[nodiscard]] bool CompareSwapFormat(const Liara_SwapChain& swap_chain) const
         {
@@ -80,4 +80,4 @@ namespace Liara::Graphics
         std::vector<VkFence> m_ImagesInFlight;
         size_t m_CurrentFrame = 0;
     };
-}  // namespace Liara
+}

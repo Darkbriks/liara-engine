@@ -1,7 +1,3 @@
-//
-// Created by antoi on 20/10/2024.
-//
-
 #include "Liara_Renderer.h"
 
 #include <array>
@@ -59,9 +55,7 @@ namespace Liara::Graphics
             throw std::runtime_error("Failed to record command buffer!");
         }
 
-        const auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window.WasResized())
+        if (const auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex); result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window.WasResized())
         {
             m_Window.ResetResizedFlag();
             CreateSwapChain();
@@ -147,7 +141,7 @@ namespace Liara::Graphics
         auto extent = m_Window.GetExtent();
         while (extent.width == 0 || extent.height == 0)
         {
-            glfwWaitEvents();
+            SDL_WaitEvent(nullptr);
             extent = m_Window.GetExtent();
         }
 

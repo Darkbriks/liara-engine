@@ -2,19 +2,18 @@
 
 #include <array>
 #include <cstdlib>
-#include <cstring>
-#include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <fmt/core.h>
 
 namespace Liara::Graphics
 {
-    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent) : m_Device{deviceRef}, m_WindowExtent{windowExtent}
+    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, const VkExtent2D windowExtent) : m_Device{deviceRef}, m_WindowExtent{windowExtent}
     {
         Init();
     }
 
-    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent, std::shared_ptr<Liara_SwapChain> oldSwapChain) : m_Device{deviceRef}, m_WindowExtent{windowExtent}, m_OldSwapChain(oldSwapChain)
+    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, const VkExtent2D windowExtent, const std::shared_ptr<Liara_SwapChain>& oldSwapChain) : m_Device{deviceRef}, m_WindowExtent{windowExtent}, m_OldSwapChain(oldSwapChain)
     {
         Init();
         m_OldSwapChain = nullptr;
@@ -51,7 +50,7 @@ namespace Liara::Graphics
         }
     }
 
-    VkResult Liara_SwapChain::AcquireNextImage(uint32_t *imageIndex)
+    VkResult Liara_SwapChain::AcquireNextImage(uint32_t *imageIndex) const
     {
         vkWaitForFences(
             m_Device.GetDevice(),
@@ -71,7 +70,7 @@ namespace Liara::Graphics
         return result;
     }
 
-    VkResult Liara_SwapChain::SubmitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex)
+    VkResult Liara_SwapChain::SubmitCommandBuffers(const VkCommandBuffer *buffers, const uint32_t *imageIndex)
     {
         if (m_ImagesInFlight[*imageIndex] != VK_NULL_HANDLE)
         {
@@ -91,7 +90,7 @@ namespace Liara::Graphics
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = buffers;
 
-        VkSemaphore signalSemaphores[] = {m_RenderFinishedSemaphores[m_CurrentFrame]};
+        const VkSemaphore signalSemaphores[] = {m_RenderFinishedSemaphores[m_CurrentFrame]};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -133,16 +132,16 @@ namespace Liara::Graphics
 
     void Liara_SwapChain::CreateSwapChain()
     {
-        SwapChainSupportDetails swapChainSupport = m_Device.GetSwapChainSupport();
+        auto [m_Capabilities, m_Formats, m_PresentModes] = m_Device.GetSwapChainSupport();
 
-        VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.m_Formats);
-        VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.m_PresentModes);
-        VkExtent2D extent = ChooseSwapExtent(swapChainSupport.m_Capabilities);
+        auto [format, colorSpace] = ChooseSwapSurfaceFormat(m_Formats);
+        const VkPresentModeKHR presentMode = ChooseSwapPresentMode(m_PresentModes);
+        const VkExtent2D extent = ChooseSwapExtent(m_Capabilities);
 
-        uint32_t imageCount = swapChainSupport.m_Capabilities.minImageCount + 1;
-        if (swapChainSupport.m_Capabilities.maxImageCount > 0 && imageCount > swapChainSupport.m_Capabilities.maxImageCount)
+        uint32_t imageCount = m_Capabilities.minImageCount + 1;
+        if (m_Capabilities.maxImageCount > 0 && imageCount > m_Capabilities.maxImageCount)
         {
-            imageCount = swapChainSupport.m_Capabilities.maxImageCount;
+            imageCount = m_Capabilities.maxImageCount;
         }
 
         VkSwapchainCreateInfoKHR createInfo = {};
@@ -150,13 +149,13 @@ namespace Liara::Graphics
         createInfo.surface = m_Device.GetSurface();
 
         createInfo.minImageCount = imageCount;
-        createInfo.imageFormat = surfaceFormat.format;
-        createInfo.imageColorSpace = surfaceFormat.colorSpace;
+        createInfo.imageFormat = format;
+        createInfo.imageColorSpace = colorSpace;
         createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        QueueFamilyIndices indices = m_Device.FindPhysicalQueueFamilies();
+        const QueueFamilyIndices indices = m_Device.FindPhysicalQueueFamilies();
         const uint32_t queueFamilyIndices[] = {indices.m_GraphicsFamily, indices.m_PresentFamily};
 
         if (indices.m_GraphicsFamily != indices.m_PresentFamily)
@@ -172,7 +171,7 @@ namespace Liara::Graphics
             createInfo.pQueueFamilyIndices = nullptr; // Optional
         }
 
-        createInfo.preTransform = swapChainSupport.m_Capabilities.currentTransform;
+        createInfo.preTransform = m_Capabilities.currentTransform;
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
         createInfo.presentMode = presentMode;
@@ -193,7 +192,7 @@ namespace Liara::Graphics
         m_SwapChainImages.resize(imageCount);
         vkGetSwapchainImagesKHR(m_Device.GetDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
 
-        m_SwapChainImageFormat = surfaceFormat.format;
+        m_SwapChainImageFormat = format;
         m_SwapChainExtent = extent;
     }
 
@@ -287,14 +286,14 @@ namespace Liara::Graphics
         {
             std::array<VkImageView, 2> attachments = {m_SwapChainImageViews[i], m_DepthImageViews[i]};
 
-            VkExtent2D swapChainExtent = GetSwapChainExtent();
+            auto [width, height] = GetSwapChainExtent();
             VkFramebufferCreateInfo framebufferInfo = {};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = m_RenderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = swapChainExtent.width;
-            framebufferInfo.height = swapChainExtent.height;
+            framebufferInfo.width = width;
+            framebufferInfo.height = height;
             framebufferInfo.layers = 1;
 
             if (vkCreateFramebuffer(m_Device.GetDevice(), &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]) != VK_SUCCESS)
@@ -308,7 +307,7 @@ namespace Liara::Graphics
     {
         const VkFormat depthFormat = FindDepthFormat();
         m_SwapChainDepthFormat = depthFormat;
-        VkExtent2D swapChainExtent = GetSwapChainExtent();
+        auto [width, height] = GetSwapChainExtent();
 
         m_DepthImages.resize(ImageCount());
         m_DepthImageMemorys.resize(ImageCount());
@@ -319,8 +318,8 @@ namespace Liara::Graphics
             VkImageCreateInfo imageInfo{};
             imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
             imageInfo.imageType = VK_IMAGE_TYPE_2D;
-            imageInfo.extent.width = swapChainExtent.width;
-            imageInfo.extent.height = swapChainExtent.height;
+            imageInfo.extent.width = width;
+            imageInfo.extent.height = height;
             imageInfo.extent.depth = 1;
             imageInfo.mipLevels = 1;
             imageInfo.arrayLayers = 1;
@@ -392,25 +391,21 @@ namespace Liara::Graphics
 
     VkPresentModeKHR Liara_SwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes)
     {
-        for (const auto &availablePresentMode: availablePresentModes)
-        {
-            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-            {
-                std::cout << "Present mode: Mailbox" << std::endl;
-                return availablePresentMode;
-            }
-        }
-
-        // for (const auto &availablePresentMode : availablePresentModes)
+        // for (const auto &availablePresentMode: availablePresentModes)
         // {
-        //   if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
-        //   {
-        //     std::cout << "Present mode: Immediate" << std::endl;
-        //     return availablePresentMode;
-        //   }
+        //     if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+        //     {
+        //         fmt::print("Present mode: Mailbox\n");
+        //         return availablePresentMode;
+        //     }
+        //     if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+        //     {
+        //         fmt::print("Present mode: Immediate\n");
+        //         return availablePresentMode;
+        //     }
         // }
 
-        std::cout << "Present mode: V-Sync" << std::endl;
+        fmt::print("Present mode: V-Sync\n");
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
@@ -432,4 +427,4 @@ namespace Liara::Graphics
             {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
             VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
-} // namespace Liara
+}

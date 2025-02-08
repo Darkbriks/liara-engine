@@ -1,20 +1,20 @@
 #include "Liara_Device.h"
 
 #include <cstring>
-#include <iostream>
 #include <set>
 #include <unordered_set>
+#include <fmt/core.h>
 
 namespace Liara::Graphics
 {
     // local callback functions
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
         const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
         void *pUserData)
     {
-        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+        fmt::print(stderr, "validation layer: {}\n", pCallbackData->pMessage);
         return VK_FALSE;
     }
 
@@ -24,9 +24,11 @@ namespace Liara::Graphics
         const VkAllocationCallbacks *pAllocator,
         VkDebugUtilsMessengerEXT *pDebugMessenger)
     {
-        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-        if (func != nullptr) { return func(instance, pCreateInfo, pAllocator, pDebugMessenger); }
-        else { return VK_ERROR_EXTENSION_NOT_PRESENT; }
+        if (const auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT")); func != nullptr)
+        {
+            return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+        }
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 
     void DestroyDebugUtilsMessengerEXT(
@@ -34,15 +36,19 @@ namespace Liara::Graphics
         VkDebugUtilsMessengerEXT debugMessenger,
         const VkAllocationCallbacks *pAllocator)
     {
-        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-        if (func != nullptr) { func(instance, debugMessenger, pAllocator); }
+        if (const auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT")); func != nullptr)
+        {
+            func(instance, debugMessenger, pAllocator);
+        }
     }
 
     // class member functions
     Liara_Device::Liara_Device(Plateform::Liara_Window &window) : m_Window{window}
     {
         CreateInstance();
-        SetupDebugMessenger();
+        #ifndef NDEBUG
+            SetupDebugMessenger();
+        #endif
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
@@ -53,19 +59,16 @@ namespace Liara::Graphics
     {
         vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
         vkDestroyDevice(m_Device, nullptr);
-
-        if (m_EnableValidationLayers) { DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr); }
-
+        DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
         vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
         vkDestroyInstance(m_Instance, nullptr);
     }
 
     void Liara_Device::CreateInstance()
     {
-        if (m_EnableValidationLayers && !CheckValidationLayerSupport())
-        {
-            throw std::runtime_error("validation layers requested, but not available!");
-        }
+        #ifndef NDEBUG
+            if (!CheckValidationLayerSupport()) { throw std::runtime_error("validation layers requested, but not available!"); }
+        #endif
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -79,31 +82,28 @@ namespace Liara::Graphics
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
 
-        auto extensions = GetRequiredExtensions();
+        const auto extensions = GetRequiredExtensions();
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInfo.ppEnabledExtensionNames = extensions.data();
 
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-        if (m_EnableValidationLayers)
-        {
+        #ifndef NDEBUG
             createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
             createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
 
             PopulateDebugMessengerCreateInfo(debugCreateInfo);
-            createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
-        }
-        else
-        {
+            createInfo.pNext = &debugCreateInfo;
+        #else
             createInfo.enabledLayerCount = 0;
             createInfo.pNext = nullptr;
-        }
+        #endif
 
         if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create instance!");
         }
 
-        HasGflwRequiredInstanceExtensions();
+        HasSdl2RequiredInstanceExtensions();
     }
 
     void Liara_Device::PickPhysicalDevice()
@@ -112,7 +112,7 @@ namespace Liara::Graphics
         vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
         if (deviceCount == 0) { throw std::runtime_error("failed to find GPUs with Vulkan support!"); }
 
-        std::cout << "Device count: " << deviceCount << std::endl;
+        fmt::print("Device count: {}\n", deviceCount);
         std::vector<VkPhysicalDevice> devices(deviceCount);
         vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data());
 
@@ -131,7 +131,7 @@ namespace Liara::Graphics
         }
 
         vkGetPhysicalDeviceProperties(m_PhysicalDevice, &m_Properties);
-        std::cout << "physical device: " << m_Properties.deviceName << std::endl;
+        fmt::print("physical device: {}\n", m_Properties.deviceName);
     }
 
     void Liara_Device::CreateLogicalDevice()
@@ -165,14 +165,12 @@ namespace Liara::Graphics
         createInfo.enabledExtensionCount = static_cast<uint32_t>(m_DeviceExtensions.size());
         createInfo.ppEnabledExtensionNames = m_DeviceExtensions.data();
 
-        // might not really be necessary anymore because device specific validation layers
-        // have been deprecated
-        if (m_EnableValidationLayers)
-        {
+        #ifndef NDEBUG
             createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
             createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
-        }
-        else { createInfo.enabledLayerCount = 0; }
+        #else
+            createInfo.enabledLayerCount = 0;
+        #endif
 
         if (vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device) != VK_SUCCESS)
         {
@@ -185,7 +183,7 @@ namespace Liara::Graphics
 
     void Liara_Device::CreateCommandPool()
     {
-        QueueFamilyIndices queueFamilyIndices = FindPhysicalQueueFamilies();
+        const QueueFamilyIndices queueFamilyIndices = FindPhysicalQueueFamilies();
 
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -203,14 +201,14 @@ namespace Liara::Graphics
 
     bool Liara_Device::IsDeviceSuitable(VkPhysicalDevice device)
     {
-        QueueFamilyIndices indices = FindQueueFamilies(device);
+        const QueueFamilyIndices indices = FindQueueFamilies(device);
 
-        bool extensionsSupported = CheckDeviceExtensionSupport(device);
+        const bool extensionsSupported = CheckDeviceExtensionSupport(device);
 
         bool swapChainAdequate = false;
         if (extensionsSupported)
         {
-            SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
+            const SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
             swapChainAdequate = !swapChainSupport.m_Formats.empty() && !swapChainSupport.m_PresentModes.empty();
         }
 
@@ -226,13 +224,12 @@ namespace Liara::Graphics
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
         createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
         createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        createInfo.pfnUserCallback = debugCallback;
+        createInfo.pfnUserCallback = DebugCallback;
         createInfo.pUserData = nullptr;  // Optional
     }
 
     void Liara_Device::SetupDebugMessenger()
     {
-        if (!m_EnableValidationLayers) return;
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         PopulateDebugMessengerCreateInfo(createInfo);
         if (CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
@@ -241,7 +238,7 @@ namespace Liara::Graphics
         }
     }
 
-    bool Liara_Device::CheckValidationLayerSupport()
+    bool Liara_Device::CheckValidationLayerSupport() const
     {
         uint32_t layerCount;
         vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -268,39 +265,51 @@ namespace Liara::Graphics
         return true;
     }
 
-    std::vector<const char *> Liara_Device::GetRequiredExtensions()
+    std::vector<const char *> Liara_Device::GetRequiredExtensions() const
     {
-        uint32_t glfwExtensionCount = 0;
-        const char **glfwExtensions;
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        // Get the count
+        uint32_t sdlExtensionCount;
+        if (!SDL_Vulkan_GetInstanceExtensions(m_Window.GetWindow(), &sdlExtensionCount, nullptr))
+        {
+            throw std::runtime_error("Failed to get SDL Vulkan extensions");
+        }
 
-        std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+        // Get the extensions
+        const auto sdlExtensions = new const char *[sdlExtensionCount];
+        if (SDL_Vulkan_GetInstanceExtensions(m_Window.GetWindow(), &sdlExtensionCount, sdlExtensions) != SDL_TRUE)
+        {
+            throw std::runtime_error("Failed to get SDL Vulkan extensions");
+        }
 
-        if (m_EnableValidationLayers) { extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); }
+        std::vector<const char *> extensions(sdlExtensions, sdlExtensions + sdlExtensionCount);
+
+        #ifndef NDEBUG
+            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        #endif
 
         return extensions;
     }
 
-    void Liara_Device::HasGflwRequiredInstanceExtensions()
+    void Liara_Device::HasSdl2RequiredInstanceExtensions() const
     {
         uint32_t extensionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
         std::vector<VkExtensionProperties> extensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-        std::cout << "available extensions:" << std::endl;
+        fmt::print("available extensions:\n");
         std::unordered_set<std::string> available;
-        for (const auto &extension : extensions)
+        for (const auto & [extensionName, specVersion] : extensions)
         {
-            std::cout << "\t" << extension.extensionName << std::endl;
-            available.insert(extension.extensionName);
+            fmt::print("\t{}\n", extensionName);
+            available.insert(extensionName);
         }
 
-        std::cout << "required extensions:" << std::endl;
-        auto requiredExtensions = GetRequiredExtensions();
+        fmt::print("required extensions:\n");
+        const auto requiredExtensions = GetRequiredExtensions();
         for (const auto &required : requiredExtensions)
         {
-            std::cout << "\t" << required << std::endl;
+            fmt::print("\t{}\n", required);
             if (available.find(required) == available.end())
             {
                 throw std::runtime_error("Missing required glfw extension");
@@ -308,7 +317,7 @@ namespace Liara::Graphics
         }
     }
 
-    bool Liara_Device::CheckDeviceExtensionSupport(VkPhysicalDevice device)
+    bool Liara_Device::CheckDeviceExtensionSupport(VkPhysicalDevice device) const
     {
         uint32_t extensionCount;
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -318,12 +327,12 @@ namespace Liara::Graphics
 
         std::set<std::string> requiredExtensions(m_DeviceExtensions.begin(), m_DeviceExtensions.end());
 
-        for (const auto &extension : availableExtensions) { requiredExtensions.erase(extension.extensionName); }
+        for (const auto & [extensionName, specVersion] : availableExtensions) { requiredExtensions.erase(extensionName); }
 
         return requiredExtensions.empty();
     }
 
-    QueueFamilyIndices Liara_Device::FindQueueFamilies(VkPhysicalDevice device)
+    QueueFamilyIndices Liara_Device::FindQueueFamilies(VkPhysicalDevice device) const
     {
         QueueFamilyIndices indices;
 
@@ -356,7 +365,7 @@ namespace Liara::Graphics
         return indices;
     }
 
-    SwapChainSupportDetails Liara_Device::QuerySwapChainSupport(VkPhysicalDevice device)
+    SwapChainSupportDetails Liara_Device::QuerySwapChainSupport(VkPhysicalDevice device) const
     {
         SwapChainSupportDetails details;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_Surface, &details.m_Capabilities);
@@ -381,32 +390,32 @@ namespace Liara::Graphics
         return details;
     }
 
-    VkFormat Liara_Device::FindSupportedFormat( const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+    VkFormat Liara_Device::FindSupportedFormat( const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const
     {
-        for (VkFormat format : candidates)
+        for (const VkFormat format : candidates)
         {
             VkFormatProperties props;
             vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &props);
 
             if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) { return format; }
-            else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) { return format; }
+            if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) { return format; }
         }
         throw std::runtime_error("failed to find supported format!");
     }
 
-    uint32_t Liara_Device::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+    uint32_t Liara_Device::FindMemoryType(const uint32_t typeFilter, const VkMemoryPropertyFlags properties) const
     {
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
         for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
         {
-            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) { return i; }
+            if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) { return i; }
         }
 
         throw std::runtime_error("failed to find suitable memory type!");
     }
 
-    void Liara_Device::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory)
+    void Liara_Device::CreateBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory) const
     {
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -435,7 +444,7 @@ namespace Liara::Graphics
         vkBindBufferMemory(m_Device, buffer, bufferMemory, 0);
     }
 
-    VkCommandBuffer Liara_Device::BeginSingleTimeCommands()
+    VkCommandBuffer Liara_Device::BeginSingleTimeCommands() const
     {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -454,7 +463,7 @@ namespace Liara::Graphics
         return commandBuffer;
     }
 
-    void Liara_Device::EndSingleTimeCommands(VkCommandBuffer commandBuffer)
+    void Liara_Device::EndSingleTimeCommands(const VkCommandBuffer commandBuffer) const
     {
         vkEndCommandBuffer(commandBuffer);
 
@@ -469,9 +478,9 @@ namespace Liara::Graphics
         vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &commandBuffer);
     }
 
-    void Liara_Device::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+    void Liara_Device::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const VkDeviceSize size) const
     {
-        VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+        const VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
         VkBufferCopy copyRegion{};
         copyRegion.srcOffset = 0;  // Optional
@@ -482,9 +491,9 @@ namespace Liara::Graphics
         EndSingleTimeCommands(commandBuffer);
     }
 
-    void Liara_Device::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount)
+    void Liara_Device::CopyBufferToImage(VkBuffer buffer, VkImage image, const uint32_t width, const uint32_t height, const uint32_t layerCount) const
     {
-        VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+        const VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -503,7 +512,7 @@ namespace Liara::Graphics
         EndSingleTimeCommands(commandBuffer);
     }
 
-    void Liara_Device::CreateImageWithInfo(const VkImageCreateInfo &imageInfo, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory)
+    void Liara_Device::CreateImageWithInfo(const VkImageCreateInfo &imageInfo, const VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory) const
     {
         if (vkCreateImage(m_Device, &imageInfo, nullptr, &image) != VK_SUCCESS)
         {
@@ -528,5 +537,4 @@ namespace Liara::Graphics
             throw std::runtime_error("failed to bind image memory!");
         }
     }
-
-}  // namespace Liara
+}

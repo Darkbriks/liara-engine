@@ -1,12 +1,10 @@
 #include "Liara_Pipeline.h"
 #include "Liara_Model.h"
+#include "SpecConstant/SpecializationConstant.h"
 
 #include <fstream>
 #include <stdexcept>
-#include <iostream>
 #include <cassert>
-
-#include "SpecConstant/SpecializationConstant.h"
 
 #ifndef ENGINE_DIR
 #define ENGINE_DIR "../"
@@ -205,4 +203,4 @@ namespace Liara::Graphics
             throw std::runtime_error("Failed to create shader module!");
         }
     }
-} // Liara
+}

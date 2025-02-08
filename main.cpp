@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 
-int main()
+int Run()
 {
     try
     {
@@ -18,3 +18,10 @@ int main()
 
     return EXIT_SUCCESS;
 }
+
+#if WIN32
+    #include "external/SDL2-2.30.8/src/haptic/windows/SDL_dinputhaptic_c.h"
+    int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, INT) { return Run(); }
+#else
+    int main() { return Run(); }
+#endif

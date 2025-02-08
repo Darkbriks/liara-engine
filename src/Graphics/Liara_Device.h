@@ -26,12 +26,6 @@ namespace Liara::Graphics
     class Liara_Device
     {
     public:
-        #ifdef NDEBUG
-            const bool m_EnableValidationLayers = false;
-        #else
-            const bool m_EnableValidationLayers = true;
-        #endif
-
         explicit Liara_Device(Plateform::Liara_Window &window);
         ~Liara_Device();
 
@@ -48,21 +42,21 @@ namespace Liara::Graphics
         [[nodiscard]] VkQueue GetPresentQueue() const { return m_PresentQueue; }
         [[nodiscard]] VkInstance GetInstance() const { return m_Instance; }
         [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
-        [[nodiscard]] uint32_t GetGraphicsQueueFamily() { return FindPhysicalQueueFamilies().m_GraphicsFamily; }
+        [[nodiscard]] uint32_t GetGraphicsQueueFamily() const { return FindPhysicalQueueFamilies().m_GraphicsFamily; }
 
-        SwapChainSupportDetails GetSwapChainSupport() { return QuerySwapChainSupport(m_PhysicalDevice); }
-        uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-        QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueFamilies(m_PhysicalDevice); }
-        VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+        SwapChainSupportDetails GetSwapChainSupport() const { return QuerySwapChainSupport(m_PhysicalDevice); }
+        uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
+        QueueFamilyIndices FindPhysicalQueueFamilies() const { return FindQueueFamilies(m_PhysicalDevice); }
+        VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
         // Buffer Helper Functions
-        void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory);
-        VkCommandBuffer BeginSingleTimeCommands();
-        void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
-        void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-        void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
+        void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory) const;
+        VkCommandBuffer BeginSingleTimeCommands() const;
+        void EndSingleTimeCommands(VkCommandBuffer commandBuffer) const;
+        void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
+        void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount) const;
 
-        void CreateImageWithInfo(const VkImageCreateInfo &imageInfo, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory);
+        void CreateImageWithInfo(const VkImageCreateInfo &imageInfo, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory) const;
 
         VkPhysicalDeviceProperties m_Properties;
 
@@ -76,13 +70,13 @@ namespace Liara::Graphics
 
         // helper functions
         bool IsDeviceSuitable(VkPhysicalDevice device);
-        std::vector<const char *> GetRequiredExtensions();
-        bool CheckValidationLayerSupport();
-        QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+        std::vector<const char *> GetRequiredExtensions() const;
+        bool CheckValidationLayerSupport() const;
+        QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
         void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
-        void HasGflwRequiredInstanceExtensions();
-        bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
-        SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+        void HasSdl2RequiredInstanceExtensions() const;
+        bool CheckDeviceExtensionSupport(VkPhysicalDevice device) const;
+        SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
 
         VkInstance m_Instance;
         VkDebugUtilsMessengerEXT m_DebugMessenger;
@@ -98,4 +92,4 @@ namespace Liara::Graphics
         const std::vector<const char *> m_ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
         const std::vector<const char *> m_DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     };
-}  // namespace Liara
+}

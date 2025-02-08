@@ -5,12 +5,19 @@
 #include <vulkan/vulkan.h>
 #include <imgui.h>
 #include <backends/imgui_impl_vulkan.h>
-#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_sdl2.h>
 #include <stdexcept>
 
 namespace Liara::Systems
 {
     bool ImGuiSystem::IMGUI_INITIALIZED = false;
+
+    static void CheckVkResult(const VkResult err)
+    {
+        if (err == 0) return;
+        fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+        if (err < 0) abort();
+    }
 
     ImGuiSystem::ImGuiSystem(const Plateform::Liara_Window& window, Graphics::Liara_Device& device, const VkRenderPass renderPass, const uint32_t imageCount): lveDevice{device}
     {
@@ -53,7 +60,7 @@ namespace Liara::Systems
 
         // Setup Platform/Renderer backends
         // Initialize imgui for vulkan
-        ImGui_ImplGlfw_InitForVulkan(window.GetWindow(), true);
+        ImGui_ImplSDL2_InitForVulkan(window.GetWindow());
         ImGui_ImplVulkan_InitInfo init_info = {};
         init_info.Instance = device.GetInstance();
         init_info.PhysicalDevice = device.GetPhysicalDevice();
@@ -85,7 +92,7 @@ namespace Liara::Systems
     ImGuiSystem::~ImGuiSystem()
     {
         ImGui_ImplVulkan_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
+        ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
         vkDestroyDescriptorPool(lveDevice.GetDevice(), descriptorPool, nullptr);
     }
@@ -94,12 +101,13 @@ namespace Liara::Systems
     {
         if (!IMGUI_INITIALIZED) { return; }
         ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
     }
 
     void ImGuiSystem::Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo)
     {
+        SDL_PumpEvents();
         for (const auto& element: m_Elements) { element->Draw(frame_info, ubo); }
     }
 
@@ -109,46 +117,4 @@ namespace Liara::Systems
         ImDrawData* drawdata = ImGui::GetDrawData();
         ImGui_ImplVulkan_RenderDrawData(drawdata, frame_info.m_CommandBuffer);
     }
-
-    /*void ImGuiSystem::RunExample()
-    {
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can
-        // browse its code to learn more about Dear ImGui!).
-        if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
-
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named
-        // window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text."); // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window); // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", reinterpret_cast<float*>(&clear_color)); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true
-                // when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::End();
-        }
-
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window); // Pass a pointer to our bool variable (the window will have a
-            // closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me")) show_another_window = false;
-            ImGui::End();
-        }
-    }*/
 }

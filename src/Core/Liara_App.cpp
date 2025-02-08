@@ -1,5 +1,4 @@
 #include "Liara_App.h"
-
 #include "FrameInfo.h"
 #include "Graphics/Ubo/GlobalUbo.h"
 #include "Systems/Liara_System.h"
@@ -13,7 +12,6 @@
 
 #include <chrono>
 #include <iostream>
-#include <imgui.h>
 
 namespace Liara::Core
 {
@@ -41,7 +39,7 @@ namespace Liara::Core
         {
             g_FrameStats.Reset();
 
-            glfwPollEvents();
+            SDL_PumpEvents();
 
             auto newTime = std::chrono::high_resolution_clock::now();
             const float frameTime = std::chrono::duration<float>(newTime - currentTime).count();
@@ -157,5 +155,4 @@ namespace Liara::Core
 
         m_Renderer.EndSwapChainRenderPass(commandBuffer);
     }
-
 }

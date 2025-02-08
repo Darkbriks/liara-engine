@@ -7,10 +7,10 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <iostream>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 #include <stdexcept>
+#include <fmt/core.h>
 
 namespace Liara::Systems
 {
@@ -41,7 +41,7 @@ namespace Liara::Systems
         {
             auto& obj = snd;
             if (!obj.m_PointLight) { continue; }
-            if (lightIndex >= MAX_LIGHTS) { std::cerr << "Too many point lights" << std::endl; break; }
+            if (lightIndex >= MAX_LIGHTS) { fmt::print(stderr, "Too many point lights\n"); break; }
 
             obj.m_Transform.position = glm::vec3(rotateLight * glm::vec4(obj.m_Transform.position, 1.f));
 
