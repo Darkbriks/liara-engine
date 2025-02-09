@@ -1,14 +1,11 @@
-//
-// Created by antoi on 20/10/2024.
-//
-
 #pragma once
-#include <cassert>
-#include <memory>
 
 #include "Liara_Device.h"
 #include "Liara_SwapChain.h"
 #include "Plateform/Liara_Window.h"
+
+#include <cassert>
+#include <memory>
 
 namespace Liara::Graphics
 {
@@ -54,4 +51,4 @@ namespace Liara::Graphics
         uint32_t m_CurrentFrameIndex;
         bool m_IsFrameStarted;
     };
-} // Liara
+}

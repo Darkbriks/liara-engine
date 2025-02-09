@@ -136,7 +136,7 @@ namespace Liara::Graphics
 
         auto [format, colorSpace] = ChooseSwapSurfaceFormat(m_Formats);
         const VkPresentModeKHR presentMode = ChooseSwapPresentMode(m_PresentModes);
-        const VkExtent2D extent = ChooseSwapExtent(m_Capabilities);
+        VkExtent2D extent = ChooseSwapExtent(m_Capabilities);
 
         uint32_t imageCount = m_Capabilities.minImageCount + 1;
         if (m_Capabilities.maxImageCount > 0 && imageCount > m_Capabilities.maxImageCount)
@@ -186,12 +186,14 @@ namespace Liara::Graphics
 
         // we only specified a minimum number of images in the swap chain, so the implementation is
         // allowed to create a swap chain with more. That's why we'll first query the final number of
-        // images with vkGetSwapchainImagesKHR, then resize the container and finally call it again to
+        // images with vkGetSwapChainImagesKHR, then resize the container and finally call it again to
         // retrieve the handles.
         vkGetSwapchainImagesKHR(m_Device.GetDevice(), m_SwapChain, &imageCount, nullptr);
         m_SwapChainImages.resize(imageCount);
         vkGetSwapchainImagesKHR(m_Device.GetDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
 
+        if (extent.width == 0) { extent.width = 1; }
+        if (extent.height == 0) { extent.height = 1; }
         m_SwapChainImageFormat = format;
         m_SwapChainExtent = extent;
     }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Core/Liara_App.h"
-
 #include "Listener/KeybordMovementController.h"
 
 class FirstApp final : public Liara::Core::Liara_App

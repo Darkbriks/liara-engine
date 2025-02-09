@@ -146,7 +146,6 @@ namespace Liara::Graphics
         }
 
         vkDeviceWaitIdle(m_Device.GetDevice());
-        m_SwapChain = nullptr;
 
         if (m_SwapChain == nullptr)
         {
@@ -157,7 +156,7 @@ namespace Liara::Graphics
             std::shared_ptr<Liara_SwapChain> old_swap_chain = std::move(m_SwapChain);
             m_SwapChain = std::make_unique<Liara_SwapChain>(m_Device, extent, old_swap_chain);
 
-            if (!old_swap_chain->CompareSwapFormat(*m_SwapChain.get()))
+            if (!old_swap_chain->CompareSwapFormat(*m_SwapChain))
             {
                 throw std::runtime_error("Swap chain image or depth format has changed!");
             }

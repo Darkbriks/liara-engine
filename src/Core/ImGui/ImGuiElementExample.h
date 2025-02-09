@@ -21,7 +21,7 @@ namespace Liara::Core::ImGuiElements
             // browse its code to learn more about Dear ImGui!).
             if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
 
-            // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named
+            // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named
             // window.
             {
                 static float f = 0.0f;

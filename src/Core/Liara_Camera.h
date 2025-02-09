@@ -10,7 +10,7 @@ namespace Liara::Core
     {
     public:
         void SetOrthographicProjection(float left, float right, float top, float bottom, float near, float far);
-        void SetPerspectiveProjection(float fovy, float aspect, float near, float far);
+        void SetPerspectiveProjection(float fov, float aspect, float near, float far);
 
         [[nodiscard]] const glm::mat4& GetProjectionMatrix() const { return m_ProjectionMatrix; }
         [[nodiscard]] const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }
@@ -25,4 +25,4 @@ namespace Liara::Core
         glm::mat4 m_ViewMatrix{1.0f};
         glm::mat4 m_InverseViewMatrix{1.0f};
     };
-} // Liara
+}

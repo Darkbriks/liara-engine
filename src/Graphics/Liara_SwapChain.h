@@ -57,10 +57,10 @@ namespace Liara::Graphics
 
         VkFormat m_SwapChainImageFormat;
         VkFormat m_SwapChainDepthFormat;
-        VkExtent2D m_SwapChainExtent;
+        VkExtent2D m_SwapChainExtent{};
 
         std::vector<VkFramebuffer> m_SwapChainFramebuffers;
-        VkRenderPass m_RenderPass;
+        VkRenderPass m_RenderPass{};
 
         std::vector<VkImage> m_DepthImages;
         std::vector<VkDeviceMemory> m_DepthImageMemorys;
@@ -71,7 +71,7 @@ namespace Liara::Graphics
         Liara_Device &m_Device;
         VkExtent2D m_WindowExtent;
 
-        VkSwapchainKHR m_SwapChain;
+        VkSwapchainKHR m_SwapChain{};
         std::shared_ptr<Liara_SwapChain> m_OldSwapChain;
 
         std::vector<VkSemaphore> m_ImageAvailableSemaphores;

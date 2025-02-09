@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <cmath>
-#include <limits>
 
 namespace Liara::Core
 {
@@ -17,13 +16,13 @@ namespace Liara::Core
         m_ProjectionMatrix[3][2] = -near / (far - near);
     }
 
-    void Liara_Camera::SetPerspectiveProjection(const float fovy, const float aspect, const float near, const float far)
+    void Liara_Camera::SetPerspectiveProjection(const float fov, const float aspect, const float near, const float far)
     {
         assert(glm::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
-        const float tanHalfFovy = std::tan(fovy / 2.f);
+        const float tanHalfFov = std::tan(fov / 2.f);
         m_ProjectionMatrix = glm::mat4{0.0f};
-        m_ProjectionMatrix[0][0] = 1.f / (aspect * tanHalfFovy);
-        m_ProjectionMatrix[1][1] = 1.f / (tanHalfFovy);
+        m_ProjectionMatrix[0][0] = 1.f / (aspect * tanHalfFov);
+        m_ProjectionMatrix[1][1] = 1.f / (tanHalfFov);
         m_ProjectionMatrix[2][2] = far / (far - near);
         m_ProjectionMatrix[2][3] = 1.f;
         m_ProjectionMatrix[3][2] = -(far * near) / (far - near);
@@ -108,4 +107,4 @@ namespace Liara::Core
         m_InverseViewMatrix[3][1] = position.y;
         m_InverseViewMatrix[3][2] = position.z;
     }
-} // Liara
+}

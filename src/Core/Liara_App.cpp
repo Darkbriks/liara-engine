@@ -12,6 +12,8 @@
 
 #include <chrono>
 #include <iostream>
+#include <thread>
+#include <backends/imgui_impl_sdl2.h>
 
 namespace Liara::Core
 {
@@ -38,14 +40,17 @@ namespace Liara::Core
         while (!m_Window.ShouldClose())
         {
             g_FrameStats.Reset();
-
-            SDL_PumpEvents();
-
             auto newTime = std::chrono::high_resolution_clock::now();
             const float frameTime = std::chrono::duration<float>(newTime - currentTime).count();
             currentTime = newTime;
 
             MasterProcessInput(frameTime);
+
+            if (m_Window.WasMinimized())
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                continue;
+            }
 
             const float aspect = m_Renderer.GetAspectRatio();
             SetProjection(aspect);
@@ -126,7 +131,16 @@ namespace Liara::Core
 
     void Liara_App::Close() { vkDeviceWaitIdle(m_Device.GetDevice()); }
 
-    void Liara_App::MasterProcessInput(const float frameTime) { ProcessInput(frameTime); }
+    void Liara_App::MasterProcessInput(const float frameTime)
+    {
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
+        {
+            ImGui_ImplSDL2_ProcessEvent(&event);
+        }
+
+        ProcessInput(frameTime);
+    }
 
     void Liara_App::MasterUpdate(const FrameInfo& frameInfo)
     {

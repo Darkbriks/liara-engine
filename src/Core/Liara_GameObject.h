@@ -1,11 +1,12 @@
 #pragma once
-#include <memory>
-#include <glm/gtc/matrix_transform.hpp>
-#include <unordered_map>
 
 #include "Graphics/Liara_Model.h"
 #include "Components/TransformComponent3d.h"
 #include "Components/PointLightComponent.h"
+
+#include <memory>
+#include <glm/gtc/matrix_transform.hpp>
+#include <unordered_map>
 
 // TODO: Check Entity Component System
 namespace Liara::Core

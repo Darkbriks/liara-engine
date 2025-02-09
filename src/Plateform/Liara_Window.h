@@ -17,9 +17,10 @@ namespace Liara::Plateform
         Liara_Window(const Liara_Window&) = delete;
         Liara_Window& operator=(const Liara_Window&) = delete;
 
-        [[nodiscard]] bool ShouldClose() const { return SDL_QuitRequested(); }
+        [[nodiscard]] bool ShouldClose() const { return m_quit_requested; }
         [[nodiscard]] VkExtent2D GetExtent() const { return { m_width, m_height }; }
         [[nodiscard]] bool WasResized() const { return m_resized; }
+        [[nodiscard]] bool WasMinimized() const { return m_minimized; }
         [[nodiscard]] SDL_Window* GetWindow() const { return m_Window; }
 
         void ResetResizedFlag() { m_resized = false; }
@@ -34,6 +35,8 @@ namespace Liara::Plateform
         unsigned short m_width;
         unsigned short m_height;
         bool m_resized = false;
+        bool m_minimized = false;
+        bool m_quit_requested = false;
 
         void InitWindow();
         int EventCallback(void *userdata, const SDL_Event *event);

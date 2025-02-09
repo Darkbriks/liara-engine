@@ -58,7 +58,7 @@ namespace Liara::Graphics
 
         void CreateImageWithInfo(const VkImageCreateInfo &imageInfo, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory) const;
 
-        VkPhysicalDeviceProperties m_Properties;
+        VkPhysicalDeviceProperties m_Properties{};
 
     private:
         void CreateInstance();
@@ -69,7 +69,7 @@ namespace Liara::Graphics
         void CreateCommandPool();
 
         // helper functions
-        bool IsDeviceSuitable(VkPhysicalDevice device);
+        bool IsDeviceSuitable(VkPhysicalDevice device) const;
         std::vector<const char *> GetRequiredExtensions() const;
         bool CheckValidationLayerSupport() const;
         QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
@@ -78,16 +78,16 @@ namespace Liara::Graphics
         bool CheckDeviceExtensionSupport(VkPhysicalDevice device) const;
         SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
 
-        VkInstance m_Instance;
-        VkDebugUtilsMessengerEXT m_DebugMessenger;
+        VkInstance m_Instance{};
+        VkDebugUtilsMessengerEXT m_DebugMessenger{};
         VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
         Plateform::Liara_Window &m_Window;
-        VkCommandPool m_CommandPool;
+        VkCommandPool m_CommandPool{};
 
-        VkDevice m_Device;
-        VkSurfaceKHR m_Surface;
-        VkQueue m_GraphicsQueue;
-        VkQueue m_PresentQueue;
+        VkDevice m_Device{};
+        VkSurfaceKHR m_Surface{};
+        VkQueue m_GraphicsQueue{};
+        VkQueue m_PresentQueue{};
 
         const std::vector<const char *> m_ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
         const std::vector<const char *> m_DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};

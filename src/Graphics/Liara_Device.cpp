@@ -86,8 +86,9 @@ namespace Liara::Graphics
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInfo.ppEnabledExtensionNames = extensions.data();
 
-        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
+
         #ifndef NDEBUG
+            VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
             createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
             createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
 
@@ -199,7 +200,7 @@ namespace Liara::Graphics
 
     void Liara_Device::CreateSurface() { m_Window.CreateWindowSurface(m_Instance, &m_Surface); }
 
-    bool Liara_Device::IsDeviceSuitable(VkPhysicalDevice device)
+    bool Liara_Device::IsDeviceSuitable(VkPhysicalDevice device) const
     {
         const QueueFamilyIndices indices = FindQueueFamilies(device);
 
@@ -480,7 +481,7 @@ namespace Liara::Graphics
 
     void Liara_Device::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const VkDeviceSize size) const
     {
-        const VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+        VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
         VkBufferCopy copyRegion{};
         copyRegion.srcOffset = 0;  // Optional
@@ -493,7 +494,7 @@ namespace Liara::Graphics
 
     void Liara_Device::CopyBufferToImage(VkBuffer buffer, VkImage image, const uint32_t width, const uint32_t height, const uint32_t layerCount) const
     {
-        const VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+        VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;

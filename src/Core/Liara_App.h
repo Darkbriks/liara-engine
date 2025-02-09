@@ -66,7 +66,7 @@ namespace Liara::Core
 
         std::unique_ptr<Graphics::Descriptors::Liara_DescriptorAllocator> m_DescriptorAllocator;
         std::unique_ptr<Graphics::Descriptors::Liara_DescriptorLayoutCache> m_DescriptorLayoutCache;
-        VkDescriptorSetLayout m_GlobalSetLayout;
+        VkDescriptorSetLayout m_GlobalSetLayout{};
         std::vector<VkDescriptorSet> m_GlobalDescriptorSets;
 
         Liara_Camera m_Camera;

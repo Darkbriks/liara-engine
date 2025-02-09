@@ -36,9 +36,7 @@ namespace Liara::Plateform
     {
         if (SDL_Init(SDL_INIT_VIDEO) != 0) { throw std::runtime_error("Failed to initialize SDL"); }
 
-        constexpr uint32_t window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE;
-
-        if (!((m_Window = SDL_CreateWindow(m_title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_width, m_height, window_flags))))
+        if (constexpr uint32_t window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE; !((m_Window = SDL_CreateWindow(m_title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_width, m_height, window_flags))))
         {
             throw std::runtime_error("Failed to create window! SDL_Error: " + std::string(SDL_GetError()));
         }
@@ -58,6 +56,9 @@ namespace Liara::Plateform
             {
                 FramebufferResizeCallback(window, event->window.data1, event->window.data2);
             }
+            if (event->window.event == SDL_WINDOW_MINIMIZED) { m_minimized = true; }
+            if (event->window.event == SDL_WINDOWEVENT_RESTORED) { m_minimized = false; }
+            if (event->window.event == SDL_WINDOWEVENT_CLOSE) { m_quit_requested = true; }
         }
         return 0;
     }

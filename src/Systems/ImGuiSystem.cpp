@@ -1,5 +1,6 @@
 #include "ImGuiSystem.h"
 #include "Core/FrameInfo.h"
+#include "Core/Liara_Utils.h"
 #include "Graphics/Liara_Device.h"
 
 #include <vulkan/vulkan.h>
@@ -11,13 +12,6 @@
 namespace Liara::Systems
 {
     bool ImGuiSystem::IMGUI_INITIALIZED = false;
-
-    static void CheckVkResult(const VkResult err)
-    {
-        if (err == 0) return;
-        fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
-        if (err < 0) abort();
-    }
 
     ImGuiSystem::ImGuiSystem(const Plateform::Liara_Window& window, Graphics::Liara_Device& device, const VkRenderPass renderPass, const uint32_t imageCount): lveDevice{device}
     {
@@ -74,7 +68,7 @@ namespace Liara::Systems
         init_info.Allocator = VK_NULL_HANDLE;
         init_info.MinImageCount = 2;
         init_info.ImageCount = imageCount;
-        init_info.CheckVkResultFn = CheckVkResult;
+        init_info.CheckVkResultFn = Core::CheckVkResult;
         init_info.RenderPass = renderPass;
 
         ImGui_ImplVulkan_Init(&init_info);

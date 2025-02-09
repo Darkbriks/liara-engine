@@ -12,4 +12,11 @@ namespace Liara::Core
         seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         (HashCombine(seed, rest), ...);
     }
+
+    static void CheckVkResult(const VkResult err)
+    {
+        if (err == 0) return;
+        fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+        if (err < 0) abort();
+    }
 }
