@@ -48,9 +48,9 @@ namespace Liara::Graphics
 
     private:
         Liara_Device& m_Device;
-        VkPipeline m_GraphicsPipeline;
-        VkShaderModule m_VertShaderModule;
-        VkShaderModule m_FragShaderModule;
+        VkPipeline m_GraphicsPipeline{};
+        VkShaderModule m_VertShaderModule{};
+        VkShaderModule m_FragShaderModule{};
 
         static std::vector<char> ReadFile(const std::string& filepath);
 
@@ -58,4 +58,4 @@ namespace Liara::Graphics
 
         void CreateShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) const;
     };
-} // Liara
+}

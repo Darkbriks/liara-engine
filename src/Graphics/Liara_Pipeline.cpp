@@ -184,11 +184,24 @@ namespace Liara::Graphics
         pipelineInfo.basePipelineIndex = -1;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        if (vkCreateGraphicsPipelines(m_Device.GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create graphics pipeline!");
-        }
-
+        // FIXME: This is a temporary fix for linux
+        // For some reason, m_GraphicsPipeline is not being set correctly,
+        // Resulting in a segfault when trying to create the pipeline.
+        // This ugly hack is to make sure that the pipeline is created correctly,
+        // But a better solution should be found.
+        #ifdef __linux__
+            const auto new_pipeline  = std::make_unique<VkPipeline>();
+            if (vkCreateGraphicsPipelines(m_Device.GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, new_pipeline.get()) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to create graphics pipeline!");
+            }
+            m_GraphicsPipeline = *new_pipeline;
+        #else
+            if (vkCreateGraphicsPipelines(m_Device.GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to create graphics pipeline!");
+            }
+        #endif
     }
 
     void Liara_Pipeline::CreateShaderModule(const std::vector<char> &code, VkShaderModule *shaderModule) const
