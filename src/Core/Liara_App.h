@@ -4,6 +4,7 @@
 #include "Liara_GameObject.h"
 #include "Graphics/Liara_Device.h"
 #include "Graphics/Liara_Renderer.h"
+#include "Graphics/Liara_Texture.h"
 #include "Graphics/Descriptors/Liara_Descriptor2.h"
 #include "Plateform/Liara_Window.h"
 #include "Systems/Liara_System.h"
@@ -55,7 +56,7 @@ namespace Liara::Core
     private:
         void MasterProcessInput(float frameTime);
         void MasterUpdate(const FrameInfo& frameInfo);
-        void MasterRender(VkCommandBuffer commandBuffer, const FrameInfo &frameInfo);
+        void MasterRender(const FrameInfo &frameInfo);
 
     protected:
         Plateform::Liara_Window m_Window;
@@ -72,5 +73,8 @@ namespace Liara::Core
         Liara_Camera m_Camera;
         Liara_GameObject::Map m_GameObjects;
         std::vector<std::unique_ptr<Systems::Liara_System>> m_Systems;
+
+        // TODO: Test texture, temporary
+        std::unique_ptr<Graphics::Liara_Texture> m_Texture;
     };
 }

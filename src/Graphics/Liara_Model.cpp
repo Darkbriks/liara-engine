@@ -59,8 +59,8 @@ namespace Liara::Graphics
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         };
 
-        stagingBuffer.map();
-        stagingBuffer.writeToBuffer(vertices.data());
+        stagingBuffer.Map();
+        stagingBuffer.WriteToBuffer(vertices.data());
 
         m_VertexBuffer = std::make_unique<Liara_Buffer>(
             m_Device,
@@ -70,7 +70,7 @@ namespace Liara::Graphics
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
 
-        m_Device.CopyBuffer(stagingBuffer.getBuffer(), m_VertexBuffer->getBuffer(), bufferSize);
+        m_Device.CopyBuffer(stagingBuffer.GetBuffer(), m_VertexBuffer->GetBuffer(), bufferSize);
     }
 
     void Liara_Model::CreateIndexBuffer(const std::vector<uint32_t> &indices)
@@ -90,8 +90,8 @@ namespace Liara::Graphics
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         };
 
-        stagingBuffer.map();
-        stagingBuffer.writeToBuffer(indices.data());
+        stagingBuffer.Map();
+        stagingBuffer.WriteToBuffer(indices.data());
 
         m_IndexBuffer = std::make_unique<Liara_Buffer>(
             m_Device,
@@ -101,15 +101,15 @@ namespace Liara::Graphics
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
 
-        m_Device.CopyBuffer(stagingBuffer.getBuffer(), m_IndexBuffer->getBuffer(), bufferSize);
+        m_Device.CopyBuffer(stagingBuffer.GetBuffer(), m_IndexBuffer->GetBuffer(), bufferSize);
     }
 
     void Liara_Model::Bind(VkCommandBuffer commandBuffer) const
     {
-        const VkBuffer buffers[] = { m_VertexBuffer->getBuffer() };
+        const VkBuffer buffers[] = { m_VertexBuffer->GetBuffer() };
         constexpr VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-        if (m_HasIndexBuffer) { vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32); }
+        if (m_HasIndexBuffer) { vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32); }
     }
 
     void Liara_Model::Draw(VkCommandBuffer commandBuffer) const
@@ -198,9 +198,10 @@ namespace Liara::Graphics
 
                 if (index.texcoord_index >= 0)
                 {
+                    // Flip the y coordinate to match with Vulkan's texture coordinate system
                     vertex.uv = {
                         attrib.texcoords[2 * index.texcoord_index + 0],
-                        attrib.texcoords[2 * index.texcoord_index + 1]
+                        1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
                     };
                 }
 
@@ -213,4 +214,4 @@ namespace Liara::Graphics
             }
         }
     }
-} // Liara
+}

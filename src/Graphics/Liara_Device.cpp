@@ -153,6 +153,7 @@ namespace Liara::Graphics
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
+        // TODO: Make the anisotropy optional
         VkPhysicalDeviceFeatures deviceFeatures = {};
         deviceFeatures.samplerAnisotropy = VK_TRUE;
 
@@ -200,6 +201,7 @@ namespace Liara::Graphics
 
     void Liara_Device::CreateSurface() { m_Window.CreateWindowSurface(m_Instance, &m_Surface); }
 
+    // TODO: Make the anisotropy optional
     bool Liara_Device::IsDeviceSuitable(VkPhysicalDevice device) const
     {
         const QueueFamilyIndices indices = FindQueueFamilies(device);

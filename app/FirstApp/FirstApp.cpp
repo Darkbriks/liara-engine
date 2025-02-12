@@ -36,35 +36,13 @@ void FirstApp::InitSystems()
 
 void FirstApp::LoadGameObjects()
 {
-    std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/smooth_vase.obj", 32);
-    auto flatVase = Liara::Core::Liara_GameObject::CreateGameObject();
-    flatVase.m_Model = model;
-    flatVase.m_Transform.position = {-.5f, .5f, 0.f};
-    flatVase.m_Transform.scale = {3.f, 1.5f, 3.f};
-    m_GameObjects.emplace(flatVase.GetId(), std::move(flatVase));
-
-    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/smooth_vase.obj", 2048);
-    auto smoothVase = Liara::Core::Liara_GameObject::CreateGameObject();
-    smoothVase.m_Model = model;
-    smoothVase.m_Transform.position = {.5f, .5f, 0.f};
-    smoothVase.m_Transform.scale = {3.f, 1.5f, 3.f};
-    m_GameObjects.emplace(smoothVase.GetId(), std::move(smoothVase));
-
-    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/quad.obj", 512);
-    auto floor = Liara::Core::Liara_GameObject::CreateGameObject();
-    floor.m_Model = model;
-    floor.m_Transform.position = {0.f, .5f, 0.f};
-    floor.m_Transform.scale = {3.f, 1.f, 3.f};
-    m_GameObjects.emplace(floor.GetId(), std::move(floor));
-
-    model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/concept_td.obj", 1024);
-    auto concept = Liara::Core::Liara_GameObject::CreateGameObject();
-    concept.m_Model = model;
-    concept.m_Transform.position = {0.f, .75f, 0.f};
-    concept.m_Transform.rotation = {0.f, 0.f, glm::radians(180.f)};
-    concept.m_Transform.scale = {0.25f, 0.25f, 0.25f};
-    m_GameObjects.emplace(concept.GetId(), std::move(concept));
-
+    std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/viking_room.obj", 1);
+    auto viking_room = Liara::Core::Liara_GameObject::CreateGameObject();
+    viking_room.m_Model = model;
+    viking_room.m_Transform.position = {0.f, .75f, 0.f};
+    viking_room.m_Transform.scale = {1.5f, 1.5f, 1.5f};
+    viking_room.m_Transform.rotation = {glm::radians(90.f), glm::radians(135.f), 0.f};
+    m_GameObjects.emplace(viking_room.GetId(), std::move(viking_room));
 
     std::vector<glm::vec3> lightColors{
         {1.f, .1f, .1f},
@@ -72,12 +50,11 @@ void FirstApp::LoadGameObjects()
         {.1f, 1.f, .1f},
         {1.f, 1.f, .1f},
         {.1f, 1.f, 1.f},
-        //{1.f, 1.f, 1.f}
     };
 
     for (int i = 0; i < lightColors.size(); i++)
     {
-        auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.2f);
+        auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.5f);
         pointLight.m_color = lightColors[i];
         auto rotateLight = glm::rotate(
             glm::mat4(1.f),
@@ -86,4 +63,9 @@ void FirstApp::LoadGameObjects()
         pointLight.m_Transform.position = glm::vec3(rotateLight * glm::vec4(-1.f, -0.3f, -1.f, 1.f));
         m_GameObjects.emplace(pointLight.GetId(), std::move(pointLight));
     }
+
+    auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.5f);
+    pointLight.m_color = {1.f, 1.f, 1.f};
+    pointLight.m_Transform.position = {0.f, -0.25f, 0.f};
+    m_GameObjects.emplace(pointLight.GetId(), std::move(pointLight));
 }
