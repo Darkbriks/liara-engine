@@ -5,7 +5,7 @@
 #include "Graphics/Liara_Device.h"
 #include "Graphics/Liara_Renderer.h"
 #include "Graphics/Liara_Texture.h"
-#include "Graphics/Descriptors/Liara_Descriptor2.h"
+#include "Graphics/Descriptors/Liara_Descriptor.h"
 #include "Plateform/Liara_Window.h"
 #include "Systems/Liara_System.h"
 

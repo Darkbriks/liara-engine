@@ -201,7 +201,7 @@ namespace Liara::Graphics
 
     void Liara_Device::CreateSurface() { m_Window.CreateWindowSurface(m_Instance, &m_Surface); }
 
-    // TODO: Make the anisotropy optional
+    // TODO: Make the anisotropy and bindless textures optional
     bool Liara_Device::IsDeviceSuitable(VkPhysicalDevice device) const
     {
         const QueueFamilyIndices indices = FindQueueFamilies(device);
@@ -218,7 +218,7 @@ namespace Liara::Graphics
         VkPhysicalDeviceFeatures supportedFeatures;
         vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
-        return indices.IsComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+        return indices.IsComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy && CheckBindlessTextureSupport(device);
     }
 
     void Liara_Device::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo)
@@ -266,6 +266,22 @@ namespace Liara::Graphics
         }
 
         return true;
+    }
+
+    bool Liara_Device::CheckBindlessTextureSupport(VkPhysicalDevice device) const
+    {
+        VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures = {};
+        descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+
+        VkPhysicalDeviceFeatures2 deviceFeatures2 = {};
+        deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures2.pNext = &descriptorIndexingFeatures;
+
+        vkGetPhysicalDeviceFeatures2(device, &deviceFeatures2);
+
+        if (descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount == VK_TRUE) { return true; }
+        fmt::print("Device does not support bindless textures\n");
+        return false;
     }
 
     std::vector<const char *> Liara_Device::GetRequiredExtensions() const
