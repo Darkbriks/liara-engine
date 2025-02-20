@@ -12,8 +12,6 @@
 #include <cstdint>
 #include <vulkan/vulkan_core.h>
 
-#include "Graphics/Ubo/GlobalUbo.h"
-
 namespace Liara::Graphics::SpecConstant
 {
     /**
@@ -22,11 +20,14 @@ namespace Liara::Graphics::SpecConstant
      */
     class SpecConstant
     {
-        static constexpr size_t specDataSize = 1;               ///< The number of specialization constants.
+        static constexpr size_t specDataSize = 1;                           ///< The number of specialization constants.
 
-        static constexpr uint32_t specData[specDataSize] = {    ///< The specialization constant data.
-            MAX_LIGHTS                                          ///< The maximum number of lights.
+        static constexpr uint32_t (*specDataPtr[specDataSize])() = {        ///< The array of function pointers to get the specialization constant values.
+            []() { return static_cast<uint32_t>(Singleton<Liara_Settings>::GetInstanceSync().GetMaxLights()); }
         };
+
+        static uint32_t SpecData[specDataSize];                             ///< The array of specialization constant values.
+        static bool SpecDataInitialized;                                    ///< Whether the specialization constant values have been initialized.
 
     public:
         /**
@@ -59,13 +60,22 @@ namespace Liara::Graphics::SpecConstant
          */
         static VkSpecializationInfo GetSpecializationInfo()
         {
+            if (!SpecDataInitialized)
+            {
+                for (size_t i = 0; i < specDataSize; i++) { SpecData[i] = specDataPtr[i](); }
+                SpecDataInitialized = true;
+            }
+
             VkSpecializationInfo specializationInfo{};
             specializationInfo.mapEntryCount = static_cast<uint32_t>(specDataSize);
             specializationInfo.pMapEntries = GetMapEntries().data();
-            specializationInfo.dataSize = sizeof(specData);
-            specializationInfo.pData = specData;
+            specializationInfo.dataSize = sizeof(SpecData);
+            specializationInfo.pData = SpecData;
 
             return specializationInfo;
         }
     };
+
+    uint32_t SpecConstant::SpecData[specDataSize];
+    bool SpecConstant::SpecDataInitialized = false;
 }

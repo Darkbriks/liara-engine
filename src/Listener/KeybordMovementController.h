@@ -4,9 +4,17 @@
 
 namespace Liara::Listener
 {
+    /**
+     * @class KeybordMovementController
+     * @brief Class that encapsulates keyboard movement controls.
+     */
     class KeybordMovementController
     {
     public:
+        /**
+         * @struct KeyMappings
+         * @brief Structure that encapsulates key mappings for movement and looking.
+         */
         struct KeyMappings
         {
             int moveLeft = SDL_SCANCODE_A;
@@ -22,10 +30,18 @@ namespace Liara::Listener
         };
 
         // TODO : Ajouter une couche d'abstraction
+        /**
+         * @brief Moves the game object in the XZ plane.
+         * @param window The SDL window.
+         * @param deltaTime The time since the last frame.
+         * @param gameObject The game object to move.
+         */
         void moveInPlaneXZ(SDL_Window* window, float deltaTime, Core::Liara_GameObject& gameObject) const;
 
-        KeyMappings m_KeyMappings{};
-        float m_MoveSpeed = 3.0f;
-        float m_LookSpeed = 1.5f;
+        KeyMappings m_KeyMappings{};        ///< The key mappings for movement and looking
+        float m_MoveSpeed = 3.0f;           ///< The movement speed
+        float m_LookSpeed = 1.5f;           ///< The look speed
+
+        mutable bool m_F11Pressed = false;  ///< Whether the F11 key is pressed
     };
 }

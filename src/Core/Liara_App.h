@@ -23,11 +23,7 @@ namespace Liara::Core
     class Liara_App
     {
     public:
-        const std::string TITLE;
-        const unsigned short WIDTH;
-        const unsigned short HEIGHT;
-
-        explicit Liara_App(std::string title="Liara Engine", unsigned short width=800, unsigned short height=600);
+        explicit Liara_App();
         virtual ~Liara_App() = default;
         Liara_App(const Liara_App&) = delete;
         Liara_App& operator=(const Liara_App&) = delete;

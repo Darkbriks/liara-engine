@@ -39,5 +39,16 @@ namespace Liara::Listener
         {
             gameObject.m_Transform.position += normalize(movement) * m_MoveSpeed * deltaTime;
         }
+
+        // Si F11 est appuyé, on change le mode plein écran
+        if (state[SDL_SCANCODE_F11])
+        {
+            if (!m_F11Pressed)
+            {
+                m_F11Pressed = true;
+                Liara::Singleton<Liara::Liara_Settings>::GetInstanceSync().SetWindowFullscreen(0, !Liara::Singleton<Liara::Liara_Settings>::GetInstanceSync().IsWindowFullscreen(0));
+            }
+        }
+        else { m_F11Pressed = false; }
     }
 }

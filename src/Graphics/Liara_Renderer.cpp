@@ -48,6 +48,8 @@ namespace Liara::Graphics
 
     void Liara_Renderer::EndFrame()
     {
+        Liara_Settings& settings = Singleton<Liara_Settings>::GetInstance();
+
         assert(m_IsFrameStarted && "Can't call EndFrame while frame is not in progress");
         const auto commandBuffer = GetCurrentCommandBuffer();
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -55,15 +57,25 @@ namespace Liara::Graphics
             throw std::runtime_error("Failed to record command buffer!");
         }
 
-        if (const auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex); result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window.WasResized())
+        if (const auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex);
+            result == VK_ERROR_OUT_OF_DATE_KHR ||
+            result == VK_SUBOPTIMAL_KHR ||
+            settings.WasResized(m_Window.GetID()))
         {
-            m_Window.ResetResizedFlag();
+            m_Window.ResizeWindow();
             CreateSwapChain();
         }
         else if (result != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to present swap chain image!");
         }
+
+        if (settings.WasFullscreenChanged(m_Window.GetID()))
+        {
+            m_Window.UpdateFullscreenMode();
+        }
+
+        settings.ResetWindowFlags(m_Window.GetID());
 
         m_IsFrameStarted = false;
         m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Liara_SwapChain::MAX_FRAMES_IN_FLIGHT;

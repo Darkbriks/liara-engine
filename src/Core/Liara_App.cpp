@@ -17,9 +17,7 @@
 
 namespace Liara::Core
 {
-    Liara_App::Liara_App(std::string title, const unsigned short width, const unsigned short height)
-        : TITLE(std::move(title)), WIDTH(width), HEIGHT(height),
-          m_Window(TITLE, WIDTH, HEIGHT), m_Device(m_Window), m_Renderer(m_Window, m_Device)
+    Liara_App::Liara_App() : m_Window(), m_Device(m_Window), m_Renderer(m_Window, m_Device)
     {
         // Todo: Check if this is the right place to put this
         m_DescriptorAllocator = Graphics::Descriptors::Liara_DescriptorAllocator::Builder(m_Device)

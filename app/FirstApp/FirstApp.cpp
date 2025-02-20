@@ -9,7 +9,7 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-FirstApp::FirstApp() : Liara_App("First App", 1920, 1080)
+FirstApp::FirstApp()
 {
     LoadGameObjects();
 

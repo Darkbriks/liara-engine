@@ -72,10 +72,10 @@ namespace Liara::Graphics
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "Liara Engine";
-        appInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
-        appInfo.pEngineName = "No Engine";
-        appInfo.engineVersion = VK_MAKE_VERSION(0, 1, 0);
+        appInfo.pApplicationName = Singleton<Liara_Settings>::GetInstance().GetAppName().c_str();
+        appInfo.applicationVersion = Singleton<Liara_Settings>::GetInstance().GetVkAppVersion();
+        appInfo.pEngineName = Singleton<Liara_Settings>::GetInstance().GetEngineName().c_str();
+        appInfo.engineVersion = Singleton<Liara_Settings>::GetInstance().GetVkEngineVersion();
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
         VkInstanceCreateInfo createInfo = {};

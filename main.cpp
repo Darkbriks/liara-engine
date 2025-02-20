@@ -3,12 +3,19 @@
 #include <iostream>
 #include <cstdlib>
 
+#include "Core/Liara_Settings.h"
+
 int Run()
 {
     try
     {
+        Liara::Liara_Settings& settings = Liara::Singleton<Liara::Liara_Settings>::GetInstance();
+        settings.LoadFromFile("settings.cfg");
+
         FirstApp app;
         app.Run();
+
+        settings.SaveToFile("settings.cfg", true, true);
     }
     catch (const std::exception& e)
     {
