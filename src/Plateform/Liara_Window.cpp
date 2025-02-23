@@ -67,7 +67,7 @@ namespace Liara::Plateform
         uint32_t window_flags = SDL_WINDOW_VULKAN;
         if (settings.IsWindowResizable(m_ID)) { window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE; }
 
-        if (!((m_Window = SDL_CreateWindow(settings.GetAppName().c_str(), settings.GetWindowXPos(m_ID), settings.GetWindowYPos(m_ID), settings.GetWindowWidth(m_ID), settings.GetWindowHeight(m_ID), window_flags))))
+        if (!((m_Window = SDL_CreateWindow(Liara_Settings::APP_NAME, settings.GetWindowXPos(m_ID), settings.GetWindowYPos(m_ID), settings.GetWindowWidth(m_ID), settings.GetWindowHeight(m_ID), window_flags))))
         {
             throw std::runtime_error("Failed to create window! SDL_Error: " + std::string(SDL_GetError()));
         }

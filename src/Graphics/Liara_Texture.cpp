@@ -5,7 +5,8 @@
 #include <stdexcept>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "../external/stb/stb_image.h"
+#include <stb_image.h>
+#include <fmt/core.h>
 
 #ifndef ENGINE_DIR
 #define ENGINE_DIR "../"
@@ -18,17 +19,31 @@ namespace Liara::Graphics
         stbi_image_free(pixels);
     }
 
-    void Liara_Texture::Builder::LoadTexture(const std::string& filename, const int desiredChannels)
+    void Liara_Texture::Builder::LoadTexture(const std::string& filename)
     {
-        pixels = stbi_load((std::string(ENGINE_DIR) + filename).c_str(), &width, &height, &channels, desiredChannels);
-        assert(pixels && "Failed to load texture image!");
+        pixels = stbi_load((std::string(ENGINE_DIR) + filename).c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
-        this->desiredChannels = desiredChannels;
+        if (!pixels)
+        {
+            errorFlag = true;
+            fmt::print(stderr, "Failed to load texture image: {}\n", filename);
+        }
+
+        if (std::max(width, height) > Singleton<Liara_Settings>::GetInstance().GetMaxTextureSize())
+        {
+            errorFlag = true;
+            fmt::print(stderr, "Texture {} is too large: {}x{} > {}\n", filename, width, height, Singleton<Liara_Settings>::GetInstance().GetMaxTextureSize());
+        }
     }
 
     Liara_Texture::Liara_Texture(Liara_Device& device, const Builder& builder) : m_Device(device)
     {
-        CreateTextureImage(builder.pixels, builder.width, builder.height, builder.desiredChannels);
+        if (builder.errorFlag)
+        {
+            fmt::print(stderr, "Failed to create texture\n");
+            return;
+        }
+        CreateTextureImage(builder.pixels, builder.width, builder.height);
         CreateTextureImageView();
         CreateTextureSampler();
     }
@@ -51,13 +66,14 @@ namespace Liara::Graphics
     }
 
 
-    void Liara_Texture::CreateTextureImage(const stbi_uc* pixels, const uint32_t width, const uint32_t height, const uint8_t channels)
+    void Liara_Texture::CreateTextureImage(const stbi_uc* pixels, const uint32_t width, const uint32_t height)
     {
         assert(pixels && "No pixels data to create texture image");
         assert(width > 0 && height > 0 && "Invalid texture size");
-        assert(channels > 0 && "Invalid number of channels");
 
-        const VkDeviceSize imageSize = width * height * channels;
+        const VkDeviceSize imageSize = width * height * STBI_rgb_alpha;
+
+        m_MipLevels = Singleton<Liara_Settings>::GetInstance().UseMipmaps() ? static_cast<uint16_t>(std::floor(std::log2(std::max(width, height)))) + 1 : 1;
 
         Liara_Buffer stagingBuffer(
             m_Device,
@@ -74,7 +90,7 @@ namespace Liara::Graphics
 
         TransitionImageLayout(m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         CopyBufferToImage(stagingBuffer.GetBuffer(), m_Image, width, height);
-        TransitionImageLayout(m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        GenerateMipmaps(static_cast<int32_t>(width), static_cast<int32_t>(height));
     }
 
     void Liara_Texture::CreateImage(const uint32_t width, const uint32_t height, const VkMemoryPropertyFlags properties)
@@ -85,12 +101,12 @@ namespace Liara::Graphics
         imageInfo.extent.width = width;
         imageInfo.extent.height = height;
         imageInfo.extent.depth = 1;
-        imageInfo.mipLevels = 1;
+        imageInfo.mipLevels = m_MipLevels;
         imageInfo.arrayLayers = 1;
         imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -105,7 +121,7 @@ namespace Liara::Graphics
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = m_Device.FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        allocInfo.memoryTypeIndex = m_Device.FindMemoryType(memRequirements.memoryTypeBits, properties);
 
         if (vkAllocateMemory(m_Device.GetDevice(), &allocInfo, nullptr, &m_ImageMemory) != VK_SUCCESS)
         {
@@ -116,7 +132,6 @@ namespace Liara::Graphics
         {
             throw std::runtime_error("Failed to bind image memory.");
         }
-
     }
 
     void Liara_Texture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const
@@ -132,7 +147,7 @@ namespace Liara::Graphics
         barrier.image = image;
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.levelCount = m_MipLevels;
         barrier.subresourceRange.baseArrayLayer = 0;
         barrier.subresourceRange.layerCount = 1;
 
@@ -199,10 +214,10 @@ namespace Liara::Graphics
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = m_Image;
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB; // TODO : Adapt to the texture format
+        viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.levelCount = m_MipLevels;
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount = 1;
 
@@ -222,11 +237,8 @@ namespace Liara::Graphics
         samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-        // TODO : Pass the anisotropy value as a parameter of the builder or the engine
-        VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(m_Device.GetPhysicalDevice(), &properties);
-        samplerInfo.anisotropyEnable = VK_TRUE;
-        samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+        samplerInfo.anisotropyEnable = Singleton<Liara_Settings>::GetInstance().UseAnisotropicFiltering() ? VK_TRUE : VK_FALSE;
+        samplerInfo.maxAnisotropy = Singleton<Liara_Settings>::GetInstance().GetMaxAnisotropy();
 
         samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // Useful when using clamp to border addressing mode
         samplerInfo.unnormalizedCoordinates = VK_FALSE;
@@ -235,11 +247,114 @@ namespace Liara::Graphics
         samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
         samplerInfo.mipLodBias = 0.0f;
         samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = 0.0f;
+        samplerInfo.maxLod = static_cast<float>(m_MipLevels);
 
         if (vkCreateSampler(m_Device.GetDevice(), &samplerInfo, nullptr, &m_Sampler) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create texture sampler!");
         }
+    }
+
+    // https://vulkan-tutorial.com/Generating_Mipmaps
+    // Generate mipmaps at runtime is not recommended.
+    // It is better to generate them offline and load them directly.
+    // So, it can be useful to create a tool to generate mipmaps offline in the future.
+    void Liara_Texture::GenerateMipmaps(const int32_t texWidth, const int32_t texHeight) const
+    {
+        VkFormatProperties formatProperties;
+        vkGetPhysicalDeviceFormatProperties(m_Device.GetPhysicalDevice(), VK_FORMAT_R8G8B8A8_SRGB, &formatProperties);
+
+        if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+        {
+            throw std::runtime_error("Texture image format does not support linear blitting!");
+        }
+
+        VkCommandBuffer command_buffer = m_Device.BeginSingleTimeCommands();
+
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.image = m_Image;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        barrier.subresourceRange.levelCount = 1;
+
+        int32_t mipWidth = texWidth, mipHeight = texHeight;
+
+        for (uint16_t i = 1; i < m_MipLevels; i++)
+        {
+            barrier.subresourceRange.baseMipLevel = i - 1;
+            barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+            vkCmdPipelineBarrier(
+                command_buffer,
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &barrier
+            );
+
+            VkImageBlit blit{};
+            blit.srcOffsets[0] = {0, 0, 0};
+            blit.srcOffsets[1] = {mipWidth, mipHeight, 1};
+            blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blit.srcSubresource.mipLevel = i - 1;
+            blit.srcSubresource.baseArrayLayer = 0;
+            blit.srcSubresource.layerCount = 1;
+            blit.dstOffsets[0] = {0, 0, 0};
+            blit.dstOffsets[1] = {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1};
+            blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blit.dstSubresource.mipLevel = i;
+            blit.dstSubresource.baseArrayLayer = 0;
+            blit.dstSubresource.layerCount = 1;
+
+            vkCmdBlitImage(
+                command_buffer,
+                m_Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                1, &blit,
+                VK_FILTER_LINEAR
+            );
+
+            barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            vkCmdPipelineBarrier(
+                command_buffer,
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &barrier
+            );
+
+            if (mipWidth > 1) { mipWidth /= 2; }
+            if (mipHeight > 1) { mipHeight /= 2; }
+        }
+
+        barrier.subresourceRange.baseMipLevel = m_MipLevels - 1;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(
+            command_buffer,
+            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier
+        );
+
+        m_Device.EndSingleTimeCommands(command_buffer);
     }
 }

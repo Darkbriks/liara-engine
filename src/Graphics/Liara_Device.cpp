@@ -72,10 +72,10 @@ namespace Liara::Graphics
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = Singleton<Liara_Settings>::GetInstance().GetAppName().c_str();
-        appInfo.applicationVersion = Singleton<Liara_Settings>::GetInstance().GetVkAppVersion();
-        appInfo.pEngineName = Singleton<Liara_Settings>::GetInstance().GetEngineName().c_str();
-        appInfo.engineVersion = Singleton<Liara_Settings>::GetInstance().GetVkEngineVersion();
+        appInfo.pApplicationName = Liara_Settings::APP_NAME;
+        appInfo.applicationVersion = Liara_Settings::GetVkAppVersion();
+        appInfo.pEngineName = Liara_Settings::ENGINE_NAME;
+        appInfo.engineVersion = Liara_Settings::GetVkEngineVersion();
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
         VkInstanceCreateInfo createInfo = {};
@@ -153,9 +153,12 @@ namespace Liara::Graphics
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
-        // TODO: Make the anisotropy optional
         VkPhysicalDeviceFeatures deviceFeatures = {};
-        deviceFeatures.samplerAnisotropy = VK_TRUE;
+        deviceFeatures.samplerAnisotropy = Singleton<Liara_Settings>::GetInstance().UseAnisotropicFiltering() ? VK_TRUE : VK_FALSE;
+
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
+        Singleton<Liara_Settings>::GetInstance().SetMaxAnisotropy(std::min(static_cast<uint8_t>(properties.limits.maxSamplerAnisotropy), Singleton<Liara_Settings>::GetInstance().GetMaxAnisotropy()));
 
         VkDeviceCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -201,7 +204,6 @@ namespace Liara::Graphics
 
     void Liara_Device::CreateSurface() { m_Window.CreateWindowSurface(m_Instance, &m_Surface); }
 
-    // TODO: Make the anisotropy and bindless textures optional
     bool Liara_Device::IsDeviceSuitable(VkPhysicalDevice device) const
     {
         const QueueFamilyIndices indices = FindQueueFamilies(device);
@@ -218,7 +220,19 @@ namespace Liara::Graphics
         VkPhysicalDeviceFeatures supportedFeatures;
         vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
-        return indices.IsComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy && CheckBindlessTextureSupport(device);
+        if (Singleton<Liara_Settings>::GetInstance().UseAnisotropicFiltering() && !supportedFeatures.samplerAnisotropy)
+        {
+            fmt::print("Device does not support anisotropic filtering\n");
+            return false;
+        }
+
+        if (Singleton<Liara_Settings>::GetInstance().UseBindlessTextures() && !CheckBindlessTextureSupport(device))
+        {
+            fmt::print("Device does not support bindless textures\n");
+            return false;
+        }
+
+        return indices.IsComplete() && extensionsSupported && swapChainAdequate;
     }
 
     void Liara_Device::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo)

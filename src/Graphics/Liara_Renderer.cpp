@@ -60,10 +60,12 @@ namespace Liara::Graphics
         if (const auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex);
             result == VK_ERROR_OUT_OF_DATE_KHR ||
             result == VK_SUBOPTIMAL_KHR ||
+            settings.NeedsSwapchainRecreation() ||
             settings.WasResized(m_Window.GetID()))
         {
             m_Window.ResizeWindow();
             CreateSwapChain();
+            settings.SwapchainRecreated();
         }
         else if (result != VK_SUCCESS)
         {

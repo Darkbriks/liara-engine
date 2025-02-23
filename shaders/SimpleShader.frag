@@ -48,13 +48,6 @@ void main()
     float diffuseFactor = max(dot(surfaceNormal, lightDir), 0.0);
     vec3 diffuseLight = ubo.directionalLightColor.xyz * diffuseFactor * ubo.directionalLightDirection.w;
 
-    // Specular
-    /*vec3 halfAngle = normalize(lightDir + viewDirection);
-    float blinnTerm = dot(surfaceNormal, halfAngle);
-    blinnTerm = clamp(blinnTerm, 0.0, 1.0);
-    blinnTerm = pow(blinnTerm, fragSpecularExponent); // Higer values -> sharper highlights ; TODO : Use a material property instead of hardcoded value
-    specularLight += ubo.directionalLightColor.xyz * blinnTerm;*/
-
     for (int i = 0; i < ubo.numLights; i++)
     {
         PointLight light = ubo.pointLights[i];
@@ -75,7 +68,6 @@ void main()
         specularLight += intensity * blinnTerm;
     }
 
-    //outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
     vec4 texColor = texture(texSampler, fragTexCoords);
     outColor = vec4(diffuseLight * texColor.xyz + specularLight * texColor.xyz, 1.0);
 }

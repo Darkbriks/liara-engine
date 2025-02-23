@@ -8,7 +8,6 @@
 #include "Utils/Singleton.h"
 
 #include <cstdint>
-#include <string>
 #include <unordered_map>
 #include <functional>
 
@@ -57,30 +56,27 @@ namespace Liara
         /**
          * @brief Destructor.
          */
-        virtual ~Liara_Settings() = default;
+        ~Liara_Settings() override = default;
         Liara_Settings(const Liara_Settings&) = delete;
         Liara_Settings& operator=(const Liara_Settings&) = delete;
 
-        /**
-         * @brief Returns a flag indicating whether the pipeline has been loaded.
-         *
-         * If the pipeline has been loaded, the settings should not be modified.
-         *
-         * @return true if the pipeline has been loaded.
-         */
-        [[nodiscard]] bool IsPipelineLoaded() const { return m_PipelineLoaded; }
 
-        [[nodiscard]] std::string GetEngineName() const { return m_EngineName; }             ///< The name of the engine
-        [[nodiscard]] uint8_t GetEngineVersionMajor() const { return m_MajorVersion; }          ///< The major version of the engine
-        [[nodiscard]] uint8_t GetEngineVersionMinor() const { return m_MinorVersion; }          ///< The minor version of the engine
-        [[nodiscard]] uint8_t GetEngineVersionPatch() const { return m_PatchVersion; }          ///< The patch version of the engine
-        [[nodiscard]] uint32_t GetVkEngineVersion() const { return VK_MAKE_VERSION(m_MajorVersion, m_MinorVersion, m_PatchVersion); } ///< The Vulkan version of the engine
+        // Engine settings
+        static constexpr auto ENGINE_NAME = "Liara Engine";             ///< The name of the engine
+        static constexpr uint8_t MAJOR_ENGINE_VERSION = 0;              ///< The major version of the application
+        static constexpr uint8_t MINOR_ENGINE_VERSION = 16;             ///< The minor version of the application
+        static constexpr uint8_t PATCH_ENGINE_VERSION = 1;              ///< The patch version of the application
+        [[nodiscard]] static uint32_t GetVkEngineVersion() { return VK_MAKE_VERSION(MAJOR_ENGINE_VERSION, MINOR_ENGINE_VERSION, PATCH_ENGINE_VERSION); } ///< The Vulkan version of the engine
 
-        [[nodiscard]] std::string GetAppName() const { return m_ApplicationName; }           ///< The name of the application
-        [[nodiscard]] uint8_t GetAppVersionMajor() const { return m_ApplicationMajorVersion; }  ///< The major version of the application
-        [[nodiscard]] uint8_t GetAppVersionMinor() const { return m_ApplicationMinorVersion; }  ///< The minor version of the application
-        [[nodiscard]] uint8_t GetAppVersionPatch() const { return m_ApplicationPatchVersion; }  ///< The patch version of the application
-        [[nodiscard]] uint32_t GetVkAppVersion() const { return VK_MAKE_VERSION(m_ApplicationMajorVersion, m_ApplicationMinorVersion, m_ApplicationPatchVersion); } ///< The Vulkan version of the application
+        // Application settings
+        static constexpr auto APP_NAME = "Liara Application";           ///< The name of the application
+        static constexpr uint8_t MAJOR_APP_VERSION = 0;                 ///< The major version of the application
+        static constexpr uint8_t MINOR_APP_VERSION = 1;                 ///< The minor version of the application
+        static constexpr uint8_t PATCH_APP_VERSION = 0;                 ///< The patch version of the application
+        [[nodiscard]] static uint32_t GetVkAppVersion() { return VK_MAKE_VERSION(MAJOR_APP_VERSION, MINOR_APP_VERSION, PATCH_APP_VERSION); } ///< The Vulkan version of the application
+
+
+        [[nodiscard]] bool NeedsSwapchainRecreation() const { return m_PresentModeChanged; }    ///< Whether any of flags that require swapchain recreation are set
 
         [[nodiscard]] const WindowSettings& GetWindowSettings(const uint8_t windowID) const { return m_WindowSettings.at(windowID); }   ///< Returns the settings for a window. Assumes the window exists.
         [[nodiscard]] const std::unordered_map<uint8_t, WindowSettings>& GetWindowSettings() const { return m_WindowSettings; }         ///< Returns the settings for all windows
@@ -92,6 +88,7 @@ namespace Liara
         [[nodiscard]] bool IsWindowFullscreen(const uint8_t windowID) const { return m_WindowSettings.at(windowID).fullscreen; }        ///< Returns whether a window is fullscreen. Assumes the window exists.
         [[nodiscard]] bool IsWindowResizable(const uint8_t windowID) const { return m_WindowSettings.at(windowID).resizable; }          ///< Returns whether a window is resizable. Assumes the window exists.
         [[nodiscard]] bool IsVSync() const { return m_VSync; }                                                                          ///< Whether VSync is enabled
+        [[nodiscard]] VkPresentModeKHR GetPreferredPresentMode() const { return m_PreferedPresentMode; }                                ///< The preferred present mode
 
         [[nodiscard]] uint16_t GetMaxLights() const { return m_MaxLights; }                     ///< The maximum number of lights in the scene
 
@@ -108,13 +105,6 @@ namespace Liara
         [[nodiscard]] bool WasFullscreenChanged(const uint8_t windowID) const { return m_WindowSettings.at(windowID).fullscreen_change; }   ///< Whether the window has changed to/from fullscreen
 
         /**
-         * @brief Sets the pipeline as loaded.
-         *
-         * When the pipeline is loaded, the settings should not be modified.
-         */
-        void PipelineLoaded() { m_PipelineLoaded = true; }
-
-        /**
          * @brief Creates a window settings structure for a given window ID if it does not exist.
          * @param windowID The ID of the window.
          */
@@ -125,18 +115,18 @@ namespace Liara
         void SetWindowYPos(const int windowID, const int y_pos) { m_WindowSettings[windowID].y_pos = std::max(y_pos, 30); }                         ///< Sets the y position of a window. Y position must be at least 30, to avoid the window title bar being hidden
         void SetWindowFullscreen(uint8_t windowID, bool fullscreen);                                                                                    ///< Sets whether a window is fullscreen
         void SetWindowResizable(const uint8_t windowID, const bool resizable) { m_WindowSettings[windowID].resizable = resizable; }                     ///< Sets whether a window is resizable
-        void SetVSync(const bool vsync) { if (!m_PipelineLoaded) { m_VSync = vsync; } }                                                                 ///< Whether VSync is enabled
+        void SetVSync(const bool vsync) { if (m_VSync != vsync) { m_VSync = vsync; m_PresentModeChanged = true; } }                                    ///< Sets whether VSync is enabled
+        void SetPreferredPresentMode(const VkPresentModeKHR presentMode) { if (m_PreferedPresentMode != presentMode) { m_PreferedPresentMode = presentMode; m_PresentModeChanged = true; } } ///< Sets the preferred present mode
 
-        void SetMaxLights(const uint16_t maxLights) { if (!m_PipelineLoaded) { m_MaxLights = maxLights; } }                                             ///< The maximum number of lights in the scene
-
-        void SetMaxTextureSize(const uint16_t maxTextureSize) { if (!m_PipelineLoaded) { m_MaxTextureSize = maxTextureSize; } }                         ///< The maximum size of a texture
-        void SetUseMipmaps(const bool useMipmaps) { if (!m_PipelineLoaded) { m_UseMipmaps = useMipmaps; } }                                             ///< Whether to use mipmaps for textures
-        void SetAnisotropicFiltering(const bool anisotropicFiltering) { if (!m_PipelineLoaded) { m_AnisotropicFiltering = anisotropicFiltering; } }     ///< Whether to use anisotropic filtering for textures
-        void SetMaxAnisotropy(const uint8_t maxAnisotropy) { if (!m_PipelineLoaded) { m_MaxAnisotropy = maxAnisotropy; } }                              ///< The maximum anisotropy level
-        void SetUseBindlessTextures(const bool useBindlessTextures) { if (!m_PipelineLoaded) { m_UseBindlessTextures = useBindlessTextures; } }         ///< Whether to use bindless textures
-        void SetMaxTextureSamplers(const uint16_t maxTextureSamplers) { if (!m_PipelineLoaded) { m_MaxTextureSamplers = maxTextureSamplers; } }         ///< The maximum number of texture samplers
+        void SetMaxTextureSize(const uint16_t maxTextureSize) { m_MaxTextureSize = maxTextureSize; }                         ///< The maximum size of a texture
+        void SetUseMipmaps(const bool useMipmaps) { m_UseMipmaps = useMipmaps; }                                             ///< Whether to use mipmaps for textures
+        void SetAnisotropicFiltering(const bool anisotropicFiltering) { m_AnisotropicFiltering = anisotropicFiltering; }     ///< Whether to use anisotropic filtering for textures
+        void SetMaxAnisotropy(const uint8_t maxAnisotropy) { m_MaxAnisotropy = maxAnisotropy; }                              ///< The maximum anisotropy level
+        void SetUseBindlessTextures(const bool useBindlessTextures) { m_UseBindlessTextures = useBindlessTextures; }         ///< Whether to use bindless textures
+        void SetMaxTextureSamplers(const uint16_t maxTextureSamplers) { m_MaxTextureSamplers = maxTextureSamplers; }         ///< The maximum number of texture samplers
 
         void ResetWindowFlags(const uint8_t windowID) { m_WindowSettings[windowID].ResetFlags(); }                                                      ///< Resets the flags for a window
+        void SwapchainRecreated() { m_PresentModeChanged = false; }                          ///< Sets the swapchain as recreated by resetting the flags
 
         /**
          * @brief Loads the settings from a file.
@@ -159,34 +149,32 @@ namespace Liara
 
         Liara_Settings() = default;                ///< Default constructor
 
-        bool m_PipelineLoaded = false;             ///< Whether the pipeline has been loaded // TODO
-
-        // Engine settings
-        std::string m_EngineName = "Liara Engine";  ///< The name of the engine
-        const uint8_t m_MajorVersion = 0;           ///< The major version of the application
-        const uint8_t m_MinorVersion = 16;          ///< The minor version of the application
-        const uint8_t m_PatchVersion = 0;           ///< The patch version of the application
-
-        // Application settings
-        std::string m_ApplicationName = "Liara Application";  ///< The name of the application
-        const uint8_t m_ApplicationMajorVersion = 0;          ///< The major version of the application
-        const uint8_t m_ApplicationMinorVersion = 1;          ///< The minor version of the application
-        const uint8_t m_ApplicationPatchVersion = 0;          ///< The patch version of the application
+        // Flags
+        bool m_PresentModeChanged = false;         ///< Whether the present mode has changed, requiring a swapchain recreation
 
         // Window settings
-        std::unordered_map<uint8_t, WindowSettings> m_WindowSettings = {};  ///< The settings for each window
-        bool m_VSync = true;                       ///< Whether VSync is enabled // TODO
+        std::unordered_map<uint8_t, WindowSettings> m_WindowSettings = {};      ///< The settings for each window
+        bool m_VSync = true;                                                    ///< Whether VSync is enabled. If VSync is enabled, the PreferredPresentMode is ignored
+        /**
+         * The preferred present mode.
+         * Most common values:
+         *      - VK_PRESENT_MODE_IMMEDIATE_KHR: The image is transferred to the screen immediately, which may result in tearing, but lower latency.
+         *      - VK_PRESENT_MODE_FIFO_KHR: Uses a FIFO queue to present images. The display is synchronized with the vertical blanking period. No tearing, but higher latency.
+         *      - VK_PRESENT_MODE_MAILBOX_KHR: Uses a mailbox queue to present images. The display is synchronized with the vertical blanking period. No tearing, lower latency than FIFO, but can need more resources.
+         */
+        VkPresentModeKHR m_PreferedPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
 
         // Graphics settings
         uint16_t m_MaxLights = 10;                 ///< The maximum number of lights in the scene
+        // TODO : Anti-aliasing
 
-        // Textures settings // TODO
+        // Textures settings
         uint16_t m_MaxTextureSize = 2048;          ///< The maximum size of a texture
         bool m_UseMipmaps = true;                  ///< Whether to use mipmaps for textures
         bool m_AnisotropicFiltering = true;        ///< Whether to use anisotropic filtering for textures
         uint16_t m_MaxAnisotropy = 16;             ///< The maximum anisotropy level
         bool m_UseBindlessTextures = true;         ///< Whether to use bindless textures
-        uint16_t m_MaxTextureSamplers = 16;        ///< The maximum number of texture samplers
+        uint16_t m_MaxTextureSamplers = 16;        ///< The maximum number of texture samplers // TODO : Implement
 
         /**
          * @brief Loads the settings for a window from a file.
@@ -203,8 +191,9 @@ namespace Liara
         static void SetUint16(uint16_t& key, const std::string& value);    ///< Sets an unsigned 16-bit integer value
         static void SetUint32(uint32_t& key, const std::string& value);    ///< Sets an unsigned 32-bit integer value
 
-        std::unordered_map<std::string, std::function<void(std::string)>> m_Setters{    ///< Map of setters for the settings
+        std::unordered_map<const char*, std::function<void(std::string)>> m_Setters{    ///< Map of setters for the settings
             {"vsync", [this](const std::string& value) { SetBool(m_VSync, value); }},
+            {"preferred_present_mode", [this](const std::string& value) { SetUint32(reinterpret_cast<uint32_t&>(m_PreferedPresentMode), value); }},
             {"max_lights", [this](const std::string& value) { SetUint16(m_MaxLights, value); }},
             {"max_texture_size", [this](const std::string& value) { SetUint16(m_MaxTextureSize, value); }},
             {"use_mipmaps", [this](const std::string& value) { SetBool(m_UseMipmaps, value); }},

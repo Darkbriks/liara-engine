@@ -42,6 +42,7 @@ namespace Liara::Listener
         float m_MoveSpeed = 3.0f;           ///< The movement speed
         float m_LookSpeed = 1.5f;           ///< The look speed
 
-        mutable bool m_F11Pressed = false;  ///< Whether the F11 key is pressed
+        mutable bool m_F10Pressed = false;
+        mutable bool m_F11Pressed = false;
     };
 }

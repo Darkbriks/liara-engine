@@ -74,7 +74,7 @@ namespace Liara
                 if (equalSign == std::string::npos) { continue; }
 
                 // Extract the key and value
-                const std::string key = line.substr(0, equalSign);
+                const char* key = line.substr(0, equalSign).c_str();
                 const std::string value = line.substr(equalSign + 1);
 
                 // Parse the value
@@ -166,6 +166,7 @@ namespace Liara
             }
 
             newFile << "vsync=" << (m_VSync ? "true" : "false") << "\n";
+            newFile << "preferred_present_mode=" << static_cast<uint32_t>(m_PreferedPresentMode) << "\n";
             newFile << "max_lights=" << m_MaxLights << "\n";
             newFile << "max_texture_size=" << m_MaxTextureSize << "\n";
             newFile << "use_mipmaps=" << (m_UseMipmaps ? "true" : "false") << "\n";

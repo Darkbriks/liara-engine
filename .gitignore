@@ -1,4 +1,3 @@
-/external/
 /cmake-build-debug/
 /cmake-build-release/
 /shaders/*.spv

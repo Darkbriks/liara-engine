@@ -27,7 +27,7 @@ int Run()
 }
 
 #if WIN32
-    #include "external/SDL2-2.30.8/src/haptic/windows/SDL_dinputhaptic_c.h"
+    #include <Windows.h>
     int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, INT) { return Run(); }
 #else
     int main() { return Run(); }
