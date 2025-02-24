@@ -17,7 +17,7 @@
 
 namespace Liara::Core
 {
-    Liara_App::Liara_App() : m_Window(), m_Device(m_Window), m_Renderer(m_Window, m_Device)
+    Liara_App::Liara_App() : m_Window(), m_Device(m_Window), m_RendererManager(m_Window, m_Device)
     {
         // Todo: Check if this is the right place to put this
         m_DescriptorAllocator = Graphics::Descriptors::Liara_DescriptorAllocator::Builder(m_Device)
@@ -55,21 +55,21 @@ namespace Liara::Core
                 continue;
             }
 
-            const float aspect = m_Renderer.GetAspectRatio();
+            const float aspect = m_RendererManager.GetRenderer().GetAspectRatio();
             SetProjection(aspect);
 
-            if (const auto commandBuffer = m_Renderer.BeginFrame())
+            if (const auto commandBuffer = m_RendererManager.BeginFrame())
             {
                 Systems::ImGuiSystem::NewFrame();
 
-                const int frameIndex = static_cast<int>(m_Renderer.GetFrameIndex());
+                const int frameIndex = static_cast<int>(m_RendererManager.GetRenderer().GetFrameIndex());
                 FrameInfo frameInfo{
                     frameIndex, frameTime, commandBuffer, m_Camera, m_GlobalDescriptorSets[frameIndex], m_GameObjects
                 };
 
                 MasterUpdate(frameInfo);
                 MasterRender(frameInfo);
-                m_Renderer.EndFrame();
+                m_RendererManager.EndFrame();
             }
         }
 
@@ -118,9 +118,9 @@ namespace Liara::Core
 
     void Liara_App::InitSystems()
     {
-        m_Systems.push_back(std::make_unique<Systems::SimpleRenderSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
-        m_Systems.push_back(std::make_unique<Systems::PointLightSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
-        m_Systems.push_back(std::make_unique<Systems::ImGuiSystem>(m_Window, m_Device, m_Renderer.GetSwapChainRenderPass(), m_Renderer.GetImageCount()));
+        m_Systems.push_back(std::make_unique<Systems::SimpleRenderSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout));
+        m_Systems.push_back(std::make_unique<Systems::PointLightSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout));
+        m_Systems.push_back(std::make_unique<Systems::ImGuiSystem>(m_Window, m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_RendererManager.GetRenderer().GetImageCount()));
     }
 
     void Liara_App::InitCamera()
@@ -167,11 +167,11 @@ namespace Liara::Core
 
     void Liara_App::MasterRender(const FrameInfo& frameInfo)
     {
-        m_Renderer.BeginSwapChainRenderPass(frameInfo.m_CommandBuffer);
+        m_RendererManager.BeginRenderPass(frameInfo.m_CommandBuffer);
 
         Render(frameInfo);
         for (const auto& system: m_Systems) { system->Render(frameInfo); }
 
-        m_Renderer.EndSwapChainRenderPass(frameInfo.m_CommandBuffer);
+        m_RendererManager.EndRenderPass(frameInfo.m_CommandBuffer);
     }
 }

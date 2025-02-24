@@ -1,3 +1,4 @@
+/external/stb/
 /cmake-build-debug/
 /cmake-build-release/
 /shaders/*.spv

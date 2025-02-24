@@ -3,7 +3,7 @@
 #include "Liara_Camera.h"
 #include "Liara_GameObject.h"
 #include "Graphics/Liara_Device.h"
-#include "Graphics/Liara_Renderer.h"
+#include "Graphics/Renderers/Liara_RendererManager.h"
 #include "Graphics/Liara_Texture.h"
 #include "Graphics/Descriptors/Liara_Descriptor.h"
 #include "Plateform/Liara_Window.h"
@@ -57,7 +57,7 @@ namespace Liara::Core
     protected:
         Plateform::Liara_Window m_Window;
         Graphics::Liara_Device m_Device;
-        Graphics::Liara_Renderer m_Renderer;
+        Graphics::Renderers::Liara_RendererManager m_RendererManager;
 
         std::vector<std::unique_ptr<Graphics::Liara_Buffer>> m_UboBuffers;
 

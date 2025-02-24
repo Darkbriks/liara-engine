@@ -43,9 +43,28 @@ namespace Liara::Graphics
             fmt::print(stderr, "Failed to create texture\n");
             return;
         }
-        CreateTextureImage(builder.pixels, builder.width, builder.height);
+
+        m_Width = builder.width;
+        m_Height = builder.height;
+        m_Format = builder.format;
+
+        m_MipLevels = Singleton<Liara_Settings>::GetInstance().UseMipmaps() ? static_cast<uint16_t>(std::floor(std::log2(std::max(m_Width, m_Height)))) + 1 : 1;
+
+        CreateTextureImage(builder.pixels);
         CreateTextureImageView();
         CreateTextureSampler();
+    }
+
+    Liara_Texture::Liara_Texture(Liara_Device& device, const int width, const int height, const VkFormat format, VkImageUsageFlags usage) : m_Device(device)
+    {
+        m_Width = width;
+        m_Height = height;
+        m_Format = format;
+
+        m_MipLevels = 1;
+
+        CreateImage(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, usage);
+        CreateTextureImageView();
     }
 
     Liara_Texture::~Liara_Texture()
@@ -65,15 +84,12 @@ namespace Liara::Graphics
         };
     }
 
-
-    void Liara_Texture::CreateTextureImage(const stbi_uc* pixels, const uint32_t width, const uint32_t height)
+    void Liara_Texture::CreateTextureImage(const stbi_uc* pixels)
     {
         assert(pixels && "No pixels data to create texture image");
-        assert(width > 0 && height > 0 && "Invalid texture size");
+        assert(m_Width > 0 && m_Height > 0 && "Invalid texture size");
 
-        const VkDeviceSize imageSize = width * height * STBI_rgb_alpha;
-
-        m_MipLevels = Singleton<Liara_Settings>::GetInstance().UseMipmaps() ? static_cast<uint16_t>(std::floor(std::log2(std::max(width, height)))) + 1 : 1;
+        const VkDeviceSize imageSize = m_Width * m_Height * STBI_rgb_alpha;
 
         Liara_Buffer stagingBuffer(
             m_Device,
@@ -86,55 +102,34 @@ namespace Liara::Graphics
         stagingBuffer.Map();
         stagingBuffer.WriteToBuffer(pixels);
 
-        CreateImage(width, height, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        CreateImage(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-        TransitionImageLayout(m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        CopyBufferToImage(stagingBuffer.GetBuffer(), m_Image, width, height);
-        GenerateMipmaps(static_cast<int32_t>(width), static_cast<int32_t>(height));
+        TransitionImageLayout(m_Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        CopyBufferToImage(stagingBuffer.GetBuffer(), m_Image);
+        GenerateMipmaps();
     }
 
-    void Liara_Texture::CreateImage(const uint32_t width, const uint32_t height, const VkMemoryPropertyFlags properties)
+    void Liara_Texture::CreateImage(const VkMemoryPropertyFlags properties, VkImageUsageFlags usage)
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.extent.width = width;
-        imageInfo.extent.height = height;
+        imageInfo.extent.width = m_Width;
+        imageInfo.extent.height = m_Height;
         imageInfo.extent.depth = 1;
         imageInfo.mipLevels = m_MipLevels;
         imageInfo.arrayLayers = 1;
-        imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+        imageInfo.format = m_Format;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        imageInfo.usage = usage;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        if (vkCreateImage(m_Device.GetDevice(), &imageInfo, nullptr, &m_Image) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create image");
-        }
-
-        VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(m_Device.GetDevice(), m_Image, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = m_Device.FindMemoryType(memRequirements.memoryTypeBits, properties);
-
-        if (vkAllocateMemory(m_Device.GetDevice(), &allocInfo, nullptr, &m_ImageMemory) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to allocate image memory");
-        }
-
-        if (vkBindImageMemory(m_Device.GetDevice(), m_Image, m_ImageMemory, 0) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to bind image memory.");
-        }
+        m_Device.CreateImageWithInfo(imageInfo, properties, m_Image, m_ImageMemory);
     }
 
-    void Liara_Texture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const
+    void Liara_Texture::TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout) const
     {
         VkCommandBuffer command_buffer = m_Device.BeginSingleTimeCommands();
 
@@ -186,7 +181,7 @@ namespace Liara::Graphics
         m_Device.EndSingleTimeCommands(command_buffer);
     }
 
-    void Liara_Texture::CopyBufferToImage(VkBuffer buffer, VkImage image, const uint32_t width, const uint32_t height) const
+    void Liara_Texture::CopyBufferToImage(VkBuffer buffer, VkImage image) const
     {
         VkCommandBuffer command_buffer = m_Device.BeginSingleTimeCommands();
 
@@ -201,7 +196,7 @@ namespace Liara::Graphics
         region.imageSubresource.layerCount = 1;
 
         region.imageOffset = {0, 0, 0};
-        region.imageExtent = {width, height, 1};
+        region.imageExtent = {m_Width, m_Height, 1};
 
         vkCmdCopyBufferToImage(command_buffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
@@ -214,7 +209,7 @@ namespace Liara::Graphics
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = m_Image;
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+        viewInfo.format = m_Format;
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         viewInfo.subresourceRange.baseMipLevel = 0;
         viewInfo.subresourceRange.levelCount = m_MipLevels;
@@ -259,10 +254,10 @@ namespace Liara::Graphics
     // Generate mipmaps at runtime is not recommended.
     // It is better to generate them offline and load them directly.
     // So, it can be useful to create a tool to generate mipmaps offline in the future.
-    void Liara_Texture::GenerateMipmaps(const int32_t texWidth, const int32_t texHeight) const
+    void Liara_Texture::GenerateMipmaps() const
     {
         VkFormatProperties formatProperties;
-        vkGetPhysicalDeviceFormatProperties(m_Device.GetPhysicalDevice(), VK_FORMAT_R8G8B8A8_SRGB, &formatProperties);
+        vkGetPhysicalDeviceFormatProperties(m_Device.GetPhysicalDevice(), m_Format, &formatProperties);
 
         if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
         {
@@ -281,7 +276,7 @@ namespace Liara::Graphics
         barrier.subresourceRange.layerCount = 1;
         barrier.subresourceRange.levelCount = 1;
 
-        int32_t mipWidth = texWidth, mipHeight = texHeight;
+        auto mipWidth = static_cast<int32_t>(m_Width), mipHeight = static_cast<int32_t>(m_Height);
 
         for (uint16_t i = 1; i < m_MipLevels; i++)
         {
