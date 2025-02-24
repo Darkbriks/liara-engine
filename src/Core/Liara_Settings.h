@@ -65,7 +65,7 @@ namespace Liara
         static constexpr auto ENGINE_NAME = "Liara Engine";             ///< The name of the engine
         static constexpr uint8_t MAJOR_ENGINE_VERSION = 0;              ///< The major version of the application
         static constexpr uint8_t MINOR_ENGINE_VERSION = 16;             ///< The minor version of the application
-        static constexpr uint8_t PATCH_ENGINE_VERSION = 1;              ///< The patch version of the application
+        static constexpr uint8_t PATCH_ENGINE_VERSION = 2;              ///< The patch version of the application
         [[nodiscard]] static uint32_t GetVkEngineVersion() { return VK_MAKE_VERSION(MAJOR_ENGINE_VERSION, MINOR_ENGINE_VERSION, PATCH_ENGINE_VERSION); } ///< The Vulkan version of the engine
 
         // Application settings
@@ -173,7 +173,7 @@ namespace Liara
         bool m_UseMipmaps = true;                  ///< Whether to use mipmaps for textures
         bool m_AnisotropicFiltering = true;        ///< Whether to use anisotropic filtering for textures
         uint16_t m_MaxAnisotropy = 16;             ///< The maximum anisotropy level
-        bool m_UseBindlessTextures = true;         ///< Whether to use bindless textures
+        bool m_UseBindlessTextures = false;         ///< Whether to use bindless textures
         uint16_t m_MaxTextureSamplers = 16;        ///< The maximum number of texture samplers // TODO : Implement
 
         /**
