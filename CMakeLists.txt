@@ -20,7 +20,7 @@ endif()
 
 
 set(NAME LiaraEngine)
-set(LIARA_VERSION 0.16.2)
+set(LIARA_VERSION 0.16.3)
 project(${NAME} VERSION ${LIARA_VERSION})
 
 

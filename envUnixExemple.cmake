@@ -1,2 +1,2 @@
-# Optional set TINYOBJ_PATH to target specific version, otherwise defaults to external/tinyobjloader
-# set(TINYOBJ_PATH /Users/brendan/dev/tinyobjloader)
+# Set ImGui path
+# set(IMGUI_PATH "C:/path/to/imgui")
