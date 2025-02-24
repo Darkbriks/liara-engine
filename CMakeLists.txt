@@ -20,7 +20,7 @@ endif()
 
 
 set(NAME LiaraEngine)
-set(LIARA_VERSION 0.16.1)
+set(LIARA_VERSION 0.16.2)
 project(${NAME} VERSION ${LIARA_VERSION})
 
 
@@ -93,7 +93,7 @@ if (WIN32)
 
 elseif (UNIX)
     message(STATUS "CREATING BUILD FOR UNIX")
-    target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} sdl2 fmt tinyobjloader)
+    target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} SDL2 fmt tinyobjloader)
 endif()
 
 ############## Build SHADERS #######################
