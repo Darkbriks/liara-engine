@@ -393,21 +393,14 @@ namespace Liara::Graphics
 
     VkPresentModeKHR Liara_SwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes)
     {
-        // for (const auto &availablePresentMode: availablePresentModes)
-        // {
-        //     if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-        //     {
-        //         fmt::print("Present mode: Mailbox\n");
-        //         return availablePresentMode;
-        //     }
-        //     if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
-        //     {
-        //         fmt::print("Present mode: Immediate\n");
-        //         return availablePresentMode;
-        //     }
-        // }
+        if (Liara_Settings &settings = Singleton<Liara_Settings>::GetInstance(); !settings.IsVSync())
+        {
+            for (const auto &availablePresentMode: availablePresentModes)
+            {
+                if (availablePresentMode == settings.GetPreferredPresentMode()) { return availablePresentMode; }
+            }
+        }
 
-        fmt::print("Present mode: V-Sync\n");
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 

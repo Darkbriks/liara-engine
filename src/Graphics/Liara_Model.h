@@ -64,4 +64,4 @@ namespace Liara::Graphics
         std::unique_ptr<Liara_Buffer> m_IndexBuffer;
         uint32_t m_IndexCount{};
     };
-} // Liara
+}

@@ -1,10 +1,12 @@
 include(./.env.cmake OPTIONAL RESULT_VARIABLE LOCAL_ENV)
+include(FetchContent)
 message(STATUS "Local .env.cmake: ${LOCAL_ENV}")
 
-cmake_minimum_required(VERSION 3.22)
 
-set(NAME LiaraEngine)
-set(LIARA_VERSION 0.16.0)
+cmake_minimum_required(VERSION 3.22)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 
 message(STATUS "using ${CMAKE_GENERATOR}")
 if (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
@@ -16,10 +18,38 @@ if (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
     set(CMAKE_CXX_COMPILER  ${MINGW_PATH}/bin/g++.exe)
 endif()
 
+
+set(NAME LiaraEngine)
+set(LIARA_VERSION 0.16.3)
 project(${NAME} VERSION ${LIARA_VERSION})
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+FetchContent_Declare(
+        fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG master
+)
+
+FetchContent_Declare(
+        glm
+        GIT_REPOSITORY https://github.com/g-truc/glm.git
+        GIT_TAG master
+)
+
+FetchContent_Declare(
+        tinyobjloader
+        GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+        GIT_TAG release
+)
+
+FetchContent_Declare(
+        sdl2
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+        GIT_TAG SDL2
+)
+
+FetchContent_MakeAvailable(fmt glm tinyobjloader sdl2)
+
 
 # 1. Vulkan
 if (DEFINED VULKAN_SDK_PATH)
@@ -36,64 +66,34 @@ else()
     message(STATUS "Using vulkan lib at: ${Vulkan_LIBRARIES}")
 endif()
 
-# 2. SDL
-if (DEFINED SDL_PATH)
-    message(STATUS "Using SDL path specified in .env")
-    add_subdirectory(${SDL_PATH})
-else()
-    message(STATUS "Using SDL from external")
-    add_subdirectory(external/SDL2-2.30.8)
-endif()
 
-# 3. ImGui
+# 2. ImGui
 if (DEFINED IMGUI_PATH)
     message(STATUS "Using ImGui path specified in .env")
-    include_directories(${IMGUI_PATH})
     file(GLOB IMGUI_SOURCES "${IMGUI_PATH}/*.cpp" "${IMGUI_PATH}/backends/*.cpp")
 else()
     message(STATUS "Using ImGui from external")
-    include_directories(external/imgui)
+    SET(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/imgui")
     file(GLOB IMGUI_SOURCES "external/imgui/*.cpp" "external/imgui/backends/*.cpp")
 endif()
 
-# 4. TinyObjLoader
-if (DEFINED TINYOBJ_PATH)
-    message(STATUS "Using TinyObjLoader path specified in .env")
-    include_directories(${TINYOBJ_PATH})
-    file(GLOB_RECURSE TINYOBJ_SOURCES "${TINYOBJ_PATH}/*.h")
-else()
-    message(STATUS "Using TinyObjLoader from external")
-    include_directories(external/tiny_obj_loader)
-    file(GLOB_RECURSE TINYOBJ_SOURCES "external/tiny_obj_loader/*.h")
-endif()
-
-# 5. FMT
-if (DEFINED FMT_PATH)
-    message(STATUS "Using FMT path specified in .env")
-    add_subdirectory(${FMT_PATH})
-else()
-    message(STATUS "Using FMT from external")
-    add_subdirectory(external/fmt-11.1.3)
-endif()
 
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h" "app/*.cpp" "app/*.h" "main.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src ${Vulkan_INCLUDE_DIRS} ${IMGUI_PATH} tinyobjloader external/stb)
 
 if (WIN32)
     message(STATUS "CREATING BUILD FOR WINDOWS")
-    target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES} ${TINYOBJ_SOURCES})
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src ${Vulkan_INCLUDE_DIRS})
-    target_link_directories(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} vulkan-1 SDL2::SDL2 fmt::fmt)
+    target_link_directories(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} vulkan-1 sdl2 fmt tinyobjloader)
 
 elseif (UNIX)
     message(STATUS "CREATING BUILD FOR UNIX")
-    target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES} ${TINYOBJ_SOURCES})
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src)
-    target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} SDL2::SDL2 fmt::fmt)
+    target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} SDL2 fmt tinyobjloader)
 endif()
 
 ############## Build SHADERS #######################

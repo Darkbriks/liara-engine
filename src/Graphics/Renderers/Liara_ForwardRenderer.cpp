@@ -1,23 +1,22 @@
-#include "Liara_Renderer.h"
+#include "Liara_ForwardRenderer.h"
 
 #include <array>
 #include <stdexcept>
 
-namespace Liara::Graphics
+namespace Liara::Graphics::Renderers
 {
-    Liara_Renderer::Liara_Renderer(Plateform::Liara_Window& window, Liara_Device& device)
-    : m_Window(window), m_Device(device), m_CurrentImageIndex(0), m_CurrentFrameIndex(0), m_IsFrameStarted(false)
+    Liara_ForwardRenderer::Liara_ForwardRenderer(Plateform::Liara_Window& window, Liara_Device& device) : Liara_Renderer(window, device)
     {
         CreateSwapChain();
         CreateCommandBuffers();
     }
 
-    Liara_Renderer::~Liara_Renderer()
+    Liara_ForwardRenderer::~Liara_ForwardRenderer()
     {
         FreeCommandBuffers();
     }
 
-    VkCommandBuffer Liara_Renderer::BeginFrame()
+    VkCommandBuffer Liara_ForwardRenderer::BeginFrame()
     {
         assert(!m_IsFrameStarted && "Can't call BeginFrame while already in progress");
         const auto result = m_SwapChain->AcquireNextImage(&m_CurrentImageIndex);
@@ -46,8 +45,10 @@ namespace Liara::Graphics
         return commandBuffer;
     }
 
-    void Liara_Renderer::EndFrame()
+    void Liara_ForwardRenderer::EndFrame()
     {
+        Liara_Settings& settings = Singleton<Liara_Settings>::GetInstance();
+
         assert(m_IsFrameStarted && "Can't call EndFrame while frame is not in progress");
         const auto commandBuffer = GetCurrentCommandBuffer();
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -55,24 +56,35 @@ namespace Liara::Graphics
             throw std::runtime_error("Failed to record command buffer!");
         }
 
-        if (const auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex); result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window.WasResized())
+        if (const auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex);
+            result == VK_ERROR_OUT_OF_DATE_KHR ||
+            result == VK_SUBOPTIMAL_KHR ||
+            settings.NeedsSwapchainRecreation() ||
+            settings.WasResized(m_Window.GetID()))
         {
-            m_Window.ResetResizedFlag();
+            m_Window.ResizeWindow();
             CreateSwapChain();
+            settings.SwapchainRecreated();
         }
         else if (result != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to present swap chain image!");
         }
 
+        if (settings.WasFullscreenChanged(m_Window.GetID()))
+        {
+            m_Window.UpdateFullscreenMode();
+        }
+
+        settings.ResetWindowFlags(m_Window.GetID());
+
         m_IsFrameStarted = false;
         m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Liara_SwapChain::MAX_FRAMES_IN_FLIGHT;
     }
 
-    void Liara_Renderer::BeginSwapChainRenderPass(VkCommandBuffer command_buffer) const
+    void Liara_ForwardRenderer::BeginRenderPass(VkCommandBuffer command_buffer) const
     {
         assert(m_IsFrameStarted && "Can't call BeginSwapChainRenderPass if frame is not in progress");
-        assert(command_buffer == GetCurrentCommandBuffer() && "Can't begin render pass on command buffer from a different frame");
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -102,15 +114,14 @@ namespace Liara::Graphics
         vkCmdSetScissor(command_buffer, 0, 1, &scissor);
     }
 
-    void Liara_Renderer::EndSwapChainRenderPass(VkCommandBuffer command_buffer) const
+    void Liara_ForwardRenderer::EndRenderPass(VkCommandBuffer command_buffer) const
     {
         assert(m_IsFrameStarted && "Can't call EndSwapChainRenderPass if frame is not in progress");
-        assert(command_buffer == GetCurrentCommandBuffer() && "Can't end render pass on command buffer from a different frame");
 
         vkCmdEndRenderPass(command_buffer);
     }
 
-    void Liara_Renderer::CreateCommandBuffers()
+    void Liara_ForwardRenderer::CreateCommandBuffers()
     {
         m_CommandBuffers.resize(Liara_SwapChain::MAX_FRAMES_IN_FLIGHT);
 
@@ -126,7 +137,7 @@ namespace Liara::Graphics
         }
     }
 
-    void Liara_Renderer::FreeCommandBuffers()
+    void Liara_ForwardRenderer::FreeCommandBuffers()
     {
         vkFreeCommandBuffers(
             m_Device.GetDevice(),
@@ -136,7 +147,7 @@ namespace Liara::Graphics
         m_CommandBuffers.clear();
     }
 
-    void Liara_Renderer::CreateSwapChain()
+    void Liara_ForwardRenderer::CreateSwapChain()
     {
         auto extent = m_Window.GetExtent();
         while (extent.width == 0 || extent.height == 0)

@@ -3,12 +3,19 @@
 #include <iostream>
 #include <cstdlib>
 
+#include "Core/Liara_Settings.h"
+
 int Run()
 {
     try
     {
+        Liara::Liara_Settings& settings = Liara::Singleton<Liara::Liara_Settings>::GetInstance();
+        settings.LoadFromFile("settings.cfg");
+
         FirstApp app;
         app.Run();
+
+        settings.SaveToFile("settings.cfg", true, true);
     }
     catch (const std::exception& e)
     {
@@ -20,7 +27,7 @@ int Run()
 }
 
 #if WIN32
-    #include "external/SDL2-2.30.8/src/haptic/windows/SDL_dinputhaptic_c.h"
+    #include <Windows.h>
     int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, INT) { return Run(); }
 #else
     int main() { return Run(); }

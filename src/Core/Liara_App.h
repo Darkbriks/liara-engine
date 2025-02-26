@@ -3,8 +3,9 @@
 #include "Liara_Camera.h"
 #include "Liara_GameObject.h"
 #include "Graphics/Liara_Device.h"
-#include "Graphics/Liara_Renderer.h"
-#include "Graphics/Descriptors/Liara_Descriptor2.h"
+#include "Graphics/Renderers/Liara_RendererManager.h"
+#include "Graphics/Liara_Texture.h"
+#include "Graphics/Descriptors/Liara_Descriptor.h"
 #include "Plateform/Liara_Window.h"
 #include "Systems/Liara_System.h"
 
@@ -22,11 +23,7 @@ namespace Liara::Core
     class Liara_App
     {
     public:
-        const std::string TITLE;
-        const unsigned short WIDTH;
-        const unsigned short HEIGHT;
-
-        explicit Liara_App(std::string title="Liara Engine", unsigned short width=800, unsigned short height=600);
+        explicit Liara_App();
         virtual ~Liara_App() = default;
         Liara_App(const Liara_App&) = delete;
         Liara_App& operator=(const Liara_App&) = delete;
@@ -55,12 +52,12 @@ namespace Liara::Core
     private:
         void MasterProcessInput(float frameTime);
         void MasterUpdate(const FrameInfo& frameInfo);
-        void MasterRender(VkCommandBuffer commandBuffer, const FrameInfo &frameInfo);
+        void MasterRender(const FrameInfo &frameInfo);
 
     protected:
         Plateform::Liara_Window m_Window;
         Graphics::Liara_Device m_Device;
-        Graphics::Liara_Renderer m_Renderer;
+        Graphics::Renderers::Liara_RendererManager m_RendererManager;
 
         std::vector<std::unique_ptr<Graphics::Liara_Buffer>> m_UboBuffers;
 
@@ -72,5 +69,8 @@ namespace Liara::Core
         Liara_Camera m_Camera;
         Liara_GameObject::Map m_GameObjects;
         std::vector<std::unique_ptr<Systems::Liara_System>> m_Systems;
+
+        // TODO: Test texture, temporary
+        std::unique_ptr<Graphics::Liara_Texture> m_Texture;
     };
 }

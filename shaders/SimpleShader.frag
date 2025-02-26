@@ -3,7 +3,8 @@
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec3 fragPosWorld;
 layout(location = 2) in vec3 fragNormalWorld;
-layout(location = 3) flat in uint fragSpecularExponent; // TODO : Use a material property instead of this
+layout(location = 3) in vec2 fragTexCoords;
+layout(location = 4) flat in uint fragSpecularExponent; // TODO : Use a material property instead of this
 
 layout (location = 0) out vec4 outColor;
 
@@ -26,6 +27,8 @@ layout(set = 0, binding = 0) uniform GlobalUbo
     int numLights;
 } ubo;
 
+layout(set = 0, binding = 1) uniform sampler2D texSampler; // uniform implique que la valeur ne change pas entre les vertex, mais uniquement entre les objets
+
 layout(push_constant) uniform PushConstant
 {
     mat4 modelMatrix;
@@ -44,13 +47,6 @@ void main()
     vec3 lightDir = normalize(ubo.directionalLightDirection.xyz);
     float diffuseFactor = max(dot(surfaceNormal, lightDir), 0.0);
     vec3 diffuseLight = ubo.directionalLightColor.xyz * diffuseFactor * ubo.directionalLightDirection.w;
-
-    // Specular
-    /*vec3 halfAngle = normalize(lightDir + viewDirection);
-    float blinnTerm = dot(surfaceNormal, halfAngle);
-    blinnTerm = clamp(blinnTerm, 0.0, 1.0);
-    blinnTerm = pow(blinnTerm, fragSpecularExponent); // Higer values -> sharper highlights ; TODO : Use a material property instead of hardcoded value
-    specularLight += ubo.directionalLightColor.xyz * blinnTerm;*/
 
     for (int i = 0; i < ubo.numLights; i++)
     {
@@ -72,5 +68,6 @@ void main()
         specularLight += intensity * blinnTerm;
     }
 
-    outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
+    vec4 texColor = texture(texSampler, fragTexCoords);
+    outColor = vec4(diffuseLight * texColor.xyz + specularLight * texColor.xyz, 1.0);
 }

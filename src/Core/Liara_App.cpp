@@ -17,15 +17,13 @@
 
 namespace Liara::Core
 {
-    Liara_App::Liara_App(std::string title, const unsigned short width, const unsigned short height)
-        : TITLE(std::move(title)), WIDTH(width), HEIGHT(height),
-          m_Window(TITLE, WIDTH, HEIGHT), m_Device(m_Window), m_Renderer(m_Window, m_Device)
+    Liara_App::Liara_App() : m_Window(), m_Device(m_Window), m_RendererManager(m_Window, m_Device)
     {
         // Todo: Check if this is the right place to put this
         m_DescriptorAllocator = Graphics::Descriptors::Liara_DescriptorAllocator::Builder(m_Device)
                                 .SetMaxSets(Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
-                                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                             Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
+                                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
+                                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
                                 .Build();
 
         m_DescriptorLayoutCache = Graphics::Descriptors::Liara_DescriptorLayoutCache::Builder(m_Device).Build();
@@ -33,6 +31,11 @@ namespace Liara::Core
 
     void Liara_App::Run()
     {
+        // TODO: Test texture, temporary
+        auto texture = Liara::Graphics::Liara_Texture::Builder{};
+        texture.LoadTexture("assets/textures/viking_room.png");
+        m_Texture = std::make_unique<Graphics::Liara_Texture>(m_Device, texture);
+
         Init();
 
         auto currentTime = std::chrono::high_resolution_clock::now();
@@ -52,21 +55,21 @@ namespace Liara::Core
                 continue;
             }
 
-            const float aspect = m_Renderer.GetAspectRatio();
+            const float aspect = m_RendererManager.GetRenderer().GetAspectRatio();
             SetProjection(aspect);
 
-            if (const auto commandBuffer = m_Renderer.BeginFrame())
+            if (const auto commandBuffer = m_RendererManager.BeginFrame())
             {
                 Systems::ImGuiSystem::NewFrame();
 
-                const int frameIndex = static_cast<int>(m_Renderer.GetFrameIndex());
+                const int frameIndex = static_cast<int>(m_RendererManager.GetRenderer().GetFrameIndex());
                 FrameInfo frameInfo{
                     frameIndex, frameTime, commandBuffer, m_Camera, m_GlobalDescriptorSets[frameIndex], m_GameObjects
                 };
 
                 MasterUpdate(frameInfo);
-                MasterRender(commandBuffer, frameInfo);
-                m_Renderer.EndFrame();
+                MasterRender(frameInfo);
+                m_RendererManager.EndFrame();
             }
         }
 
@@ -94,7 +97,7 @@ namespace Liara::Core
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
             );
-            uboBuffer->map();
+            uboBuffer->Map();
         }
     }
 
@@ -104,18 +107,20 @@ namespace Liara::Core
         m_GlobalDescriptorSets.resize(Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT);
         for (size_t i = 0; i < m_GlobalDescriptorSets.size(); i++)
         {
-            auto bufferInfo = m_UboBuffers[i]->descriptorInfo();
+            auto bufferInfo = m_UboBuffers[i]->DescriptorInfo();
+            auto textureInfo = m_Texture->GetDescriptorInfo();
             Graphics::Descriptors::Liara_DescriptorBuilder(*m_DescriptorLayoutCache, *m_DescriptorAllocator)
                 .BindBuffer(0, &bufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+                .BindImage(1, &textureInfo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
                 .Build(m_GlobalDescriptorSets[i], m_GlobalSetLayout);
         }
     }
 
     void Liara_App::InitSystems()
     {
-        m_Systems.push_back(std::make_unique<Systems::SimpleRenderSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
-        m_Systems.push_back(std::make_unique<Systems::PointLightSystem>(m_Device, m_Renderer.GetSwapChainRenderPass(), m_GlobalSetLayout));
-        m_Systems.push_back(std::make_unique<Systems::ImGuiSystem>(m_Window, m_Device, m_Renderer.GetSwapChainRenderPass(), m_Renderer.GetImageCount()));
+        m_Systems.push_back(std::make_unique<Systems::SimpleRenderSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout));
+        m_Systems.push_back(std::make_unique<Systems::PointLightSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout));
+        m_Systems.push_back(std::make_unique<Systems::ImGuiSystem>(m_Window, m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_RendererManager.GetRenderer().GetImageCount()));
     }
 
     void Liara_App::InitCamera()
@@ -153,20 +158,20 @@ namespace Liara::Core
         Update(frameInfo);
         for (const auto& system: m_Systems) { system->Update(frameInfo, ubo); }
 
-        m_UboBuffers[frameInfo.m_FrameIndex]->writeToBuffer(&ubo);
-        if (const auto result = m_UboBuffers[frameInfo.m_FrameIndex]->flush(); result != VK_SUCCESS)
+        m_UboBuffers[frameInfo.m_FrameIndex]->WriteToBuffer(&ubo);
+        if (const auto result = m_UboBuffers[frameInfo.m_FrameIndex]->Flush(); result != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to flush buffer");
         }
     }
 
-    void Liara_App::MasterRender(VkCommandBuffer commandBuffer, const FrameInfo& frameInfo)
+    void Liara_App::MasterRender(const FrameInfo& frameInfo)
     {
-        m_Renderer.BeginSwapChainRenderPass(commandBuffer);
+        m_RendererManager.BeginRenderPass(frameInfo.m_CommandBuffer);
 
         Render(frameInfo);
         for (const auto& system: m_Systems) { system->Render(frameInfo); }
 
-        m_Renderer.EndSwapChainRenderPass(commandBuffer);
+        m_RendererManager.EndRenderPass(frameInfo.m_CommandBuffer);
     }
 }

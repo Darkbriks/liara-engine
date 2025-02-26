@@ -1,19 +1,47 @@
 #include "Liara_Window.h"
+#include "Core/Liara_Settings.h"
 
 #include <stdexcept>
-#include <utility>
 
 namespace Liara::Plateform
 {
-    Liara_Window::Liara_Window(std::string  title, const unsigned short width, const unsigned short height) : m_title(std::move(title)), m_width(width), m_height(height)
+    uint8_t Liara_Window::g_WindowCount = 0;
+    std::unordered_map<uint8_t, Liara_Window*> Liara_Window::g_Windows;
+
+    Liara_Window::Liara_Window() : m_ID(g_WindowCount++)
     {
+        g_Windows[m_ID] = this;
+        Singleton<Liara_Settings>::GetInstanceSync().CreateWindow(m_ID);
         InitWindow();
     }
 
     Liara_Window::~Liara_Window()
     {
+        g_Windows.erase(m_ID);
         SDL_DestroyWindow(m_Window);
         SDL_Quit();
+    }
+
+    VkExtent2D Liara_Window::GetExtent() const
+    {
+        return{
+            Singleton<Liara_Settings>::GetInstanceSync().GetWindowWidth(m_ID),
+            Singleton<Liara_Settings>::GetInstanceSync().GetWindowHeight(m_ID)
+        };
+    }
+
+    void Liara_Window::ResizeWindow() const
+    {
+        SDL_SetWindowSize(
+            m_Window,
+            Singleton<Liara_Settings>::GetInstanceSync().GetWindowWidth(m_ID),
+            Singleton<Liara_Settings>::GetInstanceSync().GetWindowHeight(m_ID)
+            );
+    }
+
+    void Liara_Window::UpdateFullscreenMode() const
+    {
+        SDL_SetWindowFullscreen(m_Window, Singleton<Liara_Settings>::GetInstance().IsWindowFullscreen(m_ID) ? SDL_WINDOW_FULLSCREEN : 0);
     }
 
     void Liara_Window::CreateWindowSurface(VkInstance instance, VkSurfaceKHR *surface) const
@@ -24,25 +52,29 @@ namespace Liara::Plateform
         }
     }
 
-    void Liara_Window::FramebufferResizeCallback(SDL_Window *window, const int width, const int height)
+    void Liara_Window::FramebufferResizeCallback(const uint8_t windowID, const int width, const int height)
     {
-        const auto liara_window = static_cast<Liara_Window*>(SDL_GetWindowData(window, "Liara_Window"));
-        liara_window->m_resized = true;
-        liara_window->m_width = width;
-        liara_window->m_height = height;
+        Singleton<Liara_Settings>::GetInstanceSync().SetWindowWidth(windowID, width);
+        Singleton<Liara_Settings>::GetInstanceSync().SetWindowHeight(windowID, height);
     }
 
     void Liara_Window::InitWindow()
     {
         if (SDL_Init(SDL_INIT_VIDEO) != 0) { throw std::runtime_error("Failed to initialize SDL"); }
 
-        if (constexpr uint32_t window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE; !((m_Window = SDL_CreateWindow(m_title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_width, m_height, window_flags))))
+        const Liara_Settings& settings = Singleton<Liara_Settings>::GetInstanceSync();
+
+        uint32_t window_flags = SDL_WINDOW_VULKAN;
+        if (settings.IsWindowResizable(m_ID)) { window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE; }
+
+        if (!((m_Window = SDL_CreateWindow(Liara_Settings::APP_NAME, settings.GetWindowXPos(m_ID), settings.GetWindowYPos(m_ID), settings.GetWindowWidth(m_ID), settings.GetWindowHeight(m_ID), window_flags))))
         {
             throw std::runtime_error("Failed to create window! SDL_Error: " + std::string(SDL_GetError()));
         }
 
-        SDL_SetWindowData(m_Window, "Liara_Window", this);
+        UpdateFullscreenMode();
 
+        SDL_SetWindowData(m_Window, "Liara_Window", this);
         SDL_AddEventWatch([](void *userdata, SDL_Event *event) { return static_cast<Liara_Window *>(userdata)->EventCallback(userdata, event); }, this);
     }
 
@@ -51,10 +83,15 @@ namespace Liara::Plateform
         if (event->type == SDL_WINDOWEVENT)
         {
             auto *window = SDL_GetWindowFromID(event->window.windowID);
-            //auto *lira_window = static_cast<Liara_Window *>(SDL_GetWindowData(window, "Liara_Window"));
+            const auto *lira_window = static_cast<Liara_Window *>(SDL_GetWindowData(window, "Liara_Window"));
             if (event->window.event == SDL_WINDOWEVENT_RESIZED)
             {
-                FramebufferResizeCallback(window, event->window.data1, event->window.data2);
+                FramebufferResizeCallback(lira_window->GetID(), event->window.data1, event->window.data2);
+            }
+            if (event->window.event == SDL_WINDOWEVENT_MOVED)
+            {
+                Singleton<Liara_Settings>::GetInstanceSync().SetWindowXPos(lira_window->GetID(), event->window.data1);
+                Singleton<Liara_Settings>::GetInstanceSync().SetWindowYPos(lira_window->GetID(), event->window.data2);
             }
             if (event->window.event == SDL_WINDOW_MINIMIZED) { m_minimized = true; }
             if (event->window.event == SDL_WINDOWEVENT_RESTORED) { m_minimized = false; }

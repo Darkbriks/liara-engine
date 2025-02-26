@@ -15,14 +15,14 @@ namespace Liara::Graphics
     Liara_Buffer::Liara_Buffer( Liara_Device &device, const VkDeviceSize instanceSize, const uint32_t instanceCount, const VkBufferUsageFlags usageFlags, const VkMemoryPropertyFlags memoryPropertyFlags, const VkDeviceSize minOffsetAlignment)
         : m_Device(device), m_InstanceCount(instanceCount), m_InstanceSize(instanceSize), m_UsageFlags(usageFlags), m_MemoryPropertyFlags(memoryPropertyFlags)
     {
-        m_AlignmentSize = getAlignment(instanceSize, minOffsetAlignment);
+        m_AlignmentSize = GetAlignment(instanceSize, minOffsetAlignment);
         m_BufferSize = m_AlignmentSize * instanceCount;
         device.CreateBuffer(m_BufferSize, usageFlags, memoryPropertyFlags, m_Buffer, m_Memory);
     }
 
     Liara_Buffer::~Liara_Buffer()
     {
-        unmap();
+        Unmap();
         vkDestroyBuffer(m_Device.GetDevice(), m_Buffer, nullptr);
         vkFreeMemory(m_Device.GetDevice(), m_Memory, nullptr);
     }
@@ -36,7 +36,7 @@ namespace Liara::Graphics
     *
     * @return VkResult of the buffer mapping call
     */
-    VkResult Liara_Buffer::map(const VkDeviceSize size, const VkDeviceSize offset)
+    VkResult Liara_Buffer::Map(const VkDeviceSize size, const VkDeviceSize offset)
     {
         assert(m_Buffer && m_Memory && "Called map on buffer before create");
         return vkMapMemory(m_Device.GetDevice(), m_Memory, offset, size, 0, &m_Mapped);
@@ -47,7 +47,7 @@ namespace Liara::Graphics
     *
     * @note Does not return a result as vkUnmapMemory can't fail
     */
-    void Liara_Buffer::unmap()
+    void Liara_Buffer::Unmap()
     {
         if (m_Mapped)
         {
@@ -65,7 +65,7 @@ namespace Liara::Graphics
     * @param offset (Optional) Byte offset from beginning of mapped region
     *
     */
-    void Liara_Buffer::writeToBuffer(const void *data, const VkDeviceSize size, const VkDeviceSize offset) const
+    void Liara_Buffer::WriteToBuffer(const void *data, const VkDeviceSize size, const VkDeviceSize offset) const
     {
         assert(m_Mapped && "Cannot copy to unmapped buffer");
 
@@ -88,7 +88,7 @@ namespace Liara::Graphics
     *
     * @return VkResult of the flush call
     */
-    VkResult Liara_Buffer::flush(const VkDeviceSize size, const VkDeviceSize offset) const
+    VkResult Liara_Buffer::Flush(const VkDeviceSize size, const VkDeviceSize offset) const
     {
         VkMappedMemoryRange mappedRange = {};
         mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -109,7 +109,7 @@ namespace Liara::Graphics
     *
     * @return VkResult of the invalidate call
     */
-    VkResult Liara_Buffer::invalidate(const VkDeviceSize size, const VkDeviceSize offset) const
+    VkResult Liara_Buffer::Invalidate(const VkDeviceSize size, const VkDeviceSize offset) const
     {
         VkMappedMemoryRange mappedRange = {};
         mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -127,7 +127,7 @@ namespace Liara::Graphics
     *
     * @return VkDescriptorBufferInfo of specified offset and range
     */
-    VkDescriptorBufferInfo Liara_Buffer::descriptorInfo(const VkDeviceSize size, const VkDeviceSize offset) const { return VkDescriptorBufferInfo{ m_Buffer, offset, size, }; }
+    VkDescriptorBufferInfo Liara_Buffer::DescriptorInfo(const VkDeviceSize size, const VkDeviceSize offset) const { return VkDescriptorBufferInfo{ m_Buffer, offset, size, }; }
 
     /**
     * Copies "instanceSize" bytes of data to the mapped buffer at an offset of index * alignmentSize
@@ -136,7 +136,7 @@ namespace Liara::Graphics
     * @param index Used in offset calculation
     *
     */
-    void Liara_Buffer::writeToIndex(const void *data, const int index) const { writeToBuffer(data, m_InstanceSize, index * m_AlignmentSize); }
+    void Liara_Buffer::WriteToIndex(const void *data, const int index) const { WriteToBuffer(data, m_InstanceSize, index * m_AlignmentSize); }
 
     /**
     *  Flush the memory range at index * alignmentSize of the buffer to make it visible to the device
@@ -144,7 +144,7 @@ namespace Liara::Graphics
     * @param index Used in offset calculation
     *
     */
-    VkResult Liara_Buffer::flushIndex(const int index) const { return flush(m_AlignmentSize, index * m_AlignmentSize); }
+    VkResult Liara_Buffer::FlushIndex(const int index) const { return Flush(m_AlignmentSize, index * m_AlignmentSize); }
 
     /**
     * Create a buffer info descriptor
@@ -153,7 +153,7 @@ namespace Liara::Graphics
     *
     * @return VkDescriptorBufferInfo for instance at index
     */
-    VkDescriptorBufferInfo Liara_Buffer::descriptorInfoForIndex(const int index) const { return descriptorInfo(m_AlignmentSize, index * m_AlignmentSize); }
+    VkDescriptorBufferInfo Liara_Buffer::DescriptorInfoForIndex(const int index) const { return DescriptorInfo(m_AlignmentSize, index * m_AlignmentSize); }
 
     /**
     * Invalidate a memory range of the buffer to make it visible to the host
@@ -164,7 +164,7 @@ namespace Liara::Graphics
     *
     * @return VkResult of the invalidate call
     */
-    VkResult Liara_Buffer::invalidateIndex(const int index) const { return invalidate(m_AlignmentSize, index * m_AlignmentSize); }
+    VkResult Liara_Buffer::InvalidateIndex(const int index) const { return Invalidate(m_AlignmentSize, index * m_AlignmentSize); }
 
     /**
     * Returns the minimum instance size required to be compatible with devices minOffsetAlignment
@@ -175,7 +175,7 @@ namespace Liara::Graphics
     *
     * @return VkResult of the buffer mapping call
     */
-    VkDeviceSize Liara_Buffer::getAlignment(const VkDeviceSize instanceSize, const VkDeviceSize minOffsetAlignment)
+    VkDeviceSize Liara_Buffer::GetAlignment(const VkDeviceSize instanceSize, const VkDeviceSize minOffsetAlignment)
     {
         if (minOffsetAlignment > 0) { return (instanceSize + minOffsetAlignment - 1) & ~(minOffsetAlignment - 1); }
         return instanceSize;

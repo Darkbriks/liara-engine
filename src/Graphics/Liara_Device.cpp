@@ -72,10 +72,10 @@ namespace Liara::Graphics
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "Liara Engine";
-        appInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
-        appInfo.pEngineName = "No Engine";
-        appInfo.engineVersion = VK_MAKE_VERSION(0, 1, 0);
+        appInfo.pApplicationName = Liara_Settings::APP_NAME;
+        appInfo.applicationVersion = Liara_Settings::GetVkAppVersion();
+        appInfo.pEngineName = Liara_Settings::ENGINE_NAME;
+        appInfo.engineVersion = Liara_Settings::GetVkEngineVersion();
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
         VkInstanceCreateInfo createInfo = {};
@@ -154,7 +154,11 @@ namespace Liara::Graphics
         }
 
         VkPhysicalDeviceFeatures deviceFeatures = {};
-        deviceFeatures.samplerAnisotropy = VK_TRUE;
+        deviceFeatures.samplerAnisotropy = Singleton<Liara_Settings>::GetInstance().UseAnisotropicFiltering() ? VK_TRUE : VK_FALSE;
+
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
+        Singleton<Liara_Settings>::GetInstance().SetMaxAnisotropy(std::min(static_cast<uint8_t>(properties.limits.maxSamplerAnisotropy), Singleton<Liara_Settings>::GetInstance().GetMaxAnisotropy()));
 
         VkDeviceCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -216,7 +220,19 @@ namespace Liara::Graphics
         VkPhysicalDeviceFeatures supportedFeatures;
         vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
-        return indices.IsComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+        if (Singleton<Liara_Settings>::GetInstance().UseAnisotropicFiltering() && !supportedFeatures.samplerAnisotropy)
+        {
+            fmt::print("Device does not support anisotropic filtering\n");
+            return false;
+        }
+
+        if (Singleton<Liara_Settings>::GetInstance().UseBindlessTextures() && !CheckBindlessTextureSupport(device))
+        {
+            fmt::print("Device does not support bindless textures\n");
+            return false;
+        }
+
+        return indices.IsComplete() && extensionsSupported && swapChainAdequate;
     }
 
     void Liara_Device::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo)
@@ -264,6 +280,22 @@ namespace Liara::Graphics
         }
 
         return true;
+    }
+
+    bool Liara_Device::CheckBindlessTextureSupport(VkPhysicalDevice device) const
+    {
+        VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures = {};
+        descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+
+        VkPhysicalDeviceFeatures2 deviceFeatures2 = {};
+        deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures2.pNext = &descriptorIndexingFeatures;
+
+        vkGetPhysicalDeviceFeatures2(device, &deviceFeatures2);
+
+        if (descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount == VK_TRUE) { return true; }
+        fmt::print("Device does not support bindless textures\n");
+        return false;
     }
 
     std::vector<const char *> Liara_Device::GetRequiredExtensions() const

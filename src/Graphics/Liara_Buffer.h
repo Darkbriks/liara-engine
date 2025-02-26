@@ -20,30 +20,30 @@ namespace Liara::Graphics
         Liara_Buffer(const Liara_Buffer&) = delete;
         Liara_Buffer& operator=(const Liara_Buffer&) = delete;
  
-        VkResult map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
-        void unmap();
+        VkResult Map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+        void Unmap();
  
-        void writeToBuffer(const void* data, VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
-        [[nodiscard]] VkResult flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
-        [[nodiscard]] VkDescriptorBufferInfo descriptorInfo(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
-        [[nodiscard]] VkResult invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
+        void WriteToBuffer(const void* data, VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
+        [[nodiscard]] VkResult Flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
+        [[nodiscard]] VkDescriptorBufferInfo DescriptorInfo(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
+        [[nodiscard]] VkResult Invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
  
-        void writeToIndex(const void* data, int index) const;
-        [[nodiscard]] VkResult flushIndex(int index) const;
-        [[nodiscard]] VkDescriptorBufferInfo descriptorInfoForIndex(int index) const;
-        [[nodiscard]] VkResult invalidateIndex(int index) const;
+        void WriteToIndex(const void* data, int index) const;
+        [[nodiscard]] VkResult FlushIndex(int index) const;
+        [[nodiscard]] VkDescriptorBufferInfo DescriptorInfoForIndex(int index) const;
+        [[nodiscard]] VkResult InvalidateIndex(int index) const;
  
-        [[nodiscard]] VkBuffer getBuffer() const { return m_Buffer; }
-        [[nodiscard]] void* getMappedMemory() const { return m_Mapped; }
-        [[nodiscard]] uint32_t getInstanceCount() const { return m_InstanceCount; }
-        [[nodiscard]] VkDeviceSize getInstanceSize() const { return m_InstanceSize; }
-        [[nodiscard]] VkDeviceSize getAlignmentSize() const { return m_InstanceSize; }
-        [[nodiscard]] VkBufferUsageFlags getUsageFlags() const { return m_UsageFlags; }
-        [[nodiscard]] VkMemoryPropertyFlags getMemoryPropertyFlags() const { return m_MemoryPropertyFlags; }
-        [[nodiscard]] VkDeviceSize getBufferSize() const { return m_BufferSize; }
+        [[nodiscard]] VkBuffer GetBuffer() const { return m_Buffer; }
+        [[nodiscard]] void* GetMappedMemory() const { return m_Mapped; }
+        [[nodiscard]] uint32_t GetInstanceCount() const { return m_InstanceCount; }
+        [[nodiscard]] VkDeviceSize GetInstanceSize() const { return m_InstanceSize; }
+        [[nodiscard]] VkDeviceSize GetAlignmentSize() const { return m_InstanceSize; }
+        [[nodiscard]] VkBufferUsageFlags GetUsageFlags() const { return m_UsageFlags; }
+        [[nodiscard]] VkMemoryPropertyFlags GetMemoryPropertyFlags() const { return m_MemoryPropertyFlags; }
+        [[nodiscard]] VkDeviceSize GetBufferSize() const { return m_BufferSize; }
  
     private:
-        static VkDeviceSize getAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment);
+        static VkDeviceSize GetAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment);
  
         Liara_Device& m_Device;
         void* m_Mapped = nullptr;
