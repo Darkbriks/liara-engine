@@ -84,7 +84,15 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src ${Vulkan_INCLUDE_DIRS} ${IMGUI_PATH} tinyobjloader external/stb)
+target_include_directories(${PROJECT_NAME} PRIVATE
+        ${PROJECT_SOURCE_DIR}/src
+        ${Vulkan_INCLUDE_DIRS}
+        ${IMGUI_PATH}
+        ${tinyobjloader_SOURCE_DIR}
+        ${glm_SOURCE_DIR}
+        external/stb
+)
+
 
 if (WIN32)
     message(STATUS "CREATING BUILD FOR WINDOWS")
