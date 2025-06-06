@@ -10,23 +10,25 @@ namespace Liara::Graphics
 {
     struct PipelineConfigInfo
     {
+        PipelineConfigInfo() = default;
+
         PipelineConfigInfo(const PipelineConfigInfo&) = delete;
         PipelineConfigInfo& operator=(const PipelineConfigInfo&) = delete;
 
-        VkSpecializationInfo m_SpecializationInfo;
+        VkSpecializationInfo m_SpecializationInfo{};
 
         std::vector<VkVertexInputBindingDescription> m_BindingDescriptions;
         std::vector<VkVertexInputAttributeDescription> m_AttributeDescriptions;
 
-        VkPipelineViewportStateCreateInfo m_ViewportInfo;
-        VkPipelineInputAssemblyStateCreateInfo m_InputAssemblyInfo;
-        VkPipelineRasterizationStateCreateInfo m_RasterizationInfo;
-        VkPipelineMultisampleStateCreateInfo m_MultisampleInfo;
-        VkPipelineColorBlendAttachmentState m_ColorBlendAttachment;
-        VkPipelineColorBlendStateCreateInfo m_ColorBlendInfo;
-        VkPipelineDepthStencilStateCreateInfo m_DepthStencilInfo;
+        VkPipelineViewportStateCreateInfo m_ViewportInfo{};
+        VkPipelineInputAssemblyStateCreateInfo m_InputAssemblyInfo{};
+        VkPipelineRasterizationStateCreateInfo m_RasterizationInfo{};
+        VkPipelineMultisampleStateCreateInfo m_MultisampleInfo{};
+        VkPipelineColorBlendAttachmentState m_ColorBlendAttachment{};
+        VkPipelineColorBlendStateCreateInfo m_ColorBlendInfo{};
+        VkPipelineDepthStencilStateCreateInfo m_DepthStencilInfo{};
         std::vector<VkDynamicState> m_DynamicStateEnables;
-        VkPipelineDynamicStateCreateInfo m_DynamicStateInfo;
+        VkPipelineDynamicStateCreateInfo m_DynamicStateInfo{};
         VkPipelineLayout m_PipelineLayout = nullptr;
         VkRenderPass m_RenderPass = nullptr;
         uint32_t m_Subpass = 0;

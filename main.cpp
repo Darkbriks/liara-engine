@@ -9,21 +9,19 @@ int Run()
 {
     try
     {
-        Liara::Liara_Settings& settings = Liara::Singleton<Liara::Liara_Settings>::GetInstance();
+        Liara::Settings::Liara_Settings& settings = Liara::Singleton<Liara::Settings::Liara_Settings>::GetInstance();
         settings.LoadFromFile("settings.cfg");
 
         FirstApp app;
         app.Run();
 
-        settings.SaveToFile("settings.cfg", true, true);
+        return settings.SaveToFile("settings.cfg", true, true) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
     catch (const std::exception& e)
     {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
-
-    return EXIT_SUCCESS;
 }
 
 #if WIN32

@@ -4,7 +4,7 @@ message(STATUS "Local .env.cmake: ${LOCAL_ENV}")
 
 
 cmake_minimum_required(VERSION 3.22)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
