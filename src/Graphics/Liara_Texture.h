@@ -3,7 +3,7 @@
 #include "Liara_Device.h"
 
 #include <string>
-#include <stb_image.h>
+#include <stb/stb_image.h>
 
 namespace Liara::Graphics
 {
@@ -38,8 +38,9 @@ namespace Liara::Graphics
              * @brief Loads a texture image from a file
              *
              * @param filename The file name of the texture to load
+             * @param settings_manager The settings manager to use for texture settings
              */
-            void LoadTexture(const std::string& filename);
+            void LoadTexture(const std::string& filename, const Core::SettingsManager& settings_manager);
         };
 
         /**
@@ -48,8 +49,9 @@ namespace Liara::Graphics
          *
          * @param device The device to create the texture on
          * @param builder The builder object containing the texture data
+         * @param settingsManager The settings manager to use for texture settings
          */
-        Liara_Texture(Liara_Device& device, const Builder& builder);
+        Liara_Texture(Liara_Device& device, const Builder& builder, const Core::SettingsManager& settingsManager);
 
         /**
          * @brief Constructor for the Liara_Texture class
@@ -64,8 +66,9 @@ namespace Liara::Graphics
          * @param height The height of the texture
          * @param format The format of the texture
          * @param usage The usage of the texture
+         * @param settingsManager The settings manager to use for texture settings
          */
-        Liara_Texture(Liara_Device& device, int width, int height, VkFormat format, VkImageUsageFlags usage);
+        Liara_Texture(Liara_Device& device, int width, int height, VkFormat format, VkImageUsageFlags usage, const Core::SettingsManager& settingsManager);
         ~Liara_Texture(); ///< Destructor to clean up the texture
 
         Liara_Texture(const Liara_Texture&) = delete;
@@ -84,6 +87,7 @@ namespace Liara::Graphics
         void GenerateMipmaps() const;
 
         Liara_Device& m_Device;
+        const Core::SettingsManager& m_SettingsManager;
 
         VkImage m_Image{};
         VkDeviceMemory m_ImageMemory{};

@@ -46,7 +46,7 @@ namespace Liara::Listener
             if (!m_F10Pressed)
             {
                 m_F10Pressed = true;
-                Liara::Singleton<Liara::Liara_Settings>::GetInstanceSync().SetVSync(!Liara::Singleton<Liara::Liara_Settings>::GetInstanceSync().IsVSync());
+                m_SettingsManager.SetBool("graphics.vsync", !m_SettingsManager.GetBool("graphics.vsync"));
             }
         }
         else { m_F10Pressed = false; }
@@ -57,7 +57,10 @@ namespace Liara::Listener
             if (!m_F11Pressed)
             {
                 m_F11Pressed = true;
-                Liara::Singleton<Liara::Liara_Settings>::GetInstanceSync().SetWindowFullscreen(0, !Liara::Singleton<Liara::Liara_Settings>::GetInstanceSync().IsWindowFullscreen(0));
+                // TODO: Change in focused window
+                auto windowSettings = m_SettingsManager.Get<Plateform::WindowSettings>("window.0");
+                windowSettings.SetFullscreen(!windowSettings.IsFullscreen());
+                m_SettingsManager.Set("window.0", windowSettings);
             }
         }
         else { m_F11Pressed = false; }

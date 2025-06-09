@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include "Core/Liara_GameObject.h"
+#include "Core/Liara_SettingsManager.h"
 
 namespace Liara::Listener
 {
@@ -29,6 +30,8 @@ namespace Liara::Listener
             int lookDown = SDL_SCANCODE_DOWN;
         };
 
+        explicit KeybordMovementController(Core::SettingsManager& settingsManager) : m_SettingsManager(settingsManager) {}
+
         // TODO : Ajouter une couche d'abstraction
         /**
          * @brief Moves the game object in the XZ plane.
@@ -41,6 +44,9 @@ namespace Liara::Listener
         KeyMappings m_KeyMappings{};        ///< The key mappings for movement and looking
         float m_MoveSpeed = 3.0f;           ///< The movement speed
         float m_LookSpeed = 1.5f;           ///< The look speed
+
+    private:
+        Core::SettingsManager& m_SettingsManager;
 
         mutable bool m_F10Pressed = false;
         mutable bool m_F11Pressed = false;

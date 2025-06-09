@@ -7,6 +7,8 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <ranges>
+
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 #include <stdexcept>
@@ -19,7 +21,11 @@ namespace Liara::Systems
         glm::mat4 normalMatrix{1.0f};
     };
 
-    SimpleRenderSystem::SimpleRenderSystem(Graphics::Liara_Device& device, VkRenderPass render_pass, VkDescriptorSetLayout descriptor_set_layout) : m_Device(device)
+    SimpleRenderSystem::SimpleRenderSystem(Graphics::Liara_Device& device,
+                                          VkRenderPass render_pass,
+                                          VkDescriptorSetLayout descriptor_set_layout,
+                                          const Core::SettingsManager& settings_manager)
+        : m_Device(device), m_SettingsManager(settings_manager)
     {
         CreatePipelineLayout(descriptor_set_layout);
         CreatePipeline(render_pass);
@@ -45,7 +51,7 @@ namespace Liara::Systems
             nullptr
         );
 
-        for (auto& [fst, snd] : frame_info.m_GameObjects)
+        for (auto &snd: frame_info.m_GameObjects | std::views::values)
         {
             auto& obj = snd;
             if (!obj.m_Model) { continue; }
@@ -83,9 +89,9 @@ namespace Liara::Systems
         assert(m_PipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
         Graphics::PipelineConfigInfo pipelineConfig{};
-        Graphics::Liara_Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
+        Graphics::Liara_Pipeline::DefaultPipelineConfigInfo(pipelineConfig, m_SettingsManager);
         pipelineConfig.m_RenderPass = render_pass;
         pipelineConfig.m_PipelineLayout = m_PipelineLayout;
-        m_Pipeline = std::make_unique<Graphics::Liara_Pipeline>(m_Device, "shaders/SimpleShader.vert.spv", "shaders/SimpleShader.frag.spv", pipelineConfig);
+        m_Pipeline = std::make_unique<Graphics::Liara_Pipeline>(m_Device, "shaders/SimpleShader.vert.spv", "shaders/SimpleShader.frag.spv", pipelineConfig, m_SettingsManager);
     }
 }

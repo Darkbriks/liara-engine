@@ -43,7 +43,9 @@ namespace Liara::Graphics
     }
 
     // class member functions
-    Liara_Device::Liara_Device(Plateform::Liara_Window &window) : m_Window{window}
+    Liara_Device::Liara_Device(Plateform::Liara_Window &window, Core::SettingsManager& settings) :
+        m_SettingsManager(settings),
+        m_Window(window)
     {
         CreateInstance();
         #ifndef NDEBUG
@@ -72,10 +74,10 @@ namespace Liara::Graphics
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = Liara_Settings::APP_NAME;
-        appInfo.applicationVersion = Liara_Settings::GetVkAppVersion();
-        appInfo.pEngineName = Liara_Settings::ENGINE_NAME;
-        appInfo.engineVersion = Liara_Settings::GetVkEngineVersion();
+        appInfo.pApplicationName = m_SettingsManager.GetString("global.app_name").c_str();
+        appInfo.applicationVersion = m_SettingsManager.GetUInt("global.app_version");
+        appInfo.pEngineName = m_SettingsManager.GetString("global.engine_name").c_str();
+        appInfo.engineVersion = m_SettingsManager.GetUInt("global.engine_version");
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
         VkInstanceCreateInfo createInfo = {};
@@ -154,11 +156,14 @@ namespace Liara::Graphics
         }
 
         VkPhysicalDeviceFeatures deviceFeatures = {};
-        deviceFeatures.samplerAnisotropy = Singleton<Liara_Settings>::GetInstance().UseAnisotropicFiltering() ? VK_TRUE : VK_FALSE;
+        deviceFeatures.samplerAnisotropy = m_SettingsManager.GetBool("texture.use_anisotropic_filtering") ? VK_TRUE : VK_FALSE;
 
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
-        Singleton<Liara_Settings>::GetInstance().SetMaxAnisotropy(std::min(static_cast<uint8_t>(properties.limits.maxSamplerAnisotropy), Singleton<Liara_Settings>::GetInstance().GetMaxAnisotropy()));
+        m_SettingsManager.SetUInt("texture.max_anisotropy", std::min(
+            static_cast<uint32_t>(properties.limits.maxSamplerAnisotropy),
+            m_SettingsManager.GetUInt("texture.max_anisotropy")
+        ));
 
         VkDeviceCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -220,13 +225,13 @@ namespace Liara::Graphics
         VkPhysicalDeviceFeatures supportedFeatures;
         vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
-        if (Singleton<Liara_Settings>::GetInstance().UseAnisotropicFiltering() && !supportedFeatures.samplerAnisotropy)
+        if (m_SettingsManager.GetBool("texture.use_anisotropic_filtering") && !supportedFeatures.samplerAnisotropy)
         {
             fmt::print("Device does not support anisotropic filtering\n");
             return false;
         }
 
-        if (Singleton<Liara_Settings>::GetInstance().UseBindlessTextures() && !CheckBindlessTextureSupport(device))
+        if (m_SettingsManager.GetBool("texture.use_bindless_textures") && !CheckBindlessTextureSupport(device))
         {
             fmt::print("Device does not support bindless textures\n");
             return false;

@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include <stb/stb_image.h>
 #include <fmt/core.h>
 
 #ifndef ENGINE_DIR
@@ -19,7 +19,7 @@ namespace Liara::Graphics
         stbi_image_free(pixels);
     }
 
-    void Liara_Texture::Builder::LoadTexture(const std::string& filename)
+    void Liara_Texture::Builder::LoadTexture(const std::string& filename, const Core::SettingsManager& settings_manager)
     {
         pixels = stbi_load((std::string(ENGINE_DIR) + filename).c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
@@ -27,16 +27,18 @@ namespace Liara::Graphics
         {
             errorFlag = true;
             fmt::print(stderr, "Failed to load texture image: {}\n", filename);
+            return;
         }
 
-        if (std::max(width, height) > Singleton<Liara_Settings>::GetInstance().GetMaxTextureSize())
+        if (std::max(width, height) > settings_manager.GetUInt("texture.max_size"))
         {
             errorFlag = true;
-            fmt::print(stderr, "Texture {} is too large: {}x{} > {}\n", filename, width, height, Singleton<Liara_Settings>::GetInstance().GetMaxTextureSize());
+            fmt::print(stderr, "Texture {} is too large: {}x{} > {}\n", filename, width, height, settings_manager.GetUInt("texture.max_size"));
         }
     }
 
-    Liara_Texture::Liara_Texture(Liara_Device& device, const Builder& builder) : m_Device(device)
+    Liara_Texture::Liara_Texture(Liara_Device& device, const Builder& builder, const Core::SettingsManager& settingsManager)
+        : m_Device(device), m_SettingsManager(settingsManager)
     {
         if (builder.errorFlag)
         {
@@ -48,14 +50,15 @@ namespace Liara::Graphics
         m_Height = builder.height;
         m_Format = builder.format;
 
-        m_MipLevels = Singleton<Liara_Settings>::GetInstance().UseMipmaps() ? static_cast<uint16_t>(std::floor(std::log2(std::max(m_Width, m_Height)))) + 1 : 1;
+        m_MipLevels = m_SettingsManager.GetBool("texture.use_mipmaps") ? static_cast<uint16_t>(std::floor(std::log2(std::max(m_Width, m_Height)))) + 1 : 1;
 
         CreateTextureImage(builder.pixels);
         CreateTextureImageView();
         CreateTextureSampler();
     }
 
-    Liara_Texture::Liara_Texture(Liara_Device& device, const int width, const int height, const VkFormat format, VkImageUsageFlags usage) : m_Device(device)
+    Liara_Texture::Liara_Texture(Liara_Device& device, const int width, const int height, const VkFormat format, const VkImageUsageFlags usage, const Core::SettingsManager& settingsManager)
+        : m_Device(device), m_SettingsManager(settingsManager)
     {
         m_Width = width;
         m_Height = height;
@@ -232,8 +235,8 @@ namespace Liara::Graphics
         samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-        samplerInfo.anisotropyEnable = Singleton<Liara_Settings>::GetInstance().UseAnisotropicFiltering() ? VK_TRUE : VK_FALSE;
-        samplerInfo.maxAnisotropy = Singleton<Liara_Settings>::GetInstance().GetMaxAnisotropy();
+        samplerInfo.anisotropyEnable = m_SettingsManager.GetBool("texture.use_anisotropic_filtering") ? VK_TRUE : VK_FALSE;
+        samplerInfo.maxAnisotropy = static_cast<float>(m_SettingsManager.GetUInt("texture.max_anisotropy"));
 
         samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // Useful when using clamp to border addressing mode
         samplerInfo.unnormalizedCoordinates = VK_FALSE;

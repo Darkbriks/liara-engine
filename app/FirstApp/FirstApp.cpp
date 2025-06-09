@@ -9,13 +9,12 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-FirstApp::FirstApp()
+FirstApp::FirstApp() : m_Controller(*m_SettingsManager)
 {
     LoadGameObjects();
 
     m_Player = std::make_unique<Liara::Core::Liara_GameObject>(Liara::Core::Liara_GameObject::CreateGameObject());
     m_Player->m_Transform.position.z = -2.5f;
-    m_Controller = Liara::Listener::KeybordMovementController{};
 }
 
 void FirstApp::ProcessInput(const float frameTime)
@@ -26,8 +25,8 @@ void FirstApp::ProcessInput(const float frameTime)
 
 void FirstApp::InitSystems()
 {
-    AddSystem(std::make_unique<Liara::Systems::SimpleRenderSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout));
-    AddSystem(std::make_unique<Liara::Systems::PointLightSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout));
+    AddSystem(std::make_unique<Liara::Systems::SimpleRenderSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
+    AddSystem(std::make_unique<Liara::Systems::PointLightSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
     auto imguiSystem = std::make_unique<Liara::Systems::ImGuiSystem>(m_Window, m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_RendererManager.GetRenderer().GetImageCount());
     imguiSystem->AddElement(std::make_unique<Liara::Core::ImGuiElements::EngineStats>());
     AddSystem(std::move(imguiSystem));

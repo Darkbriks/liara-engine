@@ -8,12 +8,14 @@
 
 namespace Liara::Graphics
 {
-    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, const VkExtent2D windowExtent) : m_Device{deviceRef}, m_WindowExtent{windowExtent}
+    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, const VkExtent2D windowExtent, const Core::SettingsManager &settings)
+    : m_SettingsManager(settings), m_Device{deviceRef}, m_WindowExtent{windowExtent}, m_OldSwapChain(nullptr)
     {
         Init();
     }
 
-    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, const VkExtent2D windowExtent, const std::shared_ptr<Liara_SwapChain>& oldSwapChain) : m_Device{deviceRef}, m_WindowExtent{windowExtent}, m_OldSwapChain(oldSwapChain)
+    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, const VkExtent2D windowExtent, const std::shared_ptr<Liara_SwapChain>& oldSwapChain)
+    : m_SettingsManager{oldSwapChain->m_SettingsManager}, m_Device{deviceRef}, m_WindowExtent{windowExtent}, m_OldSwapChain(oldSwapChain)
     {
         Init();
         m_OldSwapChain = nullptr;
@@ -391,13 +393,16 @@ namespace Liara::Graphics
         return availableFormats[0];
     }
 
-    VkPresentModeKHR Liara_SwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes)
+    VkPresentModeKHR Liara_SwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes) const
     {
-        if (Liara_Settings &settings = Singleton<Liara_Settings>::GetInstance(); !settings.IsVSync())
+        if (!m_SettingsManager.GetBool("graphics.vsync"))
         {
             for (const auto &availablePresentMode: availablePresentModes)
             {
-                if (availablePresentMode == settings.GetPreferredPresentMode()) { return availablePresentMode; }
+                if (availablePresentMode == m_SettingsManager.GetUInt("graphics.present_mode"))
+                {
+                    return availablePresentMode;
+                }
             }
         }
 

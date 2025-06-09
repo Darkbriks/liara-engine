@@ -8,10 +8,13 @@
 
 #pragma once
 
-#include "Plateform/Liara_Window.h"
-
 #include <string>
 #include <vector>
+
+#include <vulkan/vulkan.h>
+
+#include "Core/Liara_SettingsManager.h"
+#include "Plateform/Liara_Window.h"
 
 namespace Liara::Graphics
 {
@@ -56,8 +59,9 @@ namespace Liara::Graphics
         /**
          * @brief Constructor to create a Vulkan logical device based on the window provided.
          * @param window Reference to a `Plateform::Liara_Window` object.
+         * @param settings Reference to a `Core::Liara_SettingsContext` object containing graphics settings.
          */
-        explicit Liara_Device(Plateform::Liara_Window &window);
+        explicit Liara_Device(Plateform::Liara_Window &window, Core::SettingsManager& settings);
 
         /**
          * @brief Destructor that cleans up Vulkan resources.
@@ -249,6 +253,8 @@ namespace Liara::Graphics
          * @return Swap chain support details for the device.
          */
         SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
+
+        Core::SettingsManager& m_SettingsManager;
 
         // Vulkan handles
         VkInstance m_Instance{};                                ///< Vulkan instance

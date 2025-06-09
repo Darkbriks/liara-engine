@@ -7,10 +7,14 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <ranges>
+
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 #include <stdexcept>
 #include <fmt/core.h>
+
+#include "Graphics/SpecConstant/SpecializationConstant.h"
 
 namespace Liara::Systems
 {
@@ -21,7 +25,11 @@ namespace Liara::Systems
         float radius;
     };
 
-    PointLightSystem::PointLightSystem(Graphics::Liara_Device& device, VkRenderPass render_pass, VkDescriptorSetLayout descriptor_set_layout) : m_Device(device)
+    PointLightSystem::PointLightSystem(Graphics::Liara_Device& device,
+                                      VkRenderPass render_pass,
+                                      VkDescriptorSetLayout descriptor_set_layout,
+                                      const Core::SettingsManager& settings_manager)
+        : m_Device(device), m_SettingsManager(settings_manager)
     {
         CreatePipelineLayout(descriptor_set_layout);
         CreatePipeline(render_pass);
@@ -34,14 +42,18 @@ namespace Liara::Systems
 
     void PointLightSystem::Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo)
     {
-        auto rotateLight = glm::rotate(glm::mat4(1.f), frame_info.m_DeltaTime, {0.f, -1.f, 0.f});
+        const auto rotateLight = glm::rotate(glm::mat4(1.f), frame_info.m_DeltaTime, {0.f, -1.f, 0.f});
 
         int lightIndex = 0;
-        for (auto& [fst, snd] : frame_info.m_GameObjects)
+        const auto maxLights = m_SettingsManager.GetUInt("graphics.max_lights");
+        for (auto &snd: frame_info.m_GameObjects | std::views::values)
         {
             auto& obj = snd;
             if (!obj.m_PointLight) { continue; }
-            if (lightIndex >= MAX_LIGHTS) { fmt::print(stderr, "Too many point lights\n"); break; }
+            if (lightIndex >= maxLights) {
+                fmt::print(stderr, "Too many point lights (max: {})\n", maxLights);
+                break;
+            }
 
             obj.m_Transform.position = glm::vec3(rotateLight * glm::vec4(obj.m_Transform.position, 1.f));
 
@@ -68,7 +80,7 @@ namespace Liara::Systems
             nullptr
         );
 
-        for (auto& [fst, snd] : frame_info.m_GameObjects)
+        for (auto &snd: frame_info.m_GameObjects | std::views::values)
         {
             auto& obj = snd;
             if (!obj.m_PointLight) { continue; }
@@ -108,11 +120,11 @@ namespace Liara::Systems
         assert(m_PipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
         Graphics::PipelineConfigInfo pipelineConfig{};
-        Graphics::Liara_Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
+        Graphics::Liara_Pipeline::DefaultPipelineConfigInfo(pipelineConfig, m_SettingsManager);
         pipelineConfig.m_BindingDescriptions.clear();
         pipelineConfig.m_AttributeDescriptions.clear();
         pipelineConfig.m_RenderPass = render_pass;
         pipelineConfig.m_PipelineLayout = m_PipelineLayout;
-        m_Pipeline = std::make_unique<Graphics::Liara_Pipeline>(m_Device, "shaders/PointLight.vert.spv", "shaders/PointLight.frag.spv", pipelineConfig);
+        m_Pipeline = std::make_unique<Graphics::Liara_Pipeline>(m_Device, "shaders/PointLight.vert.spv", "shaders/PointLight.frag.spv", pipelineConfig, m_SettingsManager);
     }
 }

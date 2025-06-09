@@ -9,73 +9,111 @@
 
 #pragma once
 
-#include <cstdint>
+#include <array>
+#include <span>
+
+#include "Core/Liara_SettingsManager.h"
+
 #include <vulkan/vulkan_core.h>
 
 namespace Liara::Graphics::SpecConstant
 {
     /**
+     * @class SpecConstantRegistry
+     * @brief Compile-time registry for specialization constants
+     */
+    template<typename... Types>
+    class SpecConstantRegistry
+    {
+    public:
+        // Initialize with provided values
+        static void Initialize(Types... values) noexcept
+        {
+            if constexpr (ConstantCount > 0) {
+                s_Data = {static_cast<uint32_t>(values)...};
+                s_Initialized = true;
+            }
+        }
+
+        // Get map entries at compile time
+        static constexpr std::array<VkSpecializationMapEntry, sizeof...(Types)> GetMapEntries() noexcept
+        {
+            std::array<VkSpecializationMapEntry, ConstantCount> entries{};
+            for (size_t i = 0; i < ConstantCount; ++i) {
+                entries[i] = VkSpecializationMapEntry{
+                    .constantID = static_cast<uint32_t>(i),
+                    .offset = static_cast<uint32_t>(i * sizeof(uint32_t)),
+                    .size = sizeof(uint32_t)
+                };
+            }
+            return entries;
+        }
+
+        // Get specialization info
+        static VkSpecializationInfo GetSpecializationInfo() noexcept
+        {
+            static constexpr auto mapEntries = GetMapEntries();
+
+            return VkSpecializationInfo{
+                .mapEntryCount = static_cast<uint32_t>(ConstantCount),
+                .pMapEntries = mapEntries.data(),
+                .dataSize = sizeof(s_Data),
+                .pData = s_Data.data()
+            };
+        }
+
+        // Get current data array (for debugging/inspection)
+        static constexpr std::span<const uint32_t> GetData() noexcept
+        {
+            return std::span<const uint32_t>{s_Data};
+        }
+
+        static constexpr size_t Size() noexcept { return ConstantCount; }
+        static bool IsInitialized() noexcept { return s_Initialized; }
+
+    private:
+        static constexpr size_t ConstantCount = sizeof...(Types);
+        using DataArray = std::array<uint32_t, ConstantCount>;
+
+        static inline DataArray s_Data{};
+        static inline bool s_Initialized = false;
+    };
+
+    /**
+     * @brief Graphics-specific specialization constants
+     */
+    using GraphicsSpecConstants = SpecConstantRegistry<uint32_t>; // MAX_LIGHTS
+
+    /**
      * @class SpecConstant
-     * @brief Class that encapsulates Vulkan specialization constants.
+     * @brief Main interface for specialization constants with settings injection
      */
     class SpecConstant
     {
-        static constexpr size_t specDataSize = 1;                           ///< The number of specialization constants.
-
-        static constexpr uint32_t (*specDataPtr[specDataSize])() = {        ///< The array of function pointers to get the specialization constant values.
-            []() { return static_cast<uint32_t>(Singleton<Liara_Settings>::GetInstanceSync().GetMaxLights()); }
-        };
-
-        static uint32_t SpecData[specDataSize];                             ///< The array of specialization constant values.
-        static bool SpecDataInitialized;                                    ///< Whether the specialization constant values have been initialized.
-
     public:
-        /**
-         * @brief Returns a vector of `VkSpecializationMapEntry` that maps specialization indices to specific constants.
-         *
-         * This method generates a list of specialization map entries for each element of `specData`, allowing Vulkan
-         * to know where and how to apply specializations to the shader.
-         *
-         * @return A vector of `VkSpecializationMapEntry` structures.
-         */
-        static std::vector<VkSpecializationMapEntry> GetMapEntries()
+        // Initialize with settings manager
+        static void Initialize(const Core::SettingsManager& settingsManager)
         {
-            std::vector<VkSpecializationMapEntry> mapEntries(specDataSize);
-            for (size_t i = 0; i < specDataSize; i++)
-            {
-                mapEntries[i].constantID = static_cast<uint32_t>(i);
-                mapEntries[i].offset = static_cast<uint32_t>(i * sizeof(uint32_t));
-                mapEntries[i].size = sizeof(uint32_t);
-            }
-
-            return mapEntries;
+            GraphicsSpecConstants::Initialize(settingsManager.GetUInt("graphics.max_lights"));
         }
 
-        /**
-         * @brief Returns a `VkSpecializationInfo` structure with the specialization constant data.
-         *
-         * This method generates a `VkSpecializationInfo` structure with the specialization constant data and map entries.
-         *
-         * @return A `VkSpecializationInfo` structure.
-         */
+        // Get specialization info for graphics shaders
         static VkSpecializationInfo GetSpecializationInfo()
         {
-            if (!SpecDataInitialized)
-            {
-                for (size_t i = 0; i < specDataSize; i++) { SpecData[i] = specDataPtr[i](); }
-                SpecDataInitialized = true;
+            if (!GraphicsSpecConstants::IsInitialized()) {
+                throw std::runtime_error("Graphics specialization context is not initialized");
             }
+            return GraphicsSpecConstants::GetSpecializationInfo();
+        }
 
-            VkSpecializationInfo specializationInfo{};
-            specializationInfo.mapEntryCount = static_cast<uint32_t>(specDataSize);
-            specializationInfo.pMapEntries = GetMapEntries().data();
-            specializationInfo.dataSize = sizeof(SpecData);
-            specializationInfo.pData = SpecData;
-
-            return specializationInfo;
+        // Utility methods for specific constants
+        static uint32_t GetMaxLights()
+        {
+            if (!GraphicsSpecConstants::IsInitialized()) {
+                throw std::runtime_error("Graphics specialization context is not initialized");
+            }
+            const auto data = GraphicsSpecConstants::GetData();
+            return data.empty() ? 10 : data[0];
         }
     };
-
-    uint32_t SpecConstant::SpecData[specDataSize];
-    bool SpecConstant::SpecDataInitialized = false;
 }

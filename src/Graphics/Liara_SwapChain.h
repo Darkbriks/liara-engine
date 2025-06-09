@@ -3,7 +3,6 @@
 #include "Liara_Device.h"
 
 #include <vulkan/vulkan.h>
-#include <string>
 #include <vector>
 #include <memory>
 
@@ -14,7 +13,7 @@ namespace Liara::Graphics
     public:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-        Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent);
+        Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent, const Core::SettingsManager &settings);
         Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent, const std::shared_ptr<Liara_SwapChain>& oldSwapChain);
         ~Liara_SwapChain();
 
@@ -51,12 +50,14 @@ namespace Liara::Graphics
         void CreateSyncObjects();
 
         // Helper functions
-        VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-        VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
+        static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
+        [[nodiscard]] VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes) const;
         [[nodiscard]] VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) const;
 
-        VkFormat m_SwapChainImageFormat;
-        VkFormat m_SwapChainDepthFormat;
+        const Core::SettingsManager &m_SettingsManager;
+
+        VkFormat m_SwapChainImageFormat{};
+        VkFormat m_SwapChainDepthFormat{};
         VkExtent2D m_SwapChainExtent{};
 
         std::vector<VkFramebuffer> m_SwapChainFramebuffers;

@@ -5,7 +5,8 @@
 
 namespace Liara::Graphics::Renderers
 {
-    Liara_RendererManager::Liara_RendererManager(Plateform::Liara_Window& window, Liara_Device& device, const RendererType type): m_Window(window), m_Device(device), m_RendererType(type)
+    Liara_RendererManager::Liara_RendererManager(Plateform::Liara_Window& window, Liara_Device& device, Core::SettingsManager& settings_manager, const RendererType type)
+        : m_SettingsManager(settings_manager), m_Window(window), m_Device(device), m_RendererType(type)
     {
         SetRenderer(type);
     }
@@ -22,7 +23,7 @@ namespace Liara::Graphics::Renderers
         switch (type)
         {
             case RendererType::FORWARD:
-                m_Renderer = std::make_unique<Liara_ForwardRenderer>(m_Window, m_Device);
+                m_Renderer = std::make_unique<Liara_ForwardRenderer>(m_SettingsManager, m_Window, m_Device);
                 break;
             default:
                 throw std::runtime_error("Invalid renderer type");

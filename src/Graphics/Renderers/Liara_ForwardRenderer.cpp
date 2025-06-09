@@ -5,10 +5,33 @@
 
 namespace Liara::Graphics::Renderers
 {
-    Liara_ForwardRenderer::Liara_ForwardRenderer(Plateform::Liara_Window& window, Liara_Device& device) : Liara_Renderer(window, device)
+    Liara_ForwardRenderer::Liara_ForwardRenderer(Core::SettingsManager& settingsManager, Plateform::Liara_Window& window, Liara_Device& device)
+        : Liara_Renderer(settingsManager, window, device)
     {
         CreateSwapChain();
         CreateCommandBuffers();
+
+        settingsManager.Subscribe<Plateform::WindowSettings>(
+            "window." + std::to_string(window.GetID()),
+            [this](const Plateform::WindowSettings& settings) {
+                if (settings.wasResized) {
+                    m_NeedsSwapChainRecreation = true;
+                }
+                if (settings.wasFullscreenChanged) {
+                    m_FullscreenChanged = true;
+                }
+            }
+        );
+
+        settingsManager.Subscribe<bool>(
+            "graphics.vsync",
+            [this](const bool vsync) {
+                if (vsync != m_VsyncState) {
+                    m_VsyncState = vsync;
+                    m_VsyncChanged = true;
+                }
+            }
+        );
     }
 
     Liara_ForwardRenderer::~Liara_ForwardRenderer()
@@ -47,8 +70,6 @@ namespace Liara::Graphics::Renderers
 
     void Liara_ForwardRenderer::EndFrame()
     {
-        Liara_Settings& settings = Singleton<Liara_Settings>::GetInstance();
-
         assert(m_IsFrameStarted && "Can't call EndFrame while frame is not in progress");
         const auto commandBuffer = GetCurrentCommandBuffer();
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -59,24 +80,27 @@ namespace Liara::Graphics::Renderers
         if (const auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex);
             result == VK_ERROR_OUT_OF_DATE_KHR ||
             result == VK_SUBOPTIMAL_KHR ||
-            settings.NeedsSwapchainRecreation() ||
-            settings.WasResized(m_Window.GetID()))
+            m_NeedsSwapChainRecreation ||
+            m_VsyncChanged)
         {
             m_Window.ResizeWindow();
             CreateSwapChain();
-            settings.SwapchainRecreated();
+            m_NeedsSwapChainRecreation = false;
+            m_VsyncChanged = false;
         }
         else if (result != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to present swap chain image!");
         }
 
-        if (settings.WasFullscreenChanged(m_Window.GetID()))
+        if (m_FullscreenChanged)
         {
             m_Window.UpdateFullscreenMode();
+            m_FullscreenChanged = false;
         }
 
-        settings.ResetWindowFlags(m_Window.GetID());
+        auto settings = m_SettingsManager.Get<Plateform::WindowSettings>("window." + std::to_string(m_Window.GetID()));
+        settings.ResetFlags();
 
         m_IsFrameStarted = false;
         m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Liara_SwapChain::MAX_FRAMES_IN_FLIGHT;
@@ -160,7 +184,7 @@ namespace Liara::Graphics::Renderers
 
         if (m_SwapChain == nullptr)
         {
-            m_SwapChain = std::make_unique<Liara_SwapChain>(m_Device, extent);
+            m_SwapChain = std::make_unique<Liara_SwapChain>(m_Device, extent, m_SettingsManager);
         }
         else
         {

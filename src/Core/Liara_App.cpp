@@ -15,10 +15,19 @@
 #include <thread>
 #include <backends/imgui_impl_sdl2.h>
 
+#include "Graphics/SpecConstant/SpecializationConstant.h"
+
 namespace Liara::Core
 {
-    Liara_App::Liara_App() : m_Window(), m_Device(m_Window), m_RendererManager(m_Window, m_Device)
+    Liara_App::Liara_App()
+        : m_SettingsManager(std::make_unique<SettingsManager>()),
+        m_Window(*m_SettingsManager),
+        m_Device(m_Window, *m_SettingsManager),
+        m_RendererManager(m_Window, m_Device, *m_SettingsManager)
     {
+        m_SettingsManager->load_from_file("settings.cfg");
+        //Graphics::SpecConstant::SpecConstant::Initialize(*m_SettingsManager);
+
         // Todo: Check if this is the right place to put this
         m_DescriptorAllocator = Graphics::Descriptors::Liara_DescriptorAllocator::Builder(m_Device)
                                 .SetMaxSets(Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
@@ -33,8 +42,8 @@ namespace Liara::Core
     {
         // TODO: Test texture, temporary
         auto texture = Liara::Graphics::Liara_Texture::Builder{};
-        texture.LoadTexture("assets/textures/viking_room.png");
-        m_Texture = std::make_unique<Graphics::Liara_Texture>(m_Device, texture);
+        texture.LoadTexture("assets/textures/viking_room.png", *m_SettingsManager);
+        m_Texture = std::make_unique<Graphics::Liara_Texture>(m_Device, texture, *m_SettingsManager);
 
         Init();
 
@@ -118,8 +127,8 @@ namespace Liara::Core
 
     void Liara_App::InitSystems()
     {
-        m_Systems.push_back(std::make_unique<Systems::SimpleRenderSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout));
-        m_Systems.push_back(std::make_unique<Systems::PointLightSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout));
+        m_Systems.push_back(std::make_unique<Systems::SimpleRenderSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
+        m_Systems.push_back(std::make_unique<Systems::PointLightSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
         m_Systems.push_back(std::make_unique<Systems::ImGuiSystem>(m_Window, m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_RendererManager.GetRenderer().GetImageCount()));
     }
 

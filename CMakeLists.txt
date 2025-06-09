@@ -19,9 +19,25 @@ if (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
 endif()
 
 
-set(NAME LiaraEngine)
-set(LIARA_VERSION 0.16.3)
-project(${NAME} VERSION ${LIARA_VERSION})
+set(ENGINE_NAME "LiaraEngine")
+set(ENGINE_VERSION_MAJOR 0)
+set(ENGINE_VERSION_MINOR 17)
+set(ENGINE_VERSION_PATCH 0)
+
+set(APP_NAME "FirstApp")
+set(APP_VERSION_MAJOR 0)
+set(APP_VERSION_MINOR 1)
+set(APP_VERSION_PATCH 0)
+
+configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/Config.h.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Config.h
+)
+
+project(${APP_NAME}
+        VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_VERSION_PATCH}
+        LANGUAGES CXX
+)
 
 
 FetchContent_Declare(
@@ -78,19 +94,20 @@ else()
 endif()
 
 
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h" "app/*.cpp" "app/*.h" "main.cpp")
+file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h" "src/*.tpp" "app/*.cpp" "app/*.h" "main.cpp" "Config.h.in")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR} # for Config.h
         ${PROJECT_SOURCE_DIR}/src
         ${Vulkan_INCLUDE_DIRS}
         ${IMGUI_PATH}
         ${tinyobjloader_SOURCE_DIR}
         ${glm_SOURCE_DIR}
-        external/stb
+        external
 )
 
 

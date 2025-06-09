@@ -1,16 +1,17 @@
 #pragma once
 
+#include <memory>
+#include <string>
+
 #include "Liara_Camera.h"
 #include "Liara_GameObject.h"
+#include "Liara_SettingsManager.h"
 #include "Graphics/Liara_Device.h"
 #include "Graphics/Renderers/Liara_RendererManager.h"
 #include "Graphics/Liara_Texture.h"
 #include "Graphics/Descriptors/Liara_Descriptor.h"
 #include "Plateform/Liara_Window.h"
 #include "Systems/Liara_System.h"
-
-#include <memory>
-#include <string>
 
 namespace Liara::Systems {
     class ImGuiSystem;
@@ -31,6 +32,8 @@ namespace Liara::Core
         virtual void Run();
 
         void AddSystem(std::unique_ptr<Systems::Liara_System> system) { m_Systems.push_back(std::move(system)); }
+
+        SettingsManager& GetSettingsManager() const { return *m_SettingsManager; }
 
     protected:
         virtual void Init();
@@ -55,6 +58,8 @@ namespace Liara::Core
         void MasterRender(const FrameInfo &frameInfo);
 
     protected:
+        std::shared_ptr<SettingsManager> m_SettingsManager;
+
         Plateform::Liara_Window m_Window;
         Graphics::Liara_Device m_Device;
         Graphics::Renderers::Liara_RendererManager m_RendererManager;

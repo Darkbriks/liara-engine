@@ -13,8 +13,14 @@
 namespace Liara::Graphics
 {
 
-    Liara_Pipeline::Liara_Pipeline(Liara_Device &device, const std::string &vertFilepath, const std::string &fragFilepath, const PipelineConfigInfo &configInfo) : m_Device(device)
+    Liara_Pipeline::Liara_Pipeline(Liara_Device &device,
+                                   const std::string &vertFilepath,
+                                   const std::string &fragFilepath,
+                                   const PipelineConfigInfo &configInfo,
+                                   const Core::SettingsManager& settings_manager)
+        : m_Device(device)
     {
+        SpecConstant::SpecConstant::SpecConstant::Initialize(settings_manager);
         CreateGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
     }
 
@@ -25,7 +31,7 @@ namespace Liara::Graphics
         vkDestroyPipeline(m_Device.GetDevice(), m_GraphicsPipeline, nullptr);
     }
 
-    void Liara_Pipeline::DefaultPipelineConfigInfo(PipelineConfigInfo &configInfo)
+    void Liara_Pipeline::DefaultPipelineConfigInfo(PipelineConfigInfo &configInfo, const Core::SettingsManager& settings_manager)
     {
         configInfo.m_InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         configInfo.m_InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -93,10 +99,15 @@ namespace Liara::Graphics
         configInfo.m_DynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.m_DynamicStateEnables.size());
         configInfo.m_DynamicStateInfo.flags = 0;
 
+        configInfo.m_InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        configInfo.m_InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        configInfo.m_InputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
+
         configInfo.m_BindingDescriptions = Liara_Model::Vertex::GetBindingDescriptions();
         configInfo.m_AttributeDescriptions = Liara_Model::Vertex::GetAttributeDescriptions();
 
         // Specialization Constants
+        SpecConstant::SpecConstant::Initialize(settings_manager);
         configInfo.m_SpecializationInfo = SpecConstant::SpecConstant::GetSpecializationInfo();
     }
 
