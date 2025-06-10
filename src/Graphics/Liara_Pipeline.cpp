@@ -20,7 +20,6 @@ namespace Liara::Graphics
                                    const Core::SettingsManager& settings_manager)
         : m_Device(device)
     {
-        SpecConstant::SpecConstant::SpecConstant::Initialize(settings_manager);
         CreateGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
     }
 
@@ -107,8 +106,12 @@ namespace Liara::Graphics
         configInfo.m_AttributeDescriptions = Liara_Model::Vertex::GetAttributeDescriptions();
 
         // Specialization Constants
-        SpecConstant::SpecConstant::Initialize(settings_manager);
-        configInfo.m_SpecializationInfo = SpecConstant::SpecConstant::GetSpecializationInfo();
+        if (!SpecConstant::IsInitialized()) {
+            SpecConstant::GetInstance().Initialize(settings_manager);
+        }
+        configInfo.m_SpecializationInfo = SpecConstant::GetSpecializationInfo();
+
+        assert(configInfo.m_BindingDescriptions.size() > 0 && "No binding descriptions provided in configInfo");
     }
 
     void Liara_Pipeline::Bind(VkCommandBuffer commandBuffer) const

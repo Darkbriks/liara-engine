@@ -11,12 +11,14 @@
 
 #include <array>
 #include <span>
-
-#include "Core/Liara_SettingsManager.h"
-
+#include <mutex>
 #include <vulkan/vulkan_core.h>
 
-namespace Liara::Graphics::SpecConstant
+#include "Utils/Singleton.h"
+
+namespace Liara::Core { class SettingsManager; }
+
+namespace Liara::Graphics
 {
     /**
      * @class SpecConstantRegistry
@@ -26,18 +28,23 @@ namespace Liara::Graphics::SpecConstant
     class SpecConstantRegistry
     {
     public:
-        // Initialize with provided values
         static void Initialize(Types... values) noexcept
         {
+            if (s_Initialized) {
+                fmt::print(stderr, "Warning: SpecConstantRegistry already initialized\n");
+                return;
+            }
+
             if constexpr (ConstantCount > 0) {
                 s_Data = {static_cast<uint32_t>(values)...};
                 s_Initialized = true;
             }
         }
 
-        // Get map entries at compile time
-        static constexpr std::array<VkSpecializationMapEntry, sizeof...(Types)> GetMapEntries() noexcept
+        static std::array<VkSpecializationMapEntry, sizeof...(Types)> GetMapEntries()
         {
+            if (!s_Initialized) { throw std::runtime_error("SpecConstantRegistry not initialized"); }
+
             std::array<VkSpecializationMapEntry, ConstantCount> entries{};
             for (size_t i = 0; i < ConstantCount; ++i) {
                 entries[i] = VkSpecializationMapEntry{
@@ -49,10 +56,13 @@ namespace Liara::Graphics::SpecConstant
             return entries;
         }
 
-        // Get specialization info
-        static VkSpecializationInfo GetSpecializationInfo() noexcept
+        static VkSpecializationInfo GetSpecializationInfo()
         {
-            static constexpr auto mapEntries = GetMapEntries();
+            if (!s_Initialized) {
+                //throw std::runtime_error("SpecConstantRegistry not initialized");
+            }
+
+            static const auto mapEntries = GetMapEntries();
 
             return VkSpecializationInfo{
                 .mapEntryCount = static_cast<uint32_t>(ConstantCount),
@@ -62,14 +72,19 @@ namespace Liara::Graphics::SpecConstant
             };
         }
 
-        // Get current data array (for debugging/inspection)
-        static constexpr std::span<const uint32_t> GetData() noexcept
+        static std::span<const uint32_t> GetData() noexcept
         {
             return std::span<const uint32_t>{s_Data};
         }
 
         static constexpr size_t Size() noexcept { return ConstantCount; }
         static bool IsInitialized() noexcept { return s_Initialized; }
+
+        static void Reset() noexcept
+        {
+            s_Initialized = false;
+            s_Data = {};
+        }
 
     private:
         static constexpr size_t ConstantCount = sizeof...(Types);
@@ -79,41 +94,69 @@ namespace Liara::Graphics::SpecConstant
         static inline bool s_Initialized = false;
     };
 
-    /**
-     * @brief Graphics-specific specialization constants
-     */
     using GraphicsSpecConstants = SpecConstantRegistry<uint32_t>; // MAX_LIGHTS
 
     /**
      * @class SpecConstant
      * @brief Main interface for specialization constants with settings injection
      */
-    class SpecConstant
+    class SpecConstant : public Singleton<SpecConstant>
     {
     public:
-        // Initialize with settings manager
-        static void Initialize(const Core::SettingsManager& settingsManager)
+
+        void Initialize(const Core::SettingsManager& settingsManager)
         {
-            GraphicsSpecConstants::Initialize(settingsManager.GetUInt("graphics.max_lights"));
+            std::lock_guard<std::mutex> lock(m_Mutex);
+
+            if (m_Initialized) {
+                fmt::print(stderr, "Warning: SpecConstant already initialized\n");
+                return;
+            }
+
+            const uint32_t maxLights = settingsManager.GetUInt("graphics.max_lights");
+            GraphicsSpecConstants::Initialize(maxLights);
+            m_Initialized = true;
         }
 
-        // Get specialization info for graphics shaders
+        static void InitializeGlobal(const Core::SettingsManager& settingsManager)
+        {
+            GetInstance().Initialize(settingsManager);
+        }
+
         static VkSpecializationInfo GetSpecializationInfo()
         {
-            if (!GraphicsSpecConstants::IsInitialized()) {
-                throw std::runtime_error("Graphics specialization context is not initialized");
-            }
+            auto& instance = GetInstance();
+            std::lock_guard<std::mutex> lock(instance.m_Mutex);
+
+            if (!instance.m_Initialized) { throw std::runtime_error("SpecConstant not initialized"); }
+
             return GraphicsSpecConstants::GetSpecializationInfo();
         }
 
-        // Utility methods for specific constants
         static uint32_t GetMaxLights()
         {
-            if (!GraphicsSpecConstants::IsInitialized()) {
-                throw std::runtime_error("Graphics specialization context is not initialized");
-            }
+            auto& instance = GetInstance();
+            std::lock_guard<std::mutex> lock(instance.m_Mutex);
+
+            if (!instance.m_Initialized) { throw std::runtime_error("SpecConstant not initialized"); }
+
             const auto data = GraphicsSpecConstants::GetData();
             return data.empty() ? 10 : data[0];
         }
+
+        static bool IsInitialized()
+        {
+            auto& instance = GetInstance();
+            std::lock_guard<std::mutex> lock(instance.m_Mutex);
+            return instance.m_Initialized;
+        }
+
+    private:
+        friend class Singleton<SpecConstant>;
+
+        SpecConstant() = default;
+
+        bool m_Initialized = false;
+        std::mutex m_Mutex;
     };
 }
