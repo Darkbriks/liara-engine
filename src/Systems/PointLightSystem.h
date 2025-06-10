@@ -7,6 +7,7 @@
 
 #include "Core/Liara_SettingsManager.h"
 
+namespace Liara::Core { class Liara_GameObject; }
 namespace Liara::Graphics { class Liara_Pipeline; class Liara_Device; }
 namespace Liara::Graphics::Ubo { struct GlobalUbo; }
 
@@ -24,14 +25,26 @@ namespace Liara::Systems
         void Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) override;
         void Render(const Core::FrameInfo &frame_info) const override;
 
+        void CacheNeedsRebuild() { m_CacheNeedsRebuild = true; }
+
     private:
         void CreatePipelineLayout(VkDescriptorSetLayout descriptor_set_layout);
         void CreatePipeline(VkRenderPass render_pass);
+
+        void RebuildLightCache(const Core::FrameInfo& frame_info);
+        void UpdateLightCache(const Core::FrameInfo& frame_info);
 
         Graphics::Liara_Device& m_Device;
         std::unique_ptr<Graphics::Liara_Pipeline> m_Pipeline;
         VkPipelineLayout m_PipelineLayout{};
 
         const Core::SettingsManager& m_SettingsManager;
+
+        // Use a vector to cache point lights for efficient rendering
+        std::vector<Core::Liara_GameObject*> m_CachedPointLights;
+        bool m_CacheNeedsRebuild = true;
+        size_t m_LastGameObjectCount = 0;
+
+        uint32_t m_MaxLights;
     };
 }

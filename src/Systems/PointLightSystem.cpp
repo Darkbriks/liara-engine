@@ -42,54 +42,54 @@ namespace Liara::Systems
 
     void PointLightSystem::Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo)
     {
+        UpdateLightCache(frame_info);
+
         const auto rotateLight = glm::rotate(glm::mat4(1.f), frame_info.m_DeltaTime, {0.f, -1.f, 0.f});
 
-        int lightIndex = 0;
-        const auto maxLights = m_SettingsManager.GetUInt("graphics.max_lights");
-        for (auto &snd: frame_info.m_GameObjects | std::views::values)
-        {
-            auto& obj = snd;
-            if (!obj.m_PointLight) { continue; }
-            if (lightIndex >= maxLights) {
-                fmt::print(stderr, "Too many point lights (max: {})\n", maxLights);
-                break;
-            }
+        const size_t lightCount = std::min(m_CachedPointLights.size(), static_cast<size_t>(m_MaxLights));
 
-            obj.m_Transform.position = glm::vec3(rotateLight * glm::vec4(obj.m_Transform.position, 1.f));
+        for (size_t i = 0; i < lightCount; ++i) {
+            auto* gameObject = m_CachedPointLights[i];
 
-            ubo.pointLights[lightIndex].position = glm::vec4(obj.m_Transform.position, 1.0f);
-            ubo.pointLights[lightIndex].color = glm::vec4(obj.m_color, obj.m_PointLight->intensity);
-            lightIndex++;
+            gameObject->m_Transform.position = glm::vec3(rotateLight * glm::vec4(gameObject->m_Transform.position, 1.f));
+
+            ubo.pointLights[i].position = glm::vec4(gameObject->m_Transform.position, 1.0f);
+            ubo.pointLights[i].color = glm::vec4(gameObject->m_color, gameObject->m_PointLight->intensity);
         }
-        ubo.numLights = lightIndex;
+
+        ubo.numLights = static_cast<int>(lightCount);
     }
 
 
     void PointLightSystem::Render(const Core::FrameInfo &frame_info) const
     {
+        if (m_CachedPointLights.empty()) { return; }
+
         m_Pipeline->Bind(frame_info.m_CommandBuffer);
 
         vkCmdBindDescriptorSets(
             frame_info.m_CommandBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             m_PipelineLayout,
-            0,
-            1,
+            0, 1,
             &frame_info.m_GlobalDescriptorSet,
-            0,
-            nullptr
+            0, nullptr
         );
 
-        for (auto &snd: frame_info.m_GameObjects | std::views::values)
-        {
-            auto& obj = snd;
-            if (!obj.m_PointLight) { continue; }
-
+        for (const auto* gameObject : m_CachedPointLights) {
             PointLightPushConstants push{};
-            push.position = glm::vec4(obj.m_Transform.position, 1.0f);
-            push.color = glm::vec4(obj.m_color, obj.m_PointLight->intensity);
-            push.radius = obj.m_Transform.scale.x;
-            vkCmdPushConstants(frame_info.m_CommandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PointLightPushConstants), &push);
+            push.position = glm::vec4(gameObject->m_Transform.position, 1.0f);
+            push.color = glm::vec4(gameObject->m_color, gameObject->m_PointLight->intensity);
+            push.radius = gameObject->m_Transform.scale.x;
+
+            vkCmdPushConstants(
+                frame_info.m_CommandBuffer,
+                m_PipelineLayout,
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                0,
+                sizeof(PointLightPushConstants),
+                &push
+            );
 
             vkCmdDraw(frame_info.m_CommandBuffer, 6, 1, 0, 0);
         }
@@ -126,5 +126,32 @@ namespace Liara::Systems
         pipelineConfig.m_RenderPass = render_pass;
         pipelineConfig.m_PipelineLayout = m_PipelineLayout;
         m_Pipeline = std::make_unique<Graphics::Liara_Pipeline>(m_Device, "shaders/PointLight.vert.spv", "shaders/PointLight.frag.spv", pipelineConfig, m_SettingsManager);
+    }
+
+    void PointLightSystem::RebuildLightCache(const Core::FrameInfo& frame_info)
+    {
+        m_CachedPointLights.clear();
+        m_CachedPointLights.reserve(m_MaxLights);
+
+        for (auto &gameObject: frame_info.m_GameObjects | std::views::values) {
+            if (gameObject.m_PointLight) {
+                m_CachedPointLights.push_back(&gameObject);
+
+                if (m_CachedPointLights.size() >= m_MaxLights) {
+                    fmt::print(stderr, "Warning: Too many point lights, limiting to {}\n", m_MaxLights);
+                    break;
+                }
+            }
+        }
+
+        m_LastGameObjectCount = frame_info.m_GameObjects.size();
+        m_CacheNeedsRebuild = false;
+    }
+
+    void PointLightSystem::UpdateLightCache(const Core::FrameInfo& frame_info)
+    {
+        if (m_CacheNeedsRebuild || m_LastGameObjectCount != frame_info.m_GameObjects.size()) {
+            RebuildLightCache(frame_info);
+        }
     }
 }
