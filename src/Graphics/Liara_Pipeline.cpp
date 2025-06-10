@@ -149,6 +149,7 @@ namespace Liara::Graphics
 
         VkPipelineShaderStageCreateInfo shaderStages[2];
 
+        shaderStages[0] = {};
         shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
         shaderStages[0].module = m_VertShaderModule;
@@ -157,6 +158,7 @@ namespace Liara::Graphics
         shaderStages[0].pNext = nullptr;
         shaderStages[0].pSpecializationInfo = &configInfo.m_SpecializationInfo;
 
+        shaderStages[1] = {};
         shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         shaderStages[1].module = m_FragShaderModule;
@@ -187,32 +189,37 @@ namespace Liara::Graphics
         pipelineInfo.pColorBlendState = &configInfo.m_ColorBlendInfo;
         pipelineInfo.pDepthStencilState = &configInfo.m_DepthStencilInfo;
         pipelineInfo.pDynamicState = &configInfo.m_DynamicStateInfo;
-
         pipelineInfo.layout = configInfo.m_PipelineLayout;
         pipelineInfo.renderPass = configInfo.m_RenderPass;
         pipelineInfo.subpass = configInfo.m_Subpass;
-
         pipelineInfo.basePipelineIndex = -1;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        // FIXME: This is a temporary fix for linux
-        // For some reason, m_GraphicsPipeline is not being set correctly,
-        // Resulting in a segfault when trying to create the pipeline.
-        // This ugly hack is to make sure that the pipeline is created correctly,
-        // But a better solution should be found.
-        #ifdef __linux__
-            const auto new_pipeline  = std::make_unique<VkPipeline>();
-            if (vkCreateGraphicsPipelines(m_Device.GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, new_pipeline.get()) != VK_SUCCESS)
-            {
-                throw std::runtime_error("Failed to create graphics pipeline!");
-            }
-            m_GraphicsPipeline = *new_pipeline;
-        #else
-            if (vkCreateGraphicsPipelines(m_Device.GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS)
-            {
-                throw std::runtime_error("Failed to create graphics pipeline!");
-            }
-        #endif
+        m_GraphicsPipeline = VK_NULL_HANDLE;
+
+        const VkResult result = vkCreateGraphicsPipelines(
+            m_Device.GetDevice(),
+            VK_NULL_HANDLE,
+            1,
+            &pipelineInfo,
+            nullptr,
+            &m_GraphicsPipeline
+        );
+
+        if (result != VK_SUCCESS) {
+            const char* errorMsg = [result]() {
+                switch (result) {
+                    case VK_ERROR_OUT_OF_HOST_MEMORY: return "Out of host memory";
+                    case VK_ERROR_OUT_OF_DEVICE_MEMORY: return "Out of device memory";
+                    case VK_ERROR_INVALID_SHADER_NV: return "Invalid shader";
+                    default: return "Unknown error";
+                }
+            }();
+
+            throw std::runtime_error(std::string("Failed to create graphics pipeline: ") + errorMsg);
+        }
+
+        assert(m_GraphicsPipeline != VK_NULL_HANDLE && "Pipeline creation succeeded but handle is null");
     }
 
     void Liara_Pipeline::CreateShaderModule(const std::vector<char> &code, VkShaderModule *shaderModule) const
