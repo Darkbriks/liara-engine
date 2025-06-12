@@ -1,7 +1,6 @@
 #include "Liara_SwapChain.h"
 
 #include <array>
-#include <cstdlib>
 #include <limits>
 #include <stdexcept>
 #include <fmt/core.h>
@@ -23,49 +22,54 @@ namespace Liara::Graphics
 
     Liara_SwapChain::~Liara_SwapChain()
     {
-        for (const auto imageView: m_SwapChainImageViews) { vkDestroyImageView(m_Device.GetDevice(), imageView, nullptr); }
+        for (size_t i = 0; i < m_ImageAvailableSemaphores.size(); i++) {
+            vkDestroySemaphore(m_Device.GetDevice(), m_ImageAvailableSemaphores[i], nullptr);
+            vkDestroySemaphore(m_Device.GetDevice(), m_RenderFinishedSemaphores[i], nullptr);
+        }
+
+        for (const auto imageView: m_SwapChainImageViews) {
+            vkDestroyImageView(m_Device.GetDevice(), imageView, nullptr);
+        }
         m_SwapChainImageViews.clear();
 
-        if (m_SwapChain != nullptr)
-        {
+        if (m_SwapChain != nullptr) {
             vkDestroySwapchainKHR(m_Device.GetDevice(), m_SwapChain, nullptr);
             m_SwapChain = nullptr;
         }
 
-        for (int i = 0; i < m_DepthImages.size(); i++)
-        {
+        for (int i = 0; i < m_DepthImages.size(); i++) {
             vkDestroyImageView(m_Device.GetDevice(), m_DepthImageViews[i], nullptr);
             vkDestroyImage(m_Device.GetDevice(), m_DepthImages[i], nullptr);
             vkFreeMemory(m_Device.GetDevice(), m_DepthImageMemorys[i], nullptr);
         }
 
-        for (const auto framebuffer: m_SwapChainFramebuffers) { vkDestroyFramebuffer(m_Device.GetDevice(), framebuffer, nullptr); }
+        for (const auto framebuffer: m_SwapChainFramebuffers) {
+            vkDestroyFramebuffer(m_Device.GetDevice(), framebuffer, nullptr);
+        }
 
         vkDestroyRenderPass(m_Device.GetDevice(), m_RenderPass, nullptr);
 
-        // cleanup synchronization objects
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            vkDestroySemaphore(m_Device.GetDevice(), m_RenderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(m_Device.GetDevice(), m_ImageAvailableSemaphores[i], nullptr);
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroyFence(m_Device.GetDevice(), m_InFlightFences[i], nullptr);
         }
     }
 
     VkResult Liara_SwapChain::AcquireNextImage(uint32_t *imageIndex) const
     {
-        vkWaitForFences(
-            m_Device.GetDevice(),
-            1,
-            &m_InFlightFences[m_CurrentFrame],
-            VK_TRUE,
-            std::numeric_limits<uint64_t>::max());
+        vkWaitForFences(m_Device.GetDevice(), 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
+
+        // Problème: on ne connaît pas encore imageIndex, donc on ne peut pas utiliser
+        // m_ImageAvailableSemaphores[*imageIndex]
+
+        // SOLUTION: Utiliser un round-robin basé sur le frame actuel
+        // Cela fonctionne car on a au maximum MAX_FRAMES_IN_FLIGHT frames en parallèle
+        const uint32_t semaphoreIndex = m_CurrentFrame;
 
         const VkResult result = vkAcquireNextImageKHR(
             m_Device.GetDevice(),
             m_SwapChain,
             std::numeric_limits<uint64_t>::max(),
-            m_ImageAvailableSemaphores[m_CurrentFrame], // must be a not signaled semaphore
+            m_ImageAvailableSemaphores[semaphoreIndex],
             VK_NULL_HANDLE,
             imageIndex);
 
@@ -74,47 +78,49 @@ namespace Liara::Graphics
 
     VkResult Liara_SwapChain::SubmitCommandBuffers(const VkCommandBuffer *buffers, const uint32_t *imageIndex)
     {
-        if (m_ImagesInFlight[*imageIndex] != VK_NULL_HANDLE)
-        {
-            vkWaitForFences(m_Device.GetDevice(), 1, &m_ImagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
-        }
-        m_ImagesInFlight[*imageIndex] = m_InFlightFences[m_CurrentFrame];
+        const uint32_t imgIndex = *imageIndex;
 
-        VkSubmitInfo submitInfo = {};
+        if (m_ImagesInFlight[imgIndex] != VK_NULL_HANDLE)
+        {
+            vkWaitForFences(m_Device.GetDevice(), 1, &m_ImagesInFlight[imgIndex], VK_TRUE, UINT64_MAX);
+        }
+
+        m_ImagesInFlight[imgIndex] = m_InFlightFences[m_CurrentFrame];
+
+        VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
         const VkSemaphore waitSemaphores[] = {m_ImageAvailableSemaphores[m_CurrentFrame]};
+        const VkSemaphore signalSemaphores[] = {m_RenderFinishedSemaphores[imgIndex]};
+
         constexpr VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
-
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = buffers;
-
-        const VkSemaphore signalSemaphores[] = {m_RenderFinishedSemaphores[m_CurrentFrame]};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
         vkResetFences(m_Device.GetDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
+
         if (vkQueueSubmit(m_Device.GetGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrame]) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to submit draw command buffer!");
         }
 
-        VkPresentInfoKHR presentInfo = {};
+        VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
 
         const VkSwapchainKHR swapChains[] = {m_SwapChain};
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
-
         presentInfo.pImageIndices = imageIndex;
 
-        const auto result = vkQueuePresentKHR(m_Device.GetPresentQueue(), &presentInfo);
+        const VkResult result = vkQueuePresentKHR(m_Device.GetPresentQueue(), &presentInfo);
 
         m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
@@ -357,10 +363,13 @@ namespace Liara::Graphics
 
     void Liara_SwapChain::CreateSyncObjects()
     {
-        m_ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        m_RenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        const size_t imageCount = ImageCount();
+
+        m_ImageAvailableSemaphores.resize(imageCount);
+        m_RenderFinishedSemaphores.resize(imageCount);
+
         m_InFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-        m_ImagesInFlight.resize(ImageCount(), VK_NULL_HANDLE);
+        m_ImagesInFlight.resize(imageCount, VK_NULL_HANDLE);
 
         VkSemaphoreCreateInfo semaphoreInfo = {};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -369,13 +378,20 @@ namespace Liara::Graphics
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        for (size_t i = 0; i < imageCount; i++)
         {
             if (vkCreateSemaphore(m_Device.GetDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(m_Device.GetDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]) != VK_SUCCESS ||
-                vkCreateFence(m_Device.GetDevice(), &fenceInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS)
+                vkCreateSemaphore(m_Device.GetDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]) != VK_SUCCESS)
             {
-                throw std::runtime_error("failed to create synchronization objects for a frame!");
+                throw std::runtime_error("failed to create image semaphores!");
+            }
+        }
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            if (vkCreateFence(m_Device.GetDevice(), &fenceInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to create frame fence!");
             }
         }
     }
