@@ -10,7 +10,7 @@
 #include "Plateform/Liara_Window.h"
 
 namespace Liara::Core {
-    SettingsManager::SettingsManager() {
+    Liara_SettingsManager::Liara_SettingsManager() {
         // Default settings
         RegisterSetting("global.engine_name", ENGINE_NAME, SettingFlags::None);
         RegisterSetting("global.engine_version", VK_MAKE_VERSION(ENGINE_VERSION_MAJOR, ENGINE_VERSION_MINOR, ENGINE_VERSION_PATCH), SettingFlags::None);
@@ -36,19 +36,19 @@ namespace Liara::Core {
         RegisterSetting("texture.use_mipmaps", true, SettingFlags::Serializable);
     }
 
-    std::vector<std::string> SettingsManager::GetAllSettingNames() const {
-        std::shared_lock lock(mutex_);
+    std::vector<std::string> Liara_SettingsManager::GetAllSettingNames() const {
+        std::shared_lock lock(m_Mutex);
         std::vector<std::string> names;
-        names.reserve(settings_.size());
+        names.reserve(m_Settings.size());
 
-        for (const auto &name: settings_ | std::views::keys) {
+        for (const auto &name: m_Settings | std::views::keys) {
             names.push_back(name);
         }
 
         return names;
     }
 
-    bool SettingsManager::save_to_file(const std::string& filename, const bool overwrite) const {
+    bool Liara_SettingsManager::SaveToFile(const std::string& filename, const bool overwrite) const {
         if (!overwrite && std::ifstream(filename).good()) {
             return false;
         }
@@ -59,18 +59,18 @@ namespace Liara::Core {
         file << "# Liara Engine Settings\n";
         file << "# Auto-generated file\n\n";
 
-        std::shared_lock lock(mutex_);
+        std::shared_lock lock(m_Mutex);
 
-        for (const auto& [name, storage] : settings_) {
-            if (!is_serializable(storage)) { continue; }
+        for (const auto& [name, storage] : m_Settings) {
+            if (!IsSerializable(storage)) { continue; }
 
             const bool success = std::visit([&]<typename T0>(const T0& entry) -> bool {
                 using EntryType = std::decay_t<T0>;
 
                 if constexpr (std::is_same_v<EntryType, FlexibleSettingEntry>) {
-                    return serialize_flexible_entry(file, name, entry);
+                    return SerializeFlexibleEntry(file, name, entry);
                 } else {
-                    return serialize_fast_entry(file, name, entry);
+                    return SerializeFastEntry(file, name, entry);
                 }
             }, storage.data);
 
@@ -80,7 +80,7 @@ namespace Liara::Core {
         return file.good();
     }
 
-    bool SettingsManager::load_from_file(const std::string& filename) {
+    bool Liara_SettingsManager::LoadFromFile(const std::string& filename) {
         std::ifstream file(filename);
         if (!file) return false;
 
@@ -91,16 +91,16 @@ namespace Liara::Core {
             ++line_number;
 
             // Ignorer commentaires et lignes vides
-            line = trim(line);
+            line = Trim(line);
             if (line.empty() || line[0] == '#') { continue; }
 
             // Parser "key=value"
             size_t eq_pos = line.find('=');
             if (eq_pos == std::string::npos) { continue; }
 
-            std::string key = trim(line.substr(0, eq_pos));
+            std::string key = Trim(line.substr(0, eq_pos));
 
-            if (std::string value = trim(line.substr(eq_pos + 1)); !deserialize_setting(key, value)) {
+            if (std::string value = Trim(line.substr(eq_pos + 1)); !DeserializeSetting(key, value)) {
                 std::fprintf(stderr, "Warning: Failed to deserialize setting '%s' at line %zu\n",
                            key.c_str(), line_number);
             }
@@ -109,7 +109,7 @@ namespace Liara::Core {
         return true;
     }
 
-    bool SettingsManager::serialize_flexible_entry(std::ofstream& file, const std::string& name, const FlexibleSettingEntry& entry) {
+    bool Liara_SettingsManager::SerializeFlexibleEntry(std::ofstream& file, const std::string& name, const FlexibleSettingEntry& entry) {
         // TODO: Check why cast to ISettingSerializable fails
         // Si l'entrée est sérialisable, utiliser la méthode de sérialisation
         if (const auto serializable = std::any_cast<ISettingSerializable*>(&entry.value)) {
@@ -120,9 +120,9 @@ namespace Liara::Core {
         return false;
     }
 
-    bool SettingsManager::deserialize_setting(const std::string& key, const std::string& value) {
-        const auto it = settings_.find(key);
-        if (it == settings_.end()) {
+    bool Liara_SettingsManager::DeserializeSetting(const std::string& key, const std::string& value) {
+        const auto it = m_Settings.find(key);
+        if (it == m_Settings.end()) {
             // Setting inconnu, créer un setting string par défaut
             RegisterSetting(key, value, SettingFlags::Default, true);
             return true;
@@ -132,14 +132,14 @@ namespace Liara::Core {
             using EntryType = std::decay_t<T0>;
 
             if constexpr (std::is_same_v<EntryType, FlexibleSettingEntry>) {
-                return deserialize_flexible_entry(entry, value);
+                return DeserializeFlexibleEntry(entry, value);
             } else {
-                return deserialize_fast_entry(entry, value);
+                return DeserializeFastEntry(entry, value);
             }
         }, it->second.data);
     }
 
-    bool SettingsManager::deserialize_flexible_entry(const FlexibleSettingEntry& entry, const std::string& value) {
+    bool Liara_SettingsManager::DeserializeFlexibleEntry(const FlexibleSettingEntry& entry, const std::string& value) {
         // TODO: Check why cast to ISettingSerializable fails
         if (const auto* serializable = std::any_cast<ISettingSerializable*>(&entry.value)) {
             return (*serializable)->deserialize(value);
@@ -147,13 +147,13 @@ namespace Liara::Core {
         return false;
     }
 
-    bool SettingsManager::is_serializable(const SettingStorage& storage) {
+    bool Liara_SettingsManager::IsSerializable(const SettingStorage& storage) {
         return std::visit([](const auto& entry) -> bool {
             return static_cast<uint32_t>(entry.flags) & static_cast<uint32_t>(SettingFlags::Serializable);
         }, storage.data);
     }
 
-    std::string SettingsManager::trim(const std::string& str) {
+    std::string Liara_SettingsManager::Trim(const std::string& str) {
         const auto start = str.find_first_not_of(" \t\r\n");
         if (start == std::string::npos) return "";
 

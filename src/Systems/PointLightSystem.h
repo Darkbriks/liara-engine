@@ -19,7 +19,7 @@ namespace Liara::Systems
         PointLightSystem(Graphics::Liara_Device& device,
                           VkRenderPass render_pass,
                           VkDescriptorSetLayout descriptor_set_layout,
-                          const Core::SettingsManager& settings_manager);
+                          const Core::Liara_SettingsManager& settings_manager);
         ~PointLightSystem() override;
 
         void Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) override;
@@ -38,7 +38,7 @@ namespace Liara::Systems
         std::unique_ptr<Graphics::Liara_Pipeline> m_Pipeline;
         VkPipelineLayout m_PipelineLayout{};
 
-        const Core::SettingsManager& m_SettingsManager;
+        const Core::Liara_SettingsManager& m_SettingsManager;
 
         // Use a vector to cache point lights for efficient rendering
         std::vector<Core::Liara_GameObject*> m_CachedPointLights;

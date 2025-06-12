@@ -61,7 +61,7 @@ namespace Liara::Graphics
          * @param window Reference to a `Plateform::Liara_Window` object.
          * @param settings Reference to a `Core::Liara_SettingsContext` object containing graphics settings.
          */
-        explicit Liara_Device(Plateform::Liara_Window &window, Core::SettingsManager& settings);
+        explicit Liara_Device(Plateform::Liara_Window &window, Core::Liara_SettingsManager& settings);
 
         /**
          * @brief Destructor that cleans up Vulkan resources.
@@ -254,7 +254,7 @@ namespace Liara::Graphics
          */
         SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
 
-        Core::SettingsManager& m_SettingsManager;
+        Core::Liara_SettingsManager& m_SettingsManager;
 
         // Vulkan handles
         VkInstance m_Instance{};                                ///< Vulkan instance

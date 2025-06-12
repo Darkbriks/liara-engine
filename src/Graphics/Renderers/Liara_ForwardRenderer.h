@@ -10,7 +10,7 @@ namespace Liara::Graphics::Renderers
     class Liara_ForwardRenderer final : public Liara_Renderer
     {
     public:
-        Liara_ForwardRenderer(Core::SettingsManager& settingsManager, Plateform::Liara_Window& window, Liara_Device& device);
+        Liara_ForwardRenderer(Core::Liara_SettingsManager& settingsManager, Plateform::Liara_Window& window, Liara_Device& device);
         ~Liara_ForwardRenderer() override;
 
         [[nodiscard]] VkRenderPass GetRenderPass() const override { return m_SwapChain->GetRenderPass(); }

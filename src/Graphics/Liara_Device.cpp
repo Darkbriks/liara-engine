@@ -43,7 +43,7 @@ namespace Liara::Graphics
     }
 
     // class member functions
-    Liara_Device::Liara_Device(Plateform::Liara_Window &window, Core::SettingsManager& settings) :
+    Liara_Device::Liara_Device(Plateform::Liara_Window &window, Core::Liara_SettingsManager& settings) :
         m_SettingsManager(settings),
         m_Window(window)
     {

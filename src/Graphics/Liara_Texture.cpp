@@ -19,7 +19,7 @@ namespace Liara::Graphics
         stbi_image_free(pixels);
     }
 
-    void Liara_Texture::Builder::LoadTexture(const std::string& filename, const Core::SettingsManager& settings_manager)
+    void Liara_Texture::Builder::LoadTexture(const std::string& filename, const Core::Liara_SettingsManager& settings_manager)
     {
         pixels = stbi_load((std::string(ENGINE_DIR) + filename).c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
@@ -37,7 +37,7 @@ namespace Liara::Graphics
         }
     }
 
-    Liara_Texture::Liara_Texture(Liara_Device& device, const Builder& builder, const Core::SettingsManager& settingsManager)
+    Liara_Texture::Liara_Texture(Liara_Device& device, const Builder& builder, const Core::Liara_SettingsManager& settingsManager)
         : m_Device(device), m_SettingsManager(settingsManager)
     {
         if (builder.errorFlag)
@@ -57,7 +57,7 @@ namespace Liara::Graphics
         CreateTextureSampler();
     }
 
-    Liara_Texture::Liara_Texture(Liara_Device& device, const int width, const int height, const VkFormat format, const VkImageUsageFlags usage, const Core::SettingsManager& settingsManager)
+    Liara_Texture::Liara_Texture(Liara_Device& device, const int width, const int height, const VkFormat format, const VkImageUsageFlags usage, const Core::Liara_SettingsManager& settingsManager)
         : m_Device(device), m_SettingsManager(settingsManager)
     {
         m_Width = width;

@@ -33,7 +33,7 @@ namespace Liara::Core
 
         void AddSystem(std::unique_ptr<Systems::Liara_System> system) { m_Systems.push_back(std::move(system)); }
 
-        SettingsManager& GetSettingsManager() const { return *m_SettingsManager; }
+        Liara_SettingsManager& GetSettingsManager() const { return *m_SettingsManager; }
 
     protected:
         virtual void Init();
@@ -58,7 +58,7 @@ namespace Liara::Core
         void MasterRender(const FrameInfo &frameInfo);
 
     protected:
-        std::shared_ptr<SettingsManager> m_SettingsManager;
+        std::shared_ptr<Liara_SettingsManager> m_SettingsManager;
 
         Plateform::Liara_Window m_Window;
         Graphics::Liara_Device m_Device;

@@ -42,7 +42,7 @@ namespace Liara::Plateform
         }
     }
 
-    Liara_Window::Liara_Window(Core::SettingsManager& settingsManager) : m_SettingsManager(settingsManager), m_ID(g_WindowCount++)
+    Liara_Window::Liara_Window(Core::Liara_SettingsManager& settingsManager) : m_SettingsManager(settingsManager), m_ID(g_WindowCount++)
     {
         g_Windows[m_ID] = this;
         WindowSettings settings;

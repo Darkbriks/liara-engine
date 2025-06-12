@@ -42,13 +42,13 @@ namespace Liara::Graphics
                               const std::string& vertFilepath,
                               const std::string& fragFilepath,
                               const PipelineConfigInfo& configInfo,
-                              const Core::SettingsManager& settings_manager);
+                              const Core::Liara_SettingsManager& settings_manager);
         ~Liara_Pipeline();
 
         Liara_Pipeline(const Liara_Pipeline&) = delete;
         Liara_Pipeline& operator=(const Liara_Pipeline&) = delete;
 
-        static void DefaultPipelineConfigInfo(PipelineConfigInfo& configInfo, const Core::SettingsManager& settings_manager);
+        static void DefaultPipelineConfigInfo(PipelineConfigInfo& configInfo, const Core::Liara_SettingsManager& settings_manager);
 
         void Bind(VkCommandBuffer commandBuffer) const;
 

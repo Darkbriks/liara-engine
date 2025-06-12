@@ -9,7 +9,7 @@
 
 namespace Liara::Graphics
 {
-    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, const VkExtent2D windowExtent, const Core::SettingsManager &settings)
+    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, const VkExtent2D windowExtent, const Core::Liara_SettingsManager &settings)
     : m_SettingsManager(settings), m_Device{deviceRef}, m_WindowExtent{windowExtent}, m_OldSwapChain(nullptr)
     {
         Init();

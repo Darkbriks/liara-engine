@@ -17,7 +17,7 @@ namespace Liara::Graphics
                                    const std::string &vertFilepath,
                                    const std::string &fragFilepath,
                                    const PipelineConfigInfo &configInfo,
-                                   const Core::SettingsManager& settings_manager)
+                                   const Core::Liara_SettingsManager& settings_manager)
         : m_Device(device)
     {
         CreateGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
@@ -30,7 +30,7 @@ namespace Liara::Graphics
         vkDestroyPipeline(m_Device.GetDevice(), m_GraphicsPipeline, nullptr);
     }
 
-    void Liara_Pipeline::DefaultPipelineConfigInfo(PipelineConfigInfo &configInfo, const Core::SettingsManager& settings_manager)
+    void Liara_Pipeline::DefaultPipelineConfigInfo(PipelineConfigInfo &configInfo, const Core::Liara_SettingsManager& settings_manager)
     {
         configInfo.m_InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         configInfo.m_InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;

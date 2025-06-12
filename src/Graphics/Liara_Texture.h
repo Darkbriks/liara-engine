@@ -40,7 +40,7 @@ namespace Liara::Graphics
              * @param filename The file name of the texture to load
              * @param settings_manager The settings manager to use for texture settings
              */
-            void LoadTexture(const std::string& filename, const Core::SettingsManager& settings_manager);
+            void LoadTexture(const std::string& filename, const Core::Liara_SettingsManager& settings_manager);
         };
 
         /**
@@ -51,7 +51,7 @@ namespace Liara::Graphics
          * @param builder The builder object containing the texture data
          * @param settingsManager The settings manager to use for texture settings
          */
-        Liara_Texture(Liara_Device& device, const Builder& builder, const Core::SettingsManager& settingsManager);
+        Liara_Texture(Liara_Device& device, const Builder& builder, const Core::Liara_SettingsManager& settingsManager);
 
         /**
          * @brief Constructor for the Liara_Texture class
@@ -68,7 +68,7 @@ namespace Liara::Graphics
          * @param usage The usage of the texture
          * @param settingsManager The settings manager to use for texture settings
          */
-        Liara_Texture(Liara_Device& device, int width, int height, VkFormat format, VkImageUsageFlags usage, const Core::SettingsManager& settingsManager);
+        Liara_Texture(Liara_Device& device, int width, int height, VkFormat format, VkImageUsageFlags usage, const Core::Liara_SettingsManager& settingsManager);
         ~Liara_Texture(); ///< Destructor to clean up the texture
 
         Liara_Texture(const Liara_Texture&) = delete;
@@ -87,7 +87,7 @@ namespace Liara::Graphics
         void GenerateMipmaps() const;
 
         Liara_Device& m_Device;
-        const Core::SettingsManager& m_SettingsManager;
+        const Core::Liara_SettingsManager& m_SettingsManager;
 
         VkImage m_Image{};
         VkDeviceMemory m_ImageMemory{};

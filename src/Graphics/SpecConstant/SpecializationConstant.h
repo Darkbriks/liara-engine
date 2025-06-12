@@ -18,7 +18,7 @@
 
 #include "Utils/Singleton.h"
 
-namespace Liara::Core { class SettingsManager; }
+namespace Liara::Core { class Liara_SettingsManager; }
 
 namespace Liara::Graphics
 {
@@ -106,7 +106,7 @@ namespace Liara::Graphics
     {
     public:
 
-        void Initialize(const Core::SettingsManager& settingsManager)
+        void Initialize(const Core::Liara_SettingsManager& settingsManager)
         {
             std::lock_guard<std::mutex> lock(m_Mutex);
 
@@ -119,7 +119,7 @@ namespace Liara::Graphics
             m_Initialized = true;
         }
 
-        static void InitializeGlobal(const Core::SettingsManager& settingsManager)
+        static void InitializeGlobal(const Core::Liara_SettingsManager& settingsManager)
         {
             GetInstance().Initialize(settingsManager);
         }

@@ -11,7 +11,7 @@
 
 namespace Liara::Core {
     template<typename T>
-    [[nodiscard]] bool SettingsManager::SettingStorage::HoldsType() const {
+    [[nodiscard]] bool Liara_SettingsManager::SettingStorage::HoldsType() const {
         if constexpr (FastSettingType<T>) {
             return std::holds_alternative<FastSettingEntry<T> >(data);
         } else {
@@ -23,14 +23,14 @@ namespace Liara::Core {
     }
 
     template<typename T>
-    void SettingsManager::RegisterSetting(const std::string_view name, T &&default_value, SettingFlags flags, const bool overwrite) {
-        std::unique_lock lock(mutex_);
-        if (!overwrite && settings_.contains(std::string(name))) { return; }
+    void Liara_SettingsManager::RegisterSetting(const std::string_view name, T &&default_value, SettingFlags flags, const bool overwrite) {
+        std::unique_lock lock(m_Mutex);
+        if (!overwrite && m_Settings.contains(std::string(name))) { return; }
 
         if constexpr (FastSettingType<std::decay_t<T> >) {
-            settings_[std::string(name)] = SettingStorage(FastSettingEntry<std::decay_t<T>>(std::forward<T>(default_value), flags));
+            m_Settings[std::string(name)] = SettingStorage(FastSettingEntry<std::decay_t<T>>(std::forward<T>(default_value), flags));
         } else {
-            settings_[std::string(name)] = SettingStorage(
+            m_Settings[std::string(name)] = SettingStorage(
                     FlexibleSettingEntry(
                     std::make_any<T>(std::forward<T>(default_value)),
                     std::hash<std::string>{}(typeid(T).name()),
@@ -41,11 +41,11 @@ namespace Liara::Core {
     }
 
     template<typename T>
-    [[nodiscard]] T SettingsManager::Get(const std::string_view name) const {
-        std::shared_lock lock(mutex_);
+    [[nodiscard]] T Liara_SettingsManager::Get(const std::string_view name) const {
+        std::shared_lock lock(m_Mutex);
 
-        const auto it = settings_.find(std::string(name));
-        if (it == settings_.end()) {
+        const auto it = m_Settings.find(std::string(name));
+        if (it == m_Settings.end()) {
             throw std::runtime_error("Setting not found: " + std::string(name));
         }
 
@@ -65,11 +65,11 @@ namespace Liara::Core {
     }
 
     template<typename T>
-    bool SettingsManager::Set(const std::string_view name, const T &value) {
-        std::unique_lock lock(mutex_);
+    bool Liara_SettingsManager::Set(const std::string_view name, const T &value) {
+        std::unique_lock lock(m_Mutex);
 
-        const auto it = settings_.find(std::string(name));
-        if (it == settings_.end()) return false;
+        const auto it = m_Settings.find(std::string(name));
+        if (it == m_Settings.end()) return false;
 
         // Vérification des flags et du type + mise à jour
         bool success = false;
@@ -115,11 +115,11 @@ namespace Liara::Core {
     }
 
     template<typename T>
-    void SettingsManager::Subscribe(const std::string_view name, std::function<void(const T &)> callback) {
-        std::unique_lock lock(mutex_);
+    void Liara_SettingsManager::Subscribe(const std::string_view name, std::function<void(const T &)> callback) {
+        std::unique_lock lock(m_Mutex);
 
-        const auto it = settings_.find(std::string(name));
-        if (it == settings_.end()) { return; }
+        const auto it = m_Settings.find(std::string(name));
+        if (it == m_Settings.end()) { return; }
 
         auto observer = std::make_unique<TypedObserver<T> >(std::move(callback));
 
@@ -129,17 +129,17 @@ namespace Liara::Core {
     }
 
     template<typename T>
-    bool SettingsManager::HasSetting(const std::string_view name) const {
-        std::shared_lock lock(mutex_);
+    bool Liara_SettingsManager::HasSetting(const std::string_view name) const {
+        std::shared_lock lock(m_Mutex);
 
-        const auto it = settings_.find(std::string(name));
-        if (it == settings_.end()) return false;
+        const auto it = m_Settings.find(std::string(name));
+        if (it == m_Settings.end()) return false;
 
         return it->second.HoldsType<T>();
     }
 
     template<typename Entry>
-    bool SettingsManager::serialize_fast_entry(std::ofstream& file, const std::string& name, const Entry& entry) const {
+    bool Liara_SettingsManager::SerializeFastEntry(std::ofstream& file, const std::string& name, const Entry& entry) const {
         using ValueType = typename Entry::value_type;
 
         if constexpr (SerializableType<ValueType>) {
@@ -152,7 +152,7 @@ namespace Liara::Core {
     }
 
     template<typename Entry>
-    bool SettingsManager::deserialize_fast_entry(Entry& entry, const std::string& value) {
+    bool Liara_SettingsManager::DeserializeFastEntry(Entry& entry, const std::string& value) {
         using ValueType = typename Entry::value_type;
 
         if constexpr (SerializableType<ValueType>) {

@@ -10,7 +10,7 @@ int Run()
     {
         FirstApp app;
         app.Run();
-        return app.GetSettingsManager().save_to_file("settings.cfg", true) ? EXIT_SUCCESS : EXIT_FAILURE;
+        return app.GetSettingsManager().SaveToFile("settings.cfg", true) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
     catch (const std::exception& e)
     {

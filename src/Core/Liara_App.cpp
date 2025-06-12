@@ -20,12 +20,12 @@
 namespace Liara::Core
 {
     Liara_App::Liara_App()
-        : m_SettingsManager(std::make_unique<SettingsManager>()),
+        : m_SettingsManager(std::make_unique<Liara_SettingsManager>()),
         m_Window(*m_SettingsManager),
         m_Device(m_Window, *m_SettingsManager),
         m_RendererManager(m_Window, m_Device, *m_SettingsManager)
     {
-        m_SettingsManager->load_from_file("settings.cfg");
+        m_SettingsManager->LoadFromFile("settings.cfg");
         //Graphics::SpecConstant::SpecConstant::Initialize(*m_SettingsManager);
 
         // Todo: Check if this is the right place to put this

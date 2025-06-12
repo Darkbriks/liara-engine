@@ -28,7 +28,7 @@ namespace Liara::Systems
     PointLightSystem::PointLightSystem(Graphics::Liara_Device& device,
                                       VkRenderPass render_pass,
                                       VkDescriptorSetLayout descriptor_set_layout,
-                                      const Core::SettingsManager& settings_manager)
+                                      const Core::Liara_SettingsManager& settings_manager)
         : m_Device(device), m_SettingsManager(settings_manager)
     {
         CreatePipelineLayout(descriptor_set_layout);

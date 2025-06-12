@@ -56,7 +56,7 @@ namespace Liara::Core {
         std::function<void(const T&)> m_callback;
     };
 
-    class SettingsManager {
+    class Liara_SettingsManager {
     private:
         // Storage rapide pour les types fréquents
         template<FastSettingType T>
@@ -110,7 +110,12 @@ namespace Liara::Core {
         };
 
     public:
-        SettingsManager();
+        Liara_SettingsManager();
+
+        Liara_SettingsManager(const Liara_SettingsManager&) = delete;
+        Liara_SettingsManager& operator=(const Liara_SettingsManager&) = delete;
+        Liara_SettingsManager(Liara_SettingsManager&&) = delete;
+        Liara_SettingsManager& operator=(Liara_SettingsManager&&) = delete;
 
         template<typename T>
         void RegisterSetting(std::string_view name, T&& default_value, SettingFlags flags = SettingFlags::Default, bool overwrite = false);
@@ -125,11 +130,11 @@ namespace Liara::Core {
         void Subscribe(std::string_view name, std::function<void(const T&)> callback);
 
         // Helpers pour les types courants (interface simplifiée)
-        bool GetBool(const std::string_view name) const { return Get<bool>(name); }
-        int GetInt(const std::string_view name) const { return Get<int>(name); }
-        uint32_t GetUInt(const std::string_view name) const { return Get<uint32_t>(name); }
-        float GetFloat(const std::string_view name) const { return Get<float>(name); }
-        std::string GetString(const std::string_view name) const { return Get<std::string>(name); }
+        [[nodiscard]] bool GetBool(const std::string_view name) const { return Get<bool>(name); }
+        [[nodiscard]] int GetInt(const std::string_view name) const { return Get<int>(name); }
+        [[nodiscard]] uint32_t GetUInt(const std::string_view name) const { return Get<uint32_t>(name); }
+        [[nodiscard]] float GetFloat(const std::string_view name) const { return Get<float>(name); }
+        [[nodiscard]] std::string GetString(const std::string_view name) const { return Get<std::string>(name); }
 
         void SetBool(const std::string_view name, const bool value) { Set(name, value); }
         void SetInt(const std::string_view name, const int value) { Set(name, value); }
@@ -143,25 +148,24 @@ namespace Liara::Core {
         template<typename T>
         bool HasSetting(std::string_view name) const;
 
-        bool save_to_file(const std::string& filename, bool overwrite = true) const;
-        bool load_from_file(const std::string& filename);
+        bool SaveToFile(const std::string& filename, bool overwrite = true) const;
+        bool LoadFromFile(const std::string& filename);
 
     private:
-
         template<typename Entry>
-        bool serialize_fast_entry(std::ofstream& file, const std::string& name, const Entry& entry) const;
-        static bool serialize_flexible_entry(std::ofstream& file, const std::string& name, const FlexibleSettingEntry& entry) ;
+        bool SerializeFastEntry(std::ofstream& file, const std::string& name, const Entry& entry) const;
+        static bool SerializeFlexibleEntry(std::ofstream& file, const std::string& name, const FlexibleSettingEntry& entry) ;
 
-        bool deserialize_setting(const std::string& key, const std::string& value);
+        bool DeserializeSetting(const std::string& key, const std::string& value);
         template<typename Entry>
-        bool deserialize_fast_entry(Entry& entry, const std::string& value);
-        static bool deserialize_flexible_entry(const FlexibleSettingEntry& entry, const std::string& value);
-        static bool is_serializable(const SettingStorage& storage);
+        bool DeserializeFastEntry(Entry& entry, const std::string& value);
+        static bool DeserializeFlexibleEntry(const FlexibleSettingEntry& entry, const std::string& value);
+        static bool IsSerializable(const SettingStorage& storage);
 
-        static std::string trim(const std::string& str);
+        static std::string Trim(const std::string& str);
 
-        mutable std::shared_mutex mutex_;
-        std::unordered_map<std::string, SettingStorage> settings_;
+        mutable std::shared_mutex m_Mutex;
+        std::unordered_map<std::string, SettingStorage> m_Settings;
     };
 }
 

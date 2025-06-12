@@ -5,7 +5,7 @@
 
 namespace Liara::Graphics::Renderers
 {
-    Liara_RendererManager::Liara_RendererManager(Plateform::Liara_Window& window, Liara_Device& device, Core::SettingsManager& settings_manager, const RendererType type)
+    Liara_RendererManager::Liara_RendererManager(Plateform::Liara_Window& window, Liara_Device& device, Core::Liara_SettingsManager& settings_manager, const RendererType type)
         : m_SettingsManager(settings_manager), m_Window(window), m_Device(device), m_RendererType(type)
     {
         SetRenderer(type);

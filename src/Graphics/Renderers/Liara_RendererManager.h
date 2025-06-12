@@ -14,7 +14,7 @@ namespace Liara::Graphics::Renderers
     class Liara_RendererManager
     {
     public:
-        Liara_RendererManager(Plateform::Liara_Window& window, Liara_Device& device, Core::SettingsManager& settings_manager, RendererType type = RendererType::FORWARD);
+        Liara_RendererManager(Plateform::Liara_Window& window, Liara_Device& device, Core::Liara_SettingsManager& settings_manager, RendererType type = RendererType::FORWARD);
         ~Liara_RendererManager();
 
         void SetRenderer(RendererType type);
@@ -30,7 +30,7 @@ namespace Liara::Graphics::Renderers
         void CleanUp();
 
     private:
-        Core::SettingsManager& m_SettingsManager;
+        Core::Liara_SettingsManager& m_SettingsManager;
         Plateform::Liara_Window& m_Window;
         Liara_Device& m_Device;
         std::unique_ptr<Liara_Renderer> m_Renderer;

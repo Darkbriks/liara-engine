@@ -9,7 +9,7 @@ namespace Liara::Graphics::Renderers
     class Liara_Renderer
     {
     public:
-        Liara_Renderer(Core::SettingsManager& settingsManager, Plateform::Liara_Window& window, Liara_Device& device)
+        Liara_Renderer(Core::Liara_SettingsManager& settingsManager, Plateform::Liara_Window& window, Liara_Device& device)
             : m_SettingsManager(settingsManager), m_Window(window), m_Device(device) {}
         virtual ~Liara_Renderer() = default;
         Liara_Renderer(const Liara_Renderer&) = delete;
@@ -28,7 +28,7 @@ namespace Liara::Graphics::Renderers
         virtual void EndRenderPass(VkCommandBuffer commandBuffer) const = 0;
 
     protected:
-        Core::SettingsManager& m_SettingsManager;
+        Core::Liara_SettingsManager& m_SettingsManager;
         Plateform::Liara_Window& m_Window;
         Liara_Device& m_Device;
     };

@@ -59,7 +59,7 @@ namespace Liara::Plateform
          * @brief Constructor, initializes id and calls InitWindow.
          * @param settingsManager Reference to the settings manager to use for window settings.
          */
-        Liara_Window(Core::SettingsManager& settingsManager);
+        Liara_Window(Core::Liara_SettingsManager& settingsManager);
 
         /**
          * @brief Destructor, destroys the window and quits SDL.
@@ -91,7 +91,7 @@ namespace Liara::Plateform
          */
         void FramebufferResizeCallback(uint8_t windowID, int width, int height) const;
 
-        Core::SettingsManager& m_SettingsManager;
+        Core::Liara_SettingsManager& m_SettingsManager;
 
         static uint8_t g_WindowCount;   ///< The number of windows created
         static std::unordered_map<uint8_t, Liara_Window*> g_Windows;  ///< The map of windows

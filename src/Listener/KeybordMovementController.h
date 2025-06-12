@@ -30,7 +30,7 @@ namespace Liara::Listener
             int lookDown = SDL_SCANCODE_DOWN;
         };
 
-        explicit KeybordMovementController(Core::SettingsManager& settingsManager) : m_SettingsManager(settingsManager) {}
+        explicit KeybordMovementController(Core::Liara_SettingsManager& settingsManager) : m_SettingsManager(settingsManager) {}
 
         // TODO : Ajouter une couche d'abstraction
         /**
@@ -46,7 +46,7 @@ namespace Liara::Listener
         float m_LookSpeed = 1.5f;           ///< The look speed
 
     private:
-        Core::SettingsManager& m_SettingsManager;
+        Core::Liara_SettingsManager& m_SettingsManager;
 
         mutable bool m_F10Pressed = false;
         mutable bool m_F11Pressed = false;
