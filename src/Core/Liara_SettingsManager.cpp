@@ -27,7 +27,6 @@ namespace Liara::Core {
          *      - VK_PRESENT_MODE_MAILBOX_KHR: Uses a mailbox queue to present images. The display is synchronized with the vertical blanking period. No tearing, lower latency than FIFO, but can need more resources.
          */
         RegisterSetting("graphics.present_mode", static_cast<uint32_t>(VK_PRESENT_MODE_MAILBOX_KHR), SettingFlags::Serializable);
-        RegisterSetting("graphics.max_lights", 10u, SettingFlags::Serializable);
         RegisterSetting("graphics.vsync", true, SettingFlags::Default);
 
         RegisterSetting("texture.use_anisotropic_filtering", true, SettingFlags::Serializable);

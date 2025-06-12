@@ -11,8 +11,6 @@ namespace Liara::Graphics
     class Liara_SwapChain
     {
     public:
-        static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-
         Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent, const Core::SettingsManager &settings);
         Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent, const std::shared_ptr<Liara_SwapChain>& oldSwapChain);
         ~Liara_SwapChain();

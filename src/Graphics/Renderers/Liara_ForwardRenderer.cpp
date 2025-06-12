@@ -3,6 +3,8 @@
 #include <array>
 #include <stdexcept>
 
+#include "Graphics/GraphicsConstants.h"
+
 namespace Liara::Graphics::Renderers
 {
     Liara_ForwardRenderer::Liara_ForwardRenderer(Core::SettingsManager& settingsManager, Plateform::Liara_Window& window, Liara_Device& device)
@@ -103,7 +105,7 @@ namespace Liara::Graphics::Renderers
         settings.ResetFlags();
 
         m_IsFrameStarted = false;
-        m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Liara_SwapChain::MAX_FRAMES_IN_FLIGHT;
+        m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Constants::MAX_FRAMES_IN_FLIGHT;
     }
 
     void Liara_ForwardRenderer::BeginRenderPass(VkCommandBuffer command_buffer) const
@@ -147,7 +149,7 @@ namespace Liara::Graphics::Renderers
 
     void Liara_ForwardRenderer::CreateCommandBuffers()
     {
-        m_CommandBuffers.resize(Liara_SwapChain::MAX_FRAMES_IN_FLIGHT);
+        m_CommandBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
         VkCommandBufferAllocateInfo commandBufferAllocInfo{};
         commandBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

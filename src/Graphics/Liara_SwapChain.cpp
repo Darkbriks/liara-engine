@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <fmt/core.h>
 
+#include "GraphicsConstants.h"
+
 namespace Liara::Graphics
 {
     Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, const VkExtent2D windowExtent, const Core::SettingsManager &settings)
@@ -49,7 +51,7 @@ namespace Liara::Graphics
 
         vkDestroyRenderPass(m_Device.GetDevice(), m_RenderPass, nullptr);
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroyFence(m_Device.GetDevice(), m_InFlightFences[i], nullptr);
         }
     }
@@ -122,7 +124,7 @@ namespace Liara::Graphics
 
         const VkResult result = vkQueuePresentKHR(m_Device.GetPresentQueue(), &presentInfo);
 
-        m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+        m_CurrentFrame = (m_CurrentFrame + 1) % Constants::MAX_FRAMES_IN_FLIGHT;
 
         return result;
     }
@@ -368,7 +370,7 @@ namespace Liara::Graphics
         m_ImageAvailableSemaphores.resize(imageCount);
         m_RenderFinishedSemaphores.resize(imageCount);
 
-        m_InFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+        m_InFlightFences.resize(Constants::MAX_FRAMES_IN_FLIGHT);
         m_ImagesInFlight.resize(imageCount, VK_NULL_HANDLE);
 
         VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -387,7 +389,7 @@ namespace Liara::Graphics
             }
         }
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++)
         {
             if (vkCreateFence(m_Device.GetDevice(), &fenceInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS)
             {

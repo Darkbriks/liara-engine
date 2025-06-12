@@ -14,6 +14,8 @@
 #include <mutex>
 #include <vulkan/vulkan_core.h>
 
+#include "Graphics/GraphicsConstants.h"
+
 #include "Utils/Singleton.h"
 
 namespace Liara::Core { class SettingsManager; }
@@ -113,8 +115,7 @@ namespace Liara::Graphics
                 return;
             }
 
-            const uint32_t maxLights = settingsManager.GetUInt("graphics.max_lights");
-            GraphicsSpecConstants::Initialize(maxLights);
+            GraphicsSpecConstants::Initialize(Constants::MAX_LIGHTS);
             m_Initialized = true;
         }
 

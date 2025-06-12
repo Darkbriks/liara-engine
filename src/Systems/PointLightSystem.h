@@ -44,7 +44,5 @@ namespace Liara::Systems
         std::vector<Core::Liara_GameObject*> m_CachedPointLights;
         bool m_CacheNeedsRebuild = true;
         size_t m_LastGameObjectCount = 0;
-
-        uint32_t m_MaxLights;
     };
 }

@@ -46,7 +46,7 @@ namespace Liara::Systems
 
         const auto rotateLight = glm::rotate(glm::mat4(1.f), frame_info.m_DeltaTime, {0.f, -1.f, 0.f});
 
-        const size_t lightCount = std::min(m_CachedPointLights.size(), static_cast<size_t>(m_MaxLights));
+        const size_t lightCount = std::min(m_CachedPointLights.size(), static_cast<size_t>(Graphics::Constants::MAX_LIGHTS));
 
         for (size_t i = 0; i < lightCount; ++i) {
             auto* gameObject = m_CachedPointLights[i];
@@ -131,14 +131,14 @@ namespace Liara::Systems
     void PointLightSystem::RebuildLightCache(const Core::FrameInfo& frame_info)
     {
         m_CachedPointLights.clear();
-        m_CachedPointLights.reserve(m_MaxLights);
+        m_CachedPointLights.reserve(Graphics::Constants::MAX_LIGHTS);
 
         for (auto &gameObject: frame_info.m_GameObjects | std::views::values) {
             if (gameObject.m_PointLight) {
                 m_CachedPointLights.push_back(&gameObject);
 
-                if (m_CachedPointLights.size() >= m_MaxLights) {
-                    fmt::print(stderr, "Warning: Too many point lights, limiting to {}\n", m_MaxLights);
+                if (m_CachedPointLights.size() >= Graphics::Constants::MAX_LIGHTS) {
+                    fmt::print(stderr, "Warning: Too many point lights, limiting to {}\n", Graphics::Constants::MAX_LIGHTS);
                     break;
                 }
             }

@@ -30,9 +30,9 @@ namespace Liara::Core
 
         // Todo: Check if this is the right place to put this
         m_DescriptorAllocator = Graphics::Descriptors::Liara_DescriptorAllocator::Builder(m_Device)
-                                .SetMaxSets(Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
-                                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
-                                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT)
+                                .SetMaxSets(Graphics::Constants::MAX_FRAMES_IN_FLIGHT)
+                                .AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Graphics::Constants::MAX_FRAMES_IN_FLIGHT)
+                                .AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Graphics::Constants::MAX_FRAMES_IN_FLIGHT)
                                 .Build();
 
         m_DescriptorLayoutCache = Graphics::Descriptors::Liara_DescriptorLayoutCache::Builder(m_Device).Build();
@@ -96,7 +96,7 @@ namespace Liara::Core
 
     void Liara_App::InitUboBuffers()
     {
-        m_UboBuffers.resize(Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT);
+        m_UboBuffers.resize(Graphics::Constants::MAX_FRAMES_IN_FLIGHT);
         for (auto &uboBuffer : m_UboBuffers)
         {
             uboBuffer = std::make_unique<Graphics::Liara_Buffer>(
@@ -113,7 +113,7 @@ namespace Liara::Core
     void Liara_App::InitDescriptorSets()
     {
         m_GlobalSetLayout = VkDescriptorSetLayout{};
-        m_GlobalDescriptorSets.resize(Graphics::Liara_SwapChain::MAX_FRAMES_IN_FLIGHT);
+        m_GlobalDescriptorSets.resize(Graphics::Constants::MAX_FRAMES_IN_FLIGHT);
         for (size_t i = 0; i < m_GlobalDescriptorSets.size(); i++)
         {
             auto bufferInfo = m_UboBuffers[i]->DescriptorInfo();

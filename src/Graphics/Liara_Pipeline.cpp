@@ -111,7 +111,7 @@ namespace Liara::Graphics
         }
         configInfo.m_SpecializationInfo = SpecConstant::GetSpecializationInfo();
 
-        assert(configInfo.m_BindingDescriptions.size() > 0 && "No binding descriptions provided in configInfo");
+        assert(!configInfo.m_BindingDescriptions.empty() && "No binding descriptions provided in configInfo");
     }
 
     void Liara_Pipeline::Bind(VkCommandBuffer commandBuffer) const
