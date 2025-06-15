@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <cstdlib>
-
+#include <SDL.h>
 
 int Run()
 {
@@ -19,9 +19,4 @@ int Run()
     }
 }
 
-#if WIN32
-    #include <Windows.h>
-    int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, INT) { return Run(); }
-#else
-    int main() { return Run(); }
-#endif
+int main() { return Run(); }
