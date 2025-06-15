@@ -41,6 +41,15 @@ jobs:
           version: ${{ env.VULKAN_SDK_VERSION }}
           cache: true
 
+      - name: Debug Vulkan installation
+        shell: cmd
+        run: |
+          echo "VULKAN_SDK: %VULKAN_SDK%"
+          echo "VK_SDK_PATH: %VK_SDK_PATH%"
+          dir "C:\VulkanSDK\${{ env.VULKAN_SDK_VERSION }}" /s /b | findstr /i "vulkan.h"
+          dir "C:\VulkanSDK\${{ env.VULKAN_SDK_VERSION }}\Include" /s /b 2>nul || echo "Include directory not found"
+          dir "C:\VulkanSDK\${{ env.VULKAN_SDK_VERSION }}\Lib" /s /b 2>nul || echo "Lib directory not found"
+
       - name: Set Vulkan environment variables
         shell: powershell
         run: |
