@@ -109,6 +109,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${sdl2_SOURCE_DIR}/include
 )
 
+if (WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SDL_MAIN_HANDLED)
+endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
         ${Vulkan_LIBRARIES}
         SDL2::SDL2
