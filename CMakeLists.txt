@@ -64,6 +64,9 @@ FetchContent_Declare(
         GIT_TAG SDL2
 )
 
+set(SDL2_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
+set(SDL2_DISABLE_SDL2MAIN OFF CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(fmt glm tinyobjloader sdl2)
 
 
@@ -94,6 +97,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES})
+
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR} # for Config.h
         ${PROJECT_SOURCE_DIR}/src
@@ -102,17 +106,23 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${tinyobjloader_SOURCE_DIR}
         ${glm_SOURCE_DIR}
         external
+        ${sdl2_SOURCE_DIR}/include
 )
 
+target_link_libraries(${PROJECT_NAME} PRIVATE
+        ${Vulkan_LIBRARIES}
+        SDL2::SDL2
+        SDL2::SDL2main
+        fmt::fmt
+        tinyobjloader
+)
 
 if (WIN32)
     message(STATUS "CREATING BUILD FOR WINDOWS")
-    target_link_directories(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} vulkan-1 sdl2 fmt tinyobjloader)
-
+    # Windows-specific libraries if needed
 elseif (UNIX)
     message(STATUS "CREATING BUILD FOR UNIX")
-    target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES} SDL2 fmt tinyobjloader)
+    # Unix-specific libraries if needed
 endif()
 
 ############## Build SHADERS #######################
