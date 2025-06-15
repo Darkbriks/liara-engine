@@ -8,8 +8,7 @@ on:
 
 env:
   VULKAN_SDK_VERSION: "1.3.280.0"
-  BUILD_TYPE_DEBUG: Debug
-  BUILD_TYPE_RELEASE: Release
+  CMAKE_VERSION: "3.25.3"
 
 jobs:
   build-windows:
@@ -35,6 +34,14 @@ jobs:
         with:
           arch: x64
 
+      - name: Install CMake 3.25+
+        uses: jwlawson/actions-setup-cmake@v1.14
+        with:
+          cmake-version: '${{ env.CMAKE_VERSION }}'
+
+      - name: Verify CMake version
+        run: cmake --version
+
       - name: Install Vulkan SDK
         uses: humbletim/install-vulkan-sdk@v1.2
         with:
@@ -44,18 +51,29 @@ jobs:
       - name: Set Vulkan environment variables
         shell: powershell
         run: |
-          echo "VULKAN_SDK: %VULKAN_SDK%"
-          echo "VK_SDK_PATH: %VK_SDK_PATH%"
+          echo "VULKAN_SDK: $env:VULKAN_SDK"
+          echo "VK_SDK_PATH: $env:VK_SDK_PATH"
           echo "VULKAN_SDK=$env:VULKAN_SDK" >> $env:GITHUB_ENV
           echo "VK_SDK_PATH=$env:VK_SDK_PATH" >> $env:GITHUB_ENV
+
+      - name: Verify glslc availability
+        shell: cmd
+        run: |
+          where glslc || echo "glslc not found in PATH, checking Vulkan SDK..."
+          if exist "%VULKAN_SDK%\Bin\glslc.exe" (
+            echo "Found glslc in Vulkan SDK"
+            echo "%VULKAN_SDK%\Bin" >> %GITHUB_PATH%
+          ) else (
+            echo "ERROR: glslc not found!"
+            exit /b 1
+          )
 
       - name: Cache CMake build dependencies
         uses: actions/cache@v4
         with:
           path: |
             build/_deps
-            build/vcpkg_installed
-          key: cmake-deps-windows-${{ matrix.build_type }}-${{ hashFiles('CMakeLists.txt', 'vcpkg.json') }}
+          key: cmake-deps-windows-${{ matrix.build_type }}-${{ hashFiles('CMakeLists.txt') }}
           restore-keys: |
             cmake-deps-windows-${{ matrix.build_type }}-
             cmake-deps-windows-
@@ -69,8 +87,7 @@ jobs:
             -G "Visual Studio 17 2022" ^
             -A x64 ^
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ^
-            -DVULKAN_SDK_PATH="%VULKAN_SDK%" ^
-            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake"
+            -DVULKAN_SDK_PATH="%VULKAN_SDK%"
 
       - name: Build project
         shell: cmd
@@ -78,7 +95,7 @@ jobs:
           cd build
           cmake --build . --config ${{ matrix.build_type }} --parallel %NUMBER_OF_PROCESSORS%
 
-      - name: Verify shaders compilation
+      - name: Build shaders
         shell: cmd
         run: |
           cd build
@@ -89,7 +106,12 @@ jobs:
         run: |
           cd build
           dir ${{ matrix.build_type }} /b
-          echo "Build completed successfully for ${{ matrix.build_type }}"
+          if exist "${{ matrix.build_type }}\Demo.exe" (
+            echo "Demo.exe found successfully"
+          ) else (
+            echo "ERROR: Demo.exe not found!"
+            exit /b 1
+          )
 
       - name: Upload artifacts (Release builds on version tags)
         if: matrix.build_type == 'Release' && startsWith(github.ref, 'refs/tags/v')
@@ -97,7 +119,7 @@ jobs:
         with:
           name: liara-engine-windows-${{ matrix.build_type }}-${{ github.ref_name }}
           path: |
-            build/${{ matrix.build_type }}/*.exe
+            build/${{ matrix.build_type }}/Demo.exe
             build/${{ matrix.build_type }}/*.dll
             build/shaders/*.spv
             assets/
