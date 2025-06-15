@@ -10,7 +10,7 @@ namespace Liara::Core::ImGuiElements
     class EngineStats : public ImGuiElement
     {
     public:
-        EngineStats() = default;
+        explicit EngineStats(const ApplicationInfo& app_info) : app_info(app_info) {}
 
         ~EngineStats() override = default;
 
@@ -22,6 +22,15 @@ namespace Liara::Core::ImGuiElements
                          ImGuiWindowFlags_NoResize |
                          ImGuiWindowFlags_NoMove |
                          ImGuiWindowFlags_AlwaysAutoResize);
+
+            if (ImGui::CollapsingHeader("Application Info")) {
+                ImGui::Text("Name: %s", app_info.get_display_name().data());
+                ImGui::Text("Version: %s", app_info.version.to_string().c_str());
+                ImGui::Text("Build: %s (%s)", app_info.build_config.data(), app_info.target_platform.data());
+                if (!app_info.organization.empty()) {
+                    ImGui::Text("Organization: %s", app_info.organization.data());
+                }
+            }
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", frame_info.m_DeltaTime * 1000.0f, 1.0f / frame_info.m_DeltaTime);
             ImGui::Text("Number of Game Objects: %ld", frame_info.m_GameObjects.size());
@@ -36,5 +45,8 @@ namespace Liara::Core::ImGuiElements
 
             ImGui::End();
         }
+
+    private:
+        const ApplicationInfo& app_info;
     };
 }

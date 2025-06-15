@@ -15,18 +15,20 @@
 #include <thread>
 #include <backends/imgui_impl_sdl2.h>
 
+#include "Config.h"
+
 #include "Graphics/SpecConstant/SpecializationConstant.h"
 
 namespace Liara::Core
 {
-    Liara_App::Liara_App()
-        : m_SettingsManager(std::make_unique<Liara_SettingsManager>()),
-        m_Window(*m_SettingsManager),
-        m_Device(m_Window, *m_SettingsManager),
-        m_RendererManager(m_Window, m_Device, *m_SettingsManager)
+    Liara_App::Liara_App(const ApplicationInfo& app_info)
+        : m_ApplicationInfo(app_info)
+        , m_SettingsManager(std::make_unique<Liara_SettingsManager>(app_info))
+        , m_Window(*m_SettingsManager)
+        , m_Device(m_Window, *m_SettingsManager)
+        , m_RendererManager(m_Window, m_Device, *m_SettingsManager)
     {
         m_SettingsManager->LoadFromFile("settings.cfg");
-        //Graphics::SpecConstant::SpecConstant::Initialize(*m_SettingsManager);
 
         // Todo: Check if this is the right place to put this
         m_DescriptorAllocator = Graphics::Descriptors::Liara_DescriptorAllocator::Builder(m_Device)

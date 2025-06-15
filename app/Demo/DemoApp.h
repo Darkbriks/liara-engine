@@ -3,11 +3,15 @@
 #include "Core/Liara_App.h"
 #include "Listener/KeybordMovementController.h"
 
-class FirstApp final : public Liara::Core::Liara_App
+class DemoApp final : public Liara::Core::Liara_App
 {
 public:
-    FirstApp();
-    ~FirstApp() override = default;
+    /**
+     * @brief Constructor taking application metadata
+     * @param app_info Application information from LIARA_APPLICATION macro
+     */
+    explicit DemoApp(const Liara::Core::ApplicationInfo& app_info);
+    ~DemoApp() override = default;
 
 protected:
     void ProcessInput(float frameTime) override;

@@ -13,6 +13,8 @@
 #include "fmt/printf.h"
 
 namespace Liara::Core {
+    struct ApplicationInfo;
+
     enum class SettingFlags : uint32_t {
         None = 0,
         RuntimeModifiable = 1 << 0,
@@ -110,7 +112,7 @@ namespace Liara::Core {
         };
 
     public:
-        Liara_SettingsManager();
+        explicit Liara_SettingsManager(const ApplicationInfo& app_info);
 
         Liara_SettingsManager(const Liara_SettingsManager&) = delete;
         Liara_SettingsManager& operator=(const Liara_SettingsManager&) = delete;

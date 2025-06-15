@@ -124,9 +124,9 @@ Liara Engine
 - [x] Fix a vulkan validation layer issue (semaphore synchronization in Swapchain)
 - [x] CI/CD pipeline for Linux and Windows
 - [ ] Migrate to C++20 features (work in progress)
-- [ ] Rework of CMake build system
+- [x] Rework of CMake build system
 - [ ] Add Catch2 for unit testing
-- [ ] Add README.md documentation (work in progress)
+- [x] Add README.md documentation (work in progress)
 - [ ] Better definition of coding style
 
 ### v0.18 - Advanced Rendering & ECS
@@ -222,16 +222,6 @@ Open an issue with:
 - Architecture improvements
 - Performance optimizations
 - Feature requests
-
----
-
-## Learning Resources
-This project demonstrates concepts from:
-
-Computer Graphics: Vulkan API, rendering pipelines, lighting models
-Software Architecture: ECS design, abstraction layers, modularity
-Modern C++: Templates, RAII, move semantics, C++20 features
-Game Engine Development: Scene graphs, asset management, systems design
 
 ---
 

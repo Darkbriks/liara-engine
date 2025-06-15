@@ -7,7 +7,7 @@
 #include <cassert>
 
 #ifndef ENGINE_DIR
-#define ENGINE_DIR "../"
+#define ENGINE_DIR "./"
 #endif
 
 namespace Liara::Graphics

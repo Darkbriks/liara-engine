@@ -39,7 +39,7 @@ namespace Liara::Graphics
             m_SwapChain = nullptr;
         }
 
-        for (int i = 0; i < m_DepthImages.size(); i++) {
+        for (size_t i = 0; i < m_DepthImages.size(); i++) {
             vkDestroyImageView(m_Device.GetDevice(), m_DepthImageViews[i], nullptr);
             vkDestroyImage(m_Device.GetDevice(), m_DepthImages[i], nullptr);
             vkFreeMemory(m_Device.GetDevice(), m_DepthImageMemorys[i], nullptr);
@@ -325,7 +325,7 @@ namespace Liara::Graphics
         m_DepthImageMemorys.resize(ImageCount());
         m_DepthImageViews.resize(ImageCount());
 
-        for (int i = 0; i < m_DepthImages.size(); i++)
+        for (size_t i = 0; i < m_DepthImages.size(); i++)
         {
             VkImageCreateInfo imageInfo{};
             imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;

@@ -152,7 +152,7 @@ namespace Liara::Graphics::Descriptors
         else
         {
             //compare each of the bindings is the same. Bindings are sorted so they will match
-            for (int i = 0; i < bindings.size(); i++)
+            for (size_t i = 0; i < bindings.size(); i++)
             {
                 if (other.bindings[i].binding != bindings[i].binding) { return false; }
                 if (other.bindings[i].descriptorType != bindings[i].descriptorType) { return false; }

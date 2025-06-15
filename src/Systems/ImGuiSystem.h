@@ -29,7 +29,7 @@ namespace Liara::Systems
         static bool IMGUI_INITIALIZED;
 
         Graphics::Liara_Device& lveDevice;
-        VkDescriptorPool descriptorPool;
+        VkDescriptorPool descriptorPool{};
 
         std::vector<std::unique_ptr<Core::ImGuiElement>> m_Elements;
     };

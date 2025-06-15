@@ -5,20 +5,13 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include "ApplicationInfo.h"
 #include "Config.h"
 #include "Liara_SettingSerializer.h"
 #include "Plateform/Liara_Window.h"
 
 namespace Liara::Core {
-    Liara_SettingsManager::Liara_SettingsManager() {
-        // Default settings
-        RegisterSetting("global.engine_name", ENGINE_NAME, SettingFlags::None);
-        RegisterSetting("global.engine_version", VK_MAKE_VERSION(ENGINE_VERSION_MAJOR, ENGINE_VERSION_MINOR, ENGINE_VERSION_PATCH), SettingFlags::None);
-
-        RegisterSetting("global.app_name", APP_NAME, SettingFlags::None);
-        RegisterSetting("global.app_version", VK_MAKE_VERSION(APP_VERSION_MAJOR, APP_VERSION_MINOR, APP_VERSION_PATCH), SettingFlags::None);
-
-
+    Liara_SettingsManager::Liara_SettingsManager(const ApplicationInfo& app_info) {
         /**
          * The preferred present mode.
          * Most common values:
@@ -34,6 +27,28 @@ namespace Liara::Core {
         RegisterSetting("texture.use_bindless_textures", false, SettingFlags::Serializable);
         RegisterSetting("texture.max_size", 4096u, SettingFlags::Serializable);
         RegisterSetting("texture.use_mipmaps", true, SettingFlags::Serializable);
+
+        // Register application information settings
+        static_assert(is_valid_app_info({}), "Default ApplicationInfo must be valid");
+        if (!is_valid_app_info(app_info)) {
+            throw std::invalid_argument("Invalid ApplicationInfo provided");
+        }
+
+        RegisterSetting("global.app_name", std::string(app_info.name), SettingFlags::None);
+        RegisterSetting("global.app_display_name", std::string(app_info.get_display_name()), SettingFlags::None);
+        RegisterSetting("global.app_description", std::string(app_info.description), SettingFlags::None);
+        RegisterSetting("global.app_version", app_info.version.packed(), SettingFlags::None);
+        RegisterSetting("global.app_version_string", app_info.version.to_string(), SettingFlags::None);
+
+        if (!app_info.organization.empty()) { RegisterSetting("global.app_organization", std::string(app_info.organization), SettingFlags::None); }
+        if (!app_info.website.empty()) { RegisterSetting("global.app_website", std::string(app_info.website), SettingFlags::None); }
+        if (!app_info.copyright.empty()) { RegisterSetting("global.app_copyright", std::string(app_info.copyright), SettingFlags::None); }
+
+        RegisterSetting("global.app_build_config", std::string(app_info.build_config), SettingFlags::None);
+        RegisterSetting("global.app_target_platform", std::string(app_info.target_platform), SettingFlags::None);
+
+        RegisterSetting("global.engine_name", std::string(ENGINE_NAME), SettingFlags::None);
+        RegisterSetting("global.engine_version", VK_MAKE_VERSION(ENGINE_VERSION_MAJOR, ENGINE_VERSION_MINOR, ENGINE_VERSION_PATCH), SettingFlags::None);
     }
 
     std::vector<std::string> Liara_SettingsManager::GetAllSettingNames() const {

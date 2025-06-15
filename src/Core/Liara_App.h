@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <string>
 
+#include "ApplicationInfo.h"
 #include "Liara_Camera.h"
 #include "Liara_GameObject.h"
 #include "Liara_SettingsManager.h"
@@ -24,7 +24,11 @@ namespace Liara::Core
     class Liara_App
     {
     public:
-        explicit Liara_App();
+        /**
+         * @brief Constructor with application metadata
+         * @param app_info Application information and metadata
+         */
+        explicit Liara_App(const ApplicationInfo& app_info = {});
         virtual ~Liara_App() = default;
         Liara_App(const Liara_App&) = delete;
         Liara_App& operator=(const Liara_App&) = delete;
@@ -34,6 +38,7 @@ namespace Liara::Core
         void AddSystem(std::unique_ptr<Systems::Liara_System> system) { m_Systems.push_back(std::move(system)); }
 
         Liara_SettingsManager& GetSettingsManager() const { return *m_SettingsManager; }
+        const ApplicationInfo& GetApplicationInfo() const noexcept { return m_ApplicationInfo; }
 
     protected:
         virtual void Init();
@@ -58,6 +63,7 @@ namespace Liara::Core
         void MasterRender(const FrameInfo &frameInfo);
 
     protected:
+        ApplicationInfo m_ApplicationInfo;
         std::shared_ptr<Liara_SettingsManager> m_SettingsManager;
 
         Plateform::Liara_Window m_Window;

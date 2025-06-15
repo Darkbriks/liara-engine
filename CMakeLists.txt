@@ -1,155 +1,44 @@
-include(./.env.cmake OPTIONAL RESULT_VARIABLE LOCAL_ENV)
-include(FetchContent)
-message(STATUS "Local .env.cmake: ${LOCAL_ENV}")
-
-
-cmake_minimum_required(VERSION 3.22)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-
-message(STATUS "using ${CMAKE_GENERATOR}")
-if (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
-    if (NOT MINGW_PATH)
-        message(FATAL_ERROR "MINGW_PATH not set in .env.cmake")
-    endif()
-    set(USE_MINGW "True")
-    set(CMAKE_C_COMPILER ${MINGW_PATH}/bin/gcc.exe)
-    set(CMAKE_CXX_COMPILER  ${MINGW_PATH}/bin/g++.exe)
-endif()
-
+cmake_minimum_required(VERSION 3.25)
 
 set(ENGINE_NAME "LiaraEngine")
 set(ENGINE_VERSION_MAJOR 0)
 set(ENGINE_VERSION_MINOR 17)
 set(ENGINE_VERSION_PATCH 0)
 
-set(APP_NAME "FirstApp")
-set(APP_VERSION_MAJOR 0)
-set(APP_VERSION_MINOR 1)
-set(APP_VERSION_PATCH 0)
-
-configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/Config.h.in
-        ${CMAKE_CURRENT_BINARY_DIR}/Config.h
-)
-
-project(${APP_NAME}
-        VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_VERSION_PATCH}
+project(LiaraEngine
+        VERSION ${ENGINE_VERSION_MAJOR}.${ENGINE_VERSION_MINOR}.${ENGINE_VERSION_PATCH}
+        DESCRIPTION "Modern 3D graphics engine built with Vulkan"
         LANGUAGES CXX
 )
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-FetchContent_Declare(
-        fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-        GIT_TAG master
-)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(CompilerSettings)
+include(Dependencies)
 
-FetchContent_Declare(
-        glm
-        GIT_REPOSITORY https://github.com/g-truc/glm.git
-        GIT_TAG master
-)
+option(LIARA_BUILD_APPS "Build demo applications" ON)
+option(LIARA_BUILD_TESTS "Build unit tests" OFF)
+option(LIARA_EMBED_SHADERS "Embed shaders in executable" OFF)
+option(LIARA_ENABLE_VALIDATION "Enable Vulkan validation layers in Debug" ON)
 
-FetchContent_Declare(
-        tinyobjloader
-        GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
-        GIT_TAG release
-)
-
-FetchContent_Declare(
-        sdl2
-        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-        GIT_TAG SDL2
-)
-
-set(SDL2_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
-set(SDL2_DISABLE_SDL2MAIN OFF CACHE BOOL "" FORCE)
-
-FetchContent_MakeAvailable(fmt glm tinyobjloader sdl2)
-
-
-# 1. Vulkan
-find_package(Vulkan REQUIRED)
-
-if (NOT Vulkan_FOUND)
-    message(FATAL_ERROR "Could not find Vulkan library!")
-else()
-    message(STATUS "Found Vulkan: ${Vulkan_LIBRARY}")
-    message(STATUS "Vulkan includes: ${Vulkan_INCLUDE_DIRS}")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-# 2. ImGui
-if (DEFINED IMGUI_PATH)
-    message(STATUS "Using ImGui path specified in .env")
-    file(GLOB IMGUI_SOURCES "${IMGUI_PATH}/*.cpp" "${IMGUI_PATH}/backends/*.cpp")
-else()
-    message(STATUS "Using ImGui from external")
-    SET(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/imgui")
-    file(GLOB IMGUI_SOURCES "external/imgui/*.cpp" "external/imgui/backends/*.cpp")
-endif()
-
-
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h" "src/*.tpp" "app/*.cpp" "app/*.h" "main.cpp" "Config.h.in")
-
-add_executable(${PROJECT_NAME} ${SOURCES})
-
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
-target_sources(${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES})
-
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_BINARY_DIR} # for Config.h
-        ${PROJECT_SOURCE_DIR}/src
-        ${Vulkan_INCLUDE_DIRS}
-        ${IMGUI_PATH}
-        ${tinyobjloader_SOURCE_DIR}
-        ${glm_SOURCE_DIR}
-        external
-        ${sdl2_SOURCE_DIR}/include
+configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/Config.h.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/Config.h"
+        @ONLY
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
-        SDL2::SDL2main
-        SDL2::SDL2
-        ${Vulkan_LIBRARIES}
-        fmt::fmt
-        tinyobjloader
-)
+add_subdirectory(external)
+add_subdirectory(src)
+add_subdirectory(shaders)
 
-if (WIN32)
-    message(STATUS "CREATING BUILD FOR WINDOWS")
-    # Windows-specific libraries if needed
-elseif (UNIX)
-    message(STATUS "CREATING BUILD FOR UNIX")
-    # Unix-specific libraries if needed
+if(LIARA_BUILD_APPS)
+    add_subdirectory(app)
 endif()
-
-############## Build SHADERS #######################
-
-# Find all vertex and fragment sources within shaders directory
-# taken from VBlancos vulkan tutorial
-# https://github.com/vblanco20-1/vulkan-guide/blob/all-chapters/CMakeLists.txt
-if (NOT DEFINED GLSL_VALIDATOR)
-    find_program(GLSL_VALIDATOR glslangValidator HINTS
-            ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}
-            /usr/bin
-            /usr/local/bin
-            ${VULKAN_SDK_PATH}/Bin
-            ${VULKAN_SDK_PATH}/Bin32
-            $ENV{VULKAN_SDK}/Bin/
-            $ENV{VULKAN_SDK}/Bin32/
-    )
-endif ()
-
-# get all .vert and .frag files in shaders directory
-file(GLOB_RECURSE GLSL_SOURCE_FILES "${PROJECT_SOURCE_DIR}/shaders/*.frag" "${PROJECT_SOURCE_DIR}/shaders/*.vert")
-
-foreach(GLSL ${GLSL_SOURCE_FILES})
-    get_filename_component(FILE_NAME ${GLSL} NAME)
-    set(SPIRV "${PROJECT_SOURCE_DIR}/shaders/${FILE_NAME}.spv")
-    add_custom_command( OUTPUT ${SPIRV} COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV} DEPENDS ${GLSL})
-    list(APPEND SPIRV_BINARY_FILES ${SPIRV})
-endforeach(GLSL)
-
-add_custom_target(Shaders DEPENDS ${SPIRV_BINARY_FILES})

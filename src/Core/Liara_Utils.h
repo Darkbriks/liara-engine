@@ -1,6 +1,9 @@
 #pragma once
 
 #include <functional>
+#include <vulkan/vulkan.h>
+#include <cstdio>
+#include <cstdlib>
 
 namespace Liara::Core
 {
@@ -13,7 +16,7 @@ namespace Liara::Core
         (HashCombine(seed, rest), ...);
     }
 
-    static void CheckVkResult(const VkResult err)
+    [[maybe_unused]] static void CheckVkResult(const VkResult err)
     {
         if (err == 0) return;
         fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);

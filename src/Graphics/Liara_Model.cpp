@@ -13,7 +13,7 @@
 #include <glm/gtx/hash.hpp>
 
 #ifndef ENGINE_DIR
-#define ENGINE_DIR "../"
+#define ENGINE_DIR "./"
 #endif
 
 namespace std

@@ -1,4 +1,4 @@
-#include "FirstApp.h"
+#include "DemoApp.h"
 #include "Listener/KeybordMovementController.h"
 #include "Core/FrameInfo.h"
 #include "Core/ImGui/ImGuiElementEngineStats.h"
@@ -9,31 +9,37 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-FirstApp::FirstApp() : m_Controller(*m_SettingsManager)
+DemoApp::DemoApp(const Liara::Core::ApplicationInfo& app_info) : Liara_App(app_info) , m_Controller(*m_SettingsManager)
 {
+    fmt::print("Starting {} v{}\n", app_info.get_display_name(), app_info.version.to_string());
+
+    if (!app_info.description.empty()) {
+        fmt::print("Description: {}\n", app_info.description);
+    }
+
     LoadGameObjects();
 
     m_Player = std::make_unique<Liara::Core::Liara_GameObject>(Liara::Core::Liara_GameObject::CreateGameObject());
     m_Player->m_Transform.position.z = -2.5f;
 }
 
-void FirstApp::ProcessInput(const float frameTime)
+void DemoApp::ProcessInput(const float frameTime)
 {
     m_Controller.moveInPlaneXZ(m_Window.GetWindow(), frameTime, *m_Player);
     m_Camera.SetViewYXZ(m_Player->m_Transform.position, m_Player->m_Transform.rotation);
 }
 
-void FirstApp::InitSystems()
+void DemoApp::InitSystems()
 {
     AddSystem(std::make_unique<Liara::Systems::SimpleRenderSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
     AddSystem(std::make_unique<Liara::Systems::PointLightSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
     auto imguiSystem = std::make_unique<Liara::Systems::ImGuiSystem>(m_Window, m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_RendererManager.GetRenderer().GetImageCount());
-    imguiSystem->AddElement(std::make_unique<Liara::Core::ImGuiElements::EngineStats>());
+    imguiSystem->AddElement(std::make_unique<Liara::Core::ImGuiElements::EngineStats>(m_ApplicationInfo));
     AddSystem(std::move(imguiSystem));
 }
 
 
-void FirstApp::LoadGameObjects()
+void DemoApp::LoadGameObjects()
 {
     std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/viking_room.obj", 1);
     auto viking_room = Liara::Core::Liara_GameObject::CreateGameObject();
@@ -51,7 +57,7 @@ void FirstApp::LoadGameObjects()
         {.1f, 1.f, 1.f},
     };
 
-    for (int i = 0; i < lightColors.size(); i++)
+    for (size_t i = 0; i < lightColors.size(); i++)
     {
         auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.5f);
         pointLight.m_color = lightColors[i];

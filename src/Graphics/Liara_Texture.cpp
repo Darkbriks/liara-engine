@@ -9,7 +9,7 @@
 #include <fmt/core.h>
 
 #ifndef ENGINE_DIR
-#define ENGINE_DIR "../"
+#define ENGINE_DIR "./"
 #endif
 
 namespace Liara::Graphics
@@ -30,7 +30,7 @@ namespace Liara::Graphics
             return;
         }
 
-        if (std::max(width, height) > settings_manager.GetUInt("texture.max_size"))
+        if (static_cast<uint32_t>(std::max(width, height)) > settings_manager.GetUInt("texture.max_size"))
         {
             errorFlag = true;
             fmt::print(stderr, "Texture {} is too large: {}x{} > {}\n", filename, width, height, settings_manager.GetUInt("texture.max_size"));
