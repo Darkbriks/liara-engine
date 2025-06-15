@@ -24,19 +24,19 @@ jobs:
             version: "22.04"
             container: ubuntu:22.04
             pkg_manager: apt
-            packages: "build-essential cmake ninja-build libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config"
+            packages: "build-essential cmake ninja-build libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config glslang-tools curl ca-certificates libglm-dev"
             update_cmd: "apt update && apt install -y"
           - name: fedora
             version: "39"
             container: fedora:39
             pkg_manager: dnf
-            packages: "gcc-c++ cmake ninja-build vulkan-devel vulkan-validation-layers-devel SDL2-devel fmt-devel pkg-config"
+            packages: "gcc-c++ cmake ninja-build vulkan-devel vulkan-validation-layers-devel SDL2-devel fmt-devel pkg-config glslang libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel"
             update_cmd: "dnf update -y && dnf install -y"
           - name: archlinux
             version: "latest"
             container: archlinux:latest
             pkg_manager: pacman
-            packages: "base-devel cmake ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf"
+            packages: "base-devel cmake ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf glslang glm"
             update_cmd: "pacman -Syu --noconfirm"
 
     container:
@@ -62,31 +62,12 @@ jobs:
         run: |
           ${{ matrix.distro.update_cmd }} ${{ matrix.distro.packages }}
 
-      - name: Setup vcpkg
-        run: |
-          git clone https://github.com/Microsoft/vcpkg.git /opt/vcpkg
-          /opt/vcpkg/bootstrap-vcpkg.sh
-          echo "VCPKG_ROOT=/opt/vcpkg" >> $GITHUB_ENV
-
-      - name: Cache vcpkg packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            /opt/vcpkg/packages
-            /opt/vcpkg/downloads
-            /opt/vcpkg/buildtrees
-          key: vcpkg-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: |
-            vcpkg-${{ matrix.distro.name }}-${{ matrix.distro.version }}-
-            vcpkg-${{ matrix.distro.name }}-
-
       - name: Cache CMake build dependencies
         uses: actions/cache@v4
         with:
           path: |
             build/_deps
-            build/vcpkg_installed
-          key: cmake-deps-${{ matrix.distro.name }}-${{ matrix.build_type }}-${{ hashFiles('CMakeLists.txt', 'vcpkg.json') }}
+          key: cmake-deps-${{ matrix.distro.name }}-${{ matrix.build_type }}-${{ hashFiles('CMakeLists.txt') }}
           restore-keys: |
             cmake-deps-${{ matrix.distro.name }}-${{ matrix.build_type }}-
             cmake-deps-${{ matrix.distro.name }}-
@@ -98,7 +79,6 @@ jobs:
           cmake .. \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake \
             -DCMAKE_INSTALL_PREFIX=install
 
       - name: Build project
@@ -163,12 +143,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential cmake ninja-build libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config wget fuse
-
-      - name: Setup vcpkg
-        run: |
-          git clone https://github.com/Microsoft/vcpkg.git vcpkg
-          ./vcpkg/bootstrap-vcpkg.sh
+          sudo apt install -y build-essential cmake ninja-build libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config glslang-tools curl ca-certificates libglm-dev wget fuse
 
       - name: Configure and build
         run: |
@@ -176,7 +151,6 @@ jobs:
           cmake .. \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake \
             -DCMAKE_INSTALL_PREFIX=AppDir/usr
           ninja -j$(nproc)
           ninja Shaders
