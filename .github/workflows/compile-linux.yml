@@ -24,20 +24,23 @@ jobs:
             version: "22.04"
             container: ubuntu:22.04
             pkg_manager: apt
-            packages: "build-essential cmake ninja-build libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config glslang-tools curl ca-certificates libglm-dev"
+            packages: "build-essential cmake ninja-build libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config glslang-tools curl ca-certificates libglm-dev software-properties-common"
             update_cmd: "apt update && apt install -y"
+            setup_compiler: "add-apt-repository ppa:ubuntu-toolchain-r/test -y && apt update && apt install -y gcc-13 g++-13 && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13"
           - name: fedora
             version: "39"
             container: fedora:39
             pkg_manager: dnf
             packages: "gcc-c++ cmake ninja-build vulkan-devel vulkan-validation-layers-devel SDL2-devel fmt-devel pkg-config glslang libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel"
             update_cmd: "dnf update -y && dnf install -y"
+            setup_compiler: ""
           - name: archlinux
             version: "latest"
             container: archlinux:latest
             pkg_manager: pacman
             packages: "base-devel cmake ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf glslang glm"
             update_cmd: "pacman -Syu --noconfirm"
+            setup_compiler: ""
 
     container:
       image: ${{ matrix.distro.container }}
@@ -61,6 +64,11 @@ jobs:
       - name: Install dependencies
         run: |
           ${{ matrix.distro.update_cmd }} ${{ matrix.distro.packages }}
+
+      - name: Setup modern compiler (Ubuntu only)
+        if: matrix.distro.name == 'ubuntu'
+        run: |
+          ${{ matrix.distro.setup_compiler }}
 
       - name: Cache CMake build dependencies
         uses: actions/cache@v4
