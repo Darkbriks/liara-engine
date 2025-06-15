@@ -1,8 +1,8 @@
+#include <SDL.h>
 #include "app/FirstApp/FirstApp.h"
 
 #include <iostream>
 #include <cstdlib>
-#include <SDL.h>
 
 int Run()
 {
@@ -19,4 +19,4 @@ int Run()
     }
 }
 
-int main() { return Run(); }
+int main(int argc, char* argv[]) { return Run(); }

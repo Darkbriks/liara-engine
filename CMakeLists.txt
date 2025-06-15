@@ -110,9 +110,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-        ${Vulkan_LIBRARIES}
-        SDL2::SDL2
         SDL2::SDL2main
+        SDL2::SDL2
+        ${Vulkan_LIBRARIES}
         fmt::fmt
         tinyobjloader
 )
