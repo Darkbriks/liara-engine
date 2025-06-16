@@ -99,7 +99,7 @@ jobs:
         shell: cmd
         run: |
           cd build
-          cmake --build . --target Shaders --config ${{ matrix.build_type }}
+          cmake --build . --target LiaraShaders --config ${{ matrix.build_type }}
 
       - name: Test executable
         shell: cmd
