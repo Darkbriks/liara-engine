@@ -77,6 +77,16 @@ jobs:
       - name: Verify CMake version
         run: cmake --version
 
+      - name: Cache Vulkan SDK
+        uses: actions/cache@v4
+        id: vulkan-cache
+        with:
+          path: /opt/vulkan-sdk/${{ env.VULKAN_SDK_VERSION }}
+          key: vulkan-sdk-${{ env.VULKAN_SDK_VERSION }}-${{ runner.os }}
+          restore-keys: |
+            vulkan-sdk-${{ env.VULKAN_SDK_VERSION }}-
+            vulkan-sdk-
+
       - name: Install Vulkan SDK and verify glslc
         run: |
           # Check if glslc is already available from installed packages
@@ -88,70 +98,151 @@ jobs:
 
           echo "glslc not found in packages, installing from Vulkan SDK for ${{ matrix.distro.name }}..."
 
-          if [ "${{ matrix.distro.name }}" = "ubuntu" ]; then
-            echo "Attempting Ubuntu repository installation..."
-            wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null
-            echo "deb https://packages.lunarg.com/vulkan/${{ env.VULKAN_SDK_VERSION }} jammy main" | tee /etc/apt/sources.list.d/lunarg-vulkan.list
-          
-            if apt update && apt install -y vulkan-sdk; then
-              echo "Successfully installed Vulkan SDK from repository"
-            else
-              echo "Repository installation failed, falling back to manual SDK installation..."
-          
-              cd /tmp
-              wget -q https://sdk.lunarg.com/sdk/download/${{ env.VULKAN_SDK_VERSION }}/linux/vulkansdk-linux-x86_64-${{ env.VULKAN_SDK_VERSION }}.tar.gz
-              tar -xzf vulkansdk-linux-x86_64-${{ env.VULKAN_SDK_VERSION }}.tar.gz
-          
-              if [ "$(id -u)" -eq 0 ]; then
-                SUDO=""
-              else
-                SUDO="sudo"
-              fi
-          
-              ${SUDO} cp ${{ env.VULKAN_SDK_VERSION }}/x86_64/bin/glslc /usr/local/bin/
-              ${SUDO} cp ${{ env.VULKAN_SDK_VERSION }}/x86_64/bin/glslangValidator /usr/local/bin/ || true
-              ${SUDO} chmod +x /usr/local/bin/glslc
-            fi
+          # Variables de configuration
+          VULKAN_SDK_DIR="/opt/vulkan-sdk"
+          VULKAN_SDK_PATH="${VULKAN_SDK_DIR}/${{ env.VULKAN_SDK_VERSION }}"
+          VULKAN_INSTALLER="vulkansdk-linux-x86_64-${{ env.VULKAN_SDK_VERSION }}.tar.xz"
+          VULKAN_URL="https://sdk.lunarg.com/sdk/download/${{ env.VULKAN_SDK_VERSION }}/linux/${VULKAN_INSTALLER}"
+          TEMP_DIR="/tmp/vulkan-install"
 
-          elif [ "${{ matrix.distro.name }}" = "fedora" ]; then
-            # Determine if we need sudo (containers run as root)
-            if [ "$(id -u)" -eq 0 ]; then
-              SUDO=""
-            else
-              SUDO="sudo"
-            fi
-          
-            # Fedora: Install Vulkan SDK manually since repo might be unreliable
-            cd /tmp
-            wget -q https://sdk.lunarg.com/sdk/download/${{ env.VULKAN_SDK_VERSION }}/linux/vulkansdk-linux-x86_64-${{ env.VULKAN_SDK_VERSION }}.tar.gz
-            tar -xzf vulkansdk-linux-x86_64-${{ env.VULKAN_SDK_VERSION }}.tar.gz
-          
-            # Copy glslc and related tools to system path  
-            ${SUDO} cp ${{ env.VULKAN_SDK_VERSION }}/x86_64/bin/glslc /usr/local/bin/
-            ${SUDO} cp ${{ env.VULKAN_SDK_VERSION }}/x86_64/bin/glslangValidator /usr/local/bin/ || true
-            ${SUDO} chmod +x /usr/local/bin/glslc
+          # Vérifier si le cache a été restauré avec succès
+          if [ "${{ steps.vulkan-cache.outputs.cache-hit }}" = "true" ] && [ -d "${VULKAN_SDK_PATH}" ] && [ -x "${VULKAN_SDK_PATH}/x86_64/bin/glslc" ]; then
+            echo "✓ Vulkan SDK restored from cache"
+            export VULKAN_SDK="${VULKAN_SDK_PATH}/x86_64"
+            export PATH="${VULKAN_SDK}/bin:${PATH}"
+            export LD_LIBRARY_PATH="${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}"
+            export VK_LAYER_PATH="${VULKAN_SDK}/etc/vulkan/explicit_layer.d"
 
-          elif [ "${{ matrix.distro.name }}" = "archlinux" ]; then
-            # Arch: shaderc should already be installed, but double-check
-            if ! command -v glslc >/dev/null 2>&1; then
-              echo "ERROR: shaderc package should provide glslc but it's missing!"
-              pacman -Ql shaderc | grep glslc || echo "glslc not found in shaderc package"
-              exit 1
-            fi
-          fi
-          
-          # Final verification
-          if command -v glslc >/dev/null 2>&1; then
-            echo "glslc successfully available: $(which glslc)"
+            # Sauvegarder les variables d'environnement pour les étapes suivantes
+            echo "VULKAN_SDK=${VULKAN_SDK}" >> $GITHUB_ENV
+            echo "PATH=${VULKAN_SDK}/bin:${PATH}" >> $GITHUB_ENV
+            echo "LD_LIBRARY_PATH=${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+            echo "VK_LAYER_PATH=${VULKAN_SDK}/etc/vulkan/explicit_layer.d" >> $GITHUB_ENV
+
+            echo "✓ Cache restored glslc location: $(which glslc)"
             glslc --version
-          else
-            echo "ERROR: glslc still not found after installation attempts!"
-            echo "Searching for glslc in common locations:"
-            find /usr -name "*glslc*" 2>/dev/null | head -10 || echo "No glslc found in /usr"
-            find /opt -name "*glslc*" 2>/dev/null | head -5 || echo "No glslc found in /opt"
-            find /tmp -name "*glslc*" 2>/dev/null | head -5 || echo "No glslc found in /tmp"
+            exit 0
+          fi
+
+          # Créer les répertoires nécessaires
+          sudo mkdir -p "${VULKAN_SDK_DIR}" "${TEMP_DIR}"
+          cd "${TEMP_DIR}"
+
+          echo "Downloading Vulkan SDK ${{ env.VULKAN_SDK_VERSION }}..."
+
+          # Télécharger avec retry et vérification
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+
+          while [ ${RETRY_COUNT} -lt ${MAX_RETRIES} ]; do
+            if wget --progress=dot:giga --timeout=30 --tries=2 "${VULKAN_URL}"; then
+              echo "Download successful"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "Download failed, retry ${RETRY_COUNT}/${MAX_RETRIES}"
+              sleep 5
+            fi
+          done
+
+          if [ ${RETRY_COUNT} -eq ${MAX_RETRIES} ]; then
+            echo "ERROR: Failed to download Vulkan SDK after ${MAX_RETRIES} attempts"
             exit 1
           fi
+
+          # Vérifier l'intégrité du fichier téléchargé
+          if [ ! -f "${VULKAN_INSTALLER}" ]; then
+            echo "ERROR: Downloaded file not found"
+            exit 1
+          fi
+
+          # Vérifier la taille minimale (SDK doit faire au moins 100MB)
+          MIN_SIZE=104857600  # 100MB en bytes
+          ACTUAL_SIZE=$(stat -c%s "${VULKAN_INSTALLER}")
+          if [ ${ACTUAL_SIZE} -lt ${MIN_SIZE} ]; then
+            echo "ERROR: Downloaded file too small (${ACTUAL_SIZE} bytes), probably corrupted"
+            exit 1
+          fi
+
+          echo "Extracting Vulkan SDK..."
+
+          # Extraire avec vérification
+          if ! tar -tf "${VULKAN_INSTALLER}" >/dev/null 2>&1; then
+            echo "ERROR: Downloaded archive is corrupted"
+            exit 1
+          fi
+
+          # Extraire dans un répertoire temporaire d'abord
+          mkdir -p extract_temp
+          if ! tar -xf "${VULKAN_INSTALLER}" -C extract_temp; then
+            echo "ERROR: Failed to extract Vulkan SDK"
+            exit 1
+          fi
+
+          # Trouver le répertoire racine extrait (format peut varier)
+          EXTRACTED_DIR=$(find extract_temp -maxdepth 1 -type d -name "*${{ env.VULKAN_SDK_VERSION }}*" | head -1)
+          if [ -z "${EXTRACTED_DIR}" ]; then
+            echo "ERROR: Could not find extracted SDK directory"
+            ls -la extract_temp/
+            exit 1
+          fi
+
+          echo "Moving SDK to ${VULKAN_SDK_PATH}..."
+
+          # Déplacer vers le répertoire final avec permissions appropriées
+          sudo rm -rf "${VULKAN_SDK_PATH}"
+          sudo mv "${EXTRACTED_DIR}" "${VULKAN_SDK_PATH}"
+          sudo chown -R root:root "${VULKAN_SDK_PATH}"
+          sudo chmod -R 755 "${VULKAN_SDK_PATH}"
+
+          # Configurer les variables d'environnement
+          export VULKAN_SDK="${VULKAN_SDK_PATH}/x86_64"
+          export PATH="${VULKAN_SDK}/bin:${PATH}"
+          export LD_LIBRARY_PATH="${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}"
+          export VK_LAYER_PATH="${VULKAN_SDK}/etc/vulkan/explicit_layer.d"
+
+          # Vérifications finales robustes
+          echo "Performing final verification..."
+
+          # Vérifier que glslc existe et est exécutable
+          if [ ! -x "${VULKAN_SDK}/bin/glslc" ]; then
+            echo "ERROR: glslc not found or not executable at ${VULKAN_SDK}/bin/glslc"
+            find "${VULKAN_SDK_PATH}" -name "*glslc*" -type f 2>/dev/null || echo "No glslc found in SDK"
+            exit 1
+          fi
+
+          # Vérifier que glslc fonctionne
+          if ! "${VULKAN_SDK}/bin/glslc" --version >/dev/null 2>&1; then
+            echo "ERROR: glslc found but not working properly"
+            "${VULKAN_SDK}/bin/glslc" --version || echo "glslc version check failed"
+            ldd "${VULKAN_SDK}/bin/glslc" || echo "ldd check failed"
+            exit 1
+          fi
+
+          # Vérifier les bibliothèques essentielles
+          REQUIRED_LIBS=("libshaderc_shared.so" "libSPIRV-Tools.so")
+          for lib in "${REQUIRED_LIBS[@]}"; do
+            if [ ! -f "${VULKAN_SDK}/lib/${lib}" ]; then
+              echo "WARNING: Required library ${lib} not found"
+            fi
+          done
+
+          # Nettoyer les fichiers temporaires
+          cd /
+          rm -rf "${TEMP_DIR}"
+
+          # Afficher les informations finales
+          echo "✓ Vulkan SDK installation successful!"
+          echo "✓ SDK Path: ${VULKAN_SDK}"
+          echo "✓ glslc location: $(which glslc)"
+          echo "✓ glslc version:"
+          glslc --version
+
+          # Sauvegarder les variables d'environnement pour les étapes suivantes
+          echo "VULKAN_SDK=${VULKAN_SDK}" >> $GITHUB_ENV
+          echo "PATH=${VULKAN_SDK}/bin:${PATH}" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+          echo "VK_LAYER_PATH=${VULKAN_SDK}/etc/vulkan/explicit_layer.d" >> $GITHUB_ENV
 
       - name: Cache CMake build dependencies
         uses: actions/cache@v4
@@ -183,7 +274,7 @@ jobs:
 
       - name: Test executable
         run: |
-          cd build
+          cd build/app
           if [ -f "Demo" ]; then
             echo "Demo executable found successfully"
             file Demo

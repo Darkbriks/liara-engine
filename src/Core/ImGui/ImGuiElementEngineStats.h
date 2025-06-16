@@ -14,7 +14,7 @@ namespace Liara::Core::ImGuiElements
 
         ~EngineStats() override = default;
 
-        void Draw(const FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) override
+        void Draw(const FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& /*ubo*/) override
         {
             ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
 

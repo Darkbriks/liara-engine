@@ -75,7 +75,7 @@ namespace Liara::Core {
  * LIARA_APPLICATION(MyApp, "MyApp", 1, 0, 0, "My awesome application");
  */
 #define LIARA_APPLICATION(AppClass, name, major, minor, patch, ...) \
-    int main(int argc, char* argv[]) { \
+    int main(int /*argc*/, char* /*argv[]*/) { \
         constexpr auto app_info = Liara::Core::CreateApplicationInfo( \
             name, major, minor, patch, __VA_ARGS__ \
         ); \
@@ -88,7 +88,7 @@ namespace Liara::Core {
  * @brief Extended macro with more control over application info
  */
 #define LIARA_APPLICATION_EX(AppClass, app_info_expr) \
-    int main(int argc, char* argv[]) { \
+    int main(int /*argc*/, char* /*argv[]*/) { \
         constexpr auto app_info = app_info_expr; \
         static_assert(Liara::Core::is_valid_app_info(app_info), \
             "Invalid application info provided to LIARA_APPLICATION_EX"); \

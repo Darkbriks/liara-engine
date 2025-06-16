@@ -106,7 +106,7 @@ jobs:
         run: |
           cd build
           dir ${{ matrix.build_type }} /b
-          if exist "${{ matrix.build_type }}\Demo.exe" (
+          if exist "${{ matrix.build_type }}\app\Demo.exe" (
             echo "Demo.exe found successfully"
           ) else (
             echo "ERROR: Demo.exe not found!"
