@@ -51,9 +51,9 @@ namespace Liara::Core
 
         virtual void SetProjection(float aspect);
 
-        virtual void ProcessInput(float frameTime) {}
-        virtual void Update(const FrameInfo& frameInfo) {}
-        virtual void Render(const FrameInfo& frameInfo) {}
+        virtual void ProcessInput(float /*frameTime*/) {}
+        virtual void Update(const FrameInfo& /*frameInfo*/) {}
+        virtual void Render(const FrameInfo& /*frameInfo*/) {}
 
         virtual void Close();
 

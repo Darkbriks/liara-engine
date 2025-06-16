@@ -5,7 +5,7 @@
 
 namespace Liara::Listener
 {
-    void KeybordMovementController::moveInPlaneXZ(SDL_Window *window, float deltaTime, Core::Liara_GameObject &gameObject) const
+    void KeybordMovementController::moveInPlaneXZ(SDL_Window */*window*/, float deltaTime, Core::Liara_GameObject &gameObject) const
     {
         const Uint8 *state = SDL_GetKeyboardState(nullptr);
 

@@ -21,8 +21,8 @@ namespace Liara::Systems
                           const Core::Liara_SettingsManager& settings_manager);
         ~SimpleRenderSystem() override;
 
-        void Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) override {}
-        void Render(const Core::FrameInfo &frame_info) const override;
+        void Update(const Core::FrameInfo& /*frame_info*/, Graphics::Ubo::GlobalUbo& /*ubo*/) override {}
+        void Render(const Core::FrameInfo& frame_info) const override;
 
     private:
         void CreatePipelineLayout(VkDescriptorSetLayout descriptor_set_layout);

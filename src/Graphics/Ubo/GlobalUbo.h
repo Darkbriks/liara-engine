@@ -24,6 +24,10 @@ namespace Liara::Graphics::Ubo
         glm::vec4 color{};          ///< The color of the light, w represents the intensity of the light
     };
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4324) // Structure was padded due to alignment specifier
+#endif
     /**
      * @struct GlobalUbo
      * @brief Structure representing the global uniform buffer object for the graphics pipeline.
@@ -42,6 +46,11 @@ namespace Liara::Graphics::Ubo
         int32_t _padding[3]{0, 0, 0};
     };
 
+#if defined(_MSC_VER)
+#pragma warning(pop) // Restore previous warning state
+#endif
+
     static_assert(sizeof(GlobalUbo) % Constants::UNIFORM_BUFFER_ALIGNMENT == 0,
                      "GlobalUbo size must be aligned to uniform buffer requirements");
 }
+

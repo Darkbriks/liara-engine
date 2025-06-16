@@ -9,10 +9,10 @@ namespace Liara::Graphics
 {
     // local callback functions
     static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType,
+        VkDebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/,
+        VkDebugUtilsMessageTypeFlagsEXT /*messageType*/,
         const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-        void *pUserData)
+        void */*pUserData*/)
     {
         fmt::print(stderr, "validation layer: {}\n", pCallbackData->pMessage);
         return VK_FALSE;

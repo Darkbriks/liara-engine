@@ -65,7 +65,7 @@ namespace Liara::Graphics
 
         // SOLUTION: Utiliser un round-robin basé sur le frame actuel
         // Cela fonctionne car on a au maximum MAX_FRAMES_IN_FLIGHT frames en parallèle
-        const uint32_t semaphoreIndex = m_CurrentFrame;
+        const auto semaphoreIndex = static_cast<uint32_t>(m_CurrentFrame);
 
         const VkResult result = vkAcquireNextImageKHR(
             m_Device.GetDevice(),
@@ -417,7 +417,7 @@ namespace Liara::Graphics
         {
             for (const auto &availablePresentMode: availablePresentModes)
             {
-                if (availablePresentMode == m_SettingsManager.GetUInt("graphics.present_mode"))
+                if (static_cast<uint32_t>(availablePresentMode) == m_SettingsManager.GetUInt("graphics.present_mode"))
                 {
                     return availablePresentMode;
                 }

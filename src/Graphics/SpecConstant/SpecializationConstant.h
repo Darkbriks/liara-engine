@@ -106,7 +106,7 @@ namespace Liara::Graphics
     {
     public:
 
-        void Initialize(const Core::Liara_SettingsManager& settingsManager)
+        void Initialize()
         {
             std::lock_guard<std::mutex> lock(m_Mutex);
 
@@ -121,7 +121,7 @@ namespace Liara::Graphics
 
         static void InitializeGlobal(const Core::Liara_SettingsManager& settingsManager)
         {
-            GetInstance().Initialize(settingsManager);
+            GetInstance().Initialize();
         }
 
         static VkSpecializationInfo GetSpecializationInfo()

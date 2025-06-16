@@ -15,7 +15,7 @@ namespace Liara::Core::ImGuiElements
         Demo() = default;
         ~Demo() override = default;
 
-        void Draw(const FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) override
+        void Draw(const FrameInfo& /*frame_info*/, Graphics::Ubo::GlobalUbo& /*ubo*/) override
         {
             ImGui::ShowDemoWindow(&show_demo_window);
         }

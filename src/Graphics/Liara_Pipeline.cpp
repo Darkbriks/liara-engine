@@ -17,7 +17,7 @@ namespace Liara::Graphics
                                    const std::string &vertFilepath,
                                    const std::string &fragFilepath,
                                    const PipelineConfigInfo &configInfo,
-                                   const Core::Liara_SettingsManager& settings_manager)
+                                   const Core::Liara_SettingsManager&)
         : m_Device(device)
     {
         CreateGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
@@ -107,7 +107,7 @@ namespace Liara::Graphics
 
         // Specialization Constants
         if (!SpecConstant::IsInitialized()) {
-            SpecConstant::GetInstance().Initialize(settings_manager);
+            SpecConstant::GetInstance().Initialize();
         }
         configInfo.m_SpecializationInfo = SpecConstant::GetSpecializationInfo();
 

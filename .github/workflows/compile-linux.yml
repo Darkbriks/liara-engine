@@ -30,14 +30,14 @@ jobs:
             version: "39"
             container: fedora:39
             pkg_manager: dnf
-            packages: "gcc-c++ ninja-build vulkan-devel vulkan-validation-layers-devel SDL2-devel fmt-devel pkg-config vulkan-tools libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel wget"
+            packages: "gcc-c++ ninja-build vulkan-devel vulkan-validation-layers-devel SDL2-devel fmt-devel pkg-config vulkan-tools libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel wget dnf-plugins-core"
             update_cmd: "dnf update -y && dnf install -y"
             setup_compiler: ""
           - name: archlinux
             version: "latest"
             container: archlinux:latest
             pkg_manager: pacman
-            packages: "base-devel ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf vulkan-tools glm wget"
+            packages: "base-devel ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf vulkan-tools glm wget shaderc"
             update_cmd: "pacman -Syu --noconfirm"
             setup_compiler: ""
 
@@ -82,11 +82,14 @@ jobs:
             fi
           fi
           
+          # Clean potential conflicts in /usr/local
+          rm -rf /usr/local/share/cmake* /usr/local/bin/cmake* /usr/local/bin/ctest* /usr/local/bin/cpack*
+
           # Install CMake 3.25+ from official releases
           cd /tmp
           wget -q https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.tar.gz
           tar -xzf cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.tar.gz
-          cp -r cmake-${{ env.CMAKE_VERSION }}-linux-x86_64/* /usr/local/
+          cp -rf cmake-${{ env.CMAKE_VERSION }}-linux-x86_64/* /usr/local/
           ln -sf /usr/local/bin/cmake /usr/bin/cmake
           ln -sf /usr/local/bin/ctest /usr/bin/ctest
 
@@ -95,27 +98,46 @@ jobs:
 
       - name: Install Vulkan SDK and verify glslc
         run: |
-          # Vulkan SDK should be available through packages, but let's verify glslc
-          if ! command -v glslc >/dev/null 2>&1; then
-            echo "glslc not found, installing Vulkan SDK..."
-            if [ "${{ matrix.distro.pkg_manager }}" = "apt" ]; then
-              wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add -
-              wget -qO /etc/apt/sources.list.d/lunarg-vulkan-${{ env.VULKAN_SDK_VERSION }}-jammy.list \
-                https://packages.lunarg.com/vulkan/${{ env.VULKAN_SDK_VERSION }}/lunarg-vulkan-${{ env.VULKAN_SDK_VERSION }}-jammy.list
-              apt update
-              apt install -y vulkan-sdk
-            elif [ "${{ matrix.distro.pkg_manager }}" = "dnf" ]; then
-              dnf config-manager --add-repo https://packages.lunarg.com/vulkan/lunarg-vulkan-repo.repo
-              dnf install -y vulkan-sdk
-            fi
-          fi
-          
-          # Verify glslc is available
+          # Check if glslc is already available from installed packages
           if command -v glslc >/dev/null 2>&1; then
             echo "glslc found: $(which glslc)"
             glslc --version
+            exit 0
+          fi
+
+          echo "glslc not found in packages, installing from Vulkan SDK for ${{ matrix.distro.name }}..."
+
+          if [ "${{ matrix.distro.name }}" = "ubuntu" ]; then
+            # Ubuntu: Install from Lunarg repository
+            wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add -
+            wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list \
+              https://packages.lunarg.com/vulkan/${{ env.VULKAN_SDK_VERSION }}/lunarg-vulkan-${{ env.VULKAN_SDK_VERSION }}-jammy.list
+            apt update
+            apt install -y vulkan-sdk
+
+          elif [ "${{ matrix.distro.name }}" = "fedora" ]; then
+            # Fedora: Add Lunarg repo and install
+            dnf config-manager --add-repo https://packages.lunarg.com/vulkan/lunarg-vulkan-repo.repo
+            dnf install -y vulkan-sdk
+
+          elif [ "${{ matrix.distro.name }}" = "archlinux" ]; then
+            # Arch: shaderc should already be installed, but double-check
+            if ! command -v glslc >/dev/null 2>&1; then
+              echo "ERROR: shaderc package should provide glslc but it's missing!"
+              pacman -Ql shaderc | grep glslc || echo "glslc not found in shaderc package"
+              exit 1
+            fi
+          fi
+          
+          # Final verification
+          if command -v glslc >/dev/null 2>&1; then
+            echo "glslc successfully available: $(which glslc)"
+            glslc --version
           else
-            echo "ERROR: glslc still not found after installation!"
+            echo "ERROR: glslc still not found after installation attempts!"
+            echo "Searching for glslc in common locations:"
+            find /usr -name "*glslc*" 2>/dev/null | head -10 || echo "No glslc found in /usr"
+            find /opt -name "*glslc*" 2>/dev/null | head -5 || echo "No glslc found in /opt"
             exit 1
           fi
 
@@ -213,10 +235,12 @@ jobs:
       - name: Install CMake 3.25+
         run: |
           sudo apt remove -y cmake
+          # Clean potential conflicts
+          sudo rm -rf /usr/local/share/cmake* /usr/local/bin/cmake* /usr/local/bin/ctest* /usr/local/bin/cpack*
           cd /tmp
           wget -q https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.tar.gz
           tar -xzf cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.tar.gz
-          sudo cp -r cmake-${{ env.CMAKE_VERSION }}-linux-x86_64/* /usr/local/
+          sudo cp -rf cmake-${{ env.CMAKE_VERSION }}-linux-x86_64/* /usr/local/
           sudo ln -sf /usr/local/bin/cmake /usr/bin/cmake
 
       - name: Configure and build

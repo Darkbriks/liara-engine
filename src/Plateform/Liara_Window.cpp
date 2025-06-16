@@ -27,8 +27,8 @@ namespace Liara::Plateform
         try {
             const nlohmann::json j = nlohmann::json::parse(data);
             name = std::string_view(j.value("name", "window.default"));
-            width = j.value("width", 1280);
-            height = j.value("height", 720);
+            width = static_cast<uint16_t>(j.value("width", 1280));
+            height = static_cast<uint16_t>(j.value("height", 720));
             xPos = j.value("xPos", 100);
             yPos = j.value("yPos", 100);
             fullscreen = j.value("fullscreen", false);
@@ -102,8 +102,8 @@ namespace Liara::Plateform
     void Liara_Window::FramebufferResizeCallback(const uint8_t windowID, const int width, const int height) const
     {
         auto settings = m_SettingsManager.Get<WindowSettings>("window." + std::to_string(windowID));
-        settings.SetWidth(width);
-        settings.SetHeight(height);
+        settings.SetWidth(static_cast<uint16_t>(width));
+        settings.SetHeight(static_cast<uint16_t>(height));
         m_SettingsManager.Set("window." + std::to_string(windowID), settings);
     }
 
@@ -127,7 +127,7 @@ namespace Liara::Plateform
         SDL_AddEventWatch([](void *userdata, SDL_Event *event) { return static_cast<Liara_Window *>(userdata)->EventCallback(userdata, event); }, this);
     }
 
-    int Liara_Window::EventCallback(void* userdata, const SDL_Event* event)
+    int Liara_Window::EventCallback(void* /*userdata*/, const SDL_Event* event)
     {
         if (event->type == SDL_WINDOWEVENT)
         {
