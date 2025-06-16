@@ -23,7 +23,7 @@ jobs:
             version: "22.04"
             container: ubuntu:22.04
             pkg_manager: apt
-            packages: "build-essential ninja-build libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config vulkan-tools libglm-dev software-properties-common wget curl ca-certificates"
+            packages: "sudo build-essential ninja-build libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config vulkan-tools libglm-dev software-properties-common wget curl ca-certificates"
             update_cmd: "apt update && apt install -y"
             setup_compiler: "add-apt-repository ppa:ubuntu-toolchain-r/test -y && apt update && apt install -y gcc-13 g++-13 && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13"
           - name: fedora
