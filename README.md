@@ -21,7 +21,7 @@ Liara Engine is a cross-platform 3D graphics engine designed to provide a solid 
 - **3D Models**: TinyObjLoader
 - **Textures**: STB Image
 - **Standard**: C++20
-- **Build System**: CMake 3.22+
+- **Build System**: CMake 3.25+
 - **Documentation**: Doxygen
 - **Testing**: GitHub Actions for CI/CD
 ---
@@ -42,12 +42,17 @@ The builds are automatically tested on multiple Linux distributions and Windows:
 ## Quick Start
 ### Prerequisites
 
-- C++20 compatible compiler (GCC 10+, Clang 12+, MSVC 2019+)
-- Vulkan SDK 1.3+
-- CMake 3.22+
+- C++20 compatible compiler (GCC 13+, Clang 12+, MSVC 2019+)
+- Vulkan SDK 1.3+ and glslc compiler (included in the official SDK)
+  - On Linux, install the Vulkan SDK via your package manager or download it from the [LunarG website](https://vulkan.lunarg.com/).
+  - On Windows, download the Vulkan SDK from the [LunarG website](https://vulkan.lunarg.com/) and set the environment variables as instructed.
+  - Alternatively, you can install vulkan packages via your package manager. Make sure to install the `vulkan-devel` package (or equivalent) and the `glslang` package (can be included in `shaderc` or `glslang` packages).
+- CMake 3.25+
 - Git with submodules support
 
 ### Building
+
+Linux :
 ```bash
 # Clone with submodules
 git clone --recursive https://github.com/Darkbriks/liara-engine.git
@@ -58,12 +63,14 @@ mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake --build . --parallel
 
-# Build shaders
-cmake --build . --target Shaders
-
 # Run demo
-./LiaraEngine
-# On Windows, use LiaraEngine.exe
+cd app/ # It's important to run the demo from the app directory to ensure correct resource paths
+./Demo
+```
+
+Windows :
+```bash
+# TODO: Add Windows build instructions
 ```
 
 These commands will compile the engine and run the demo application. The demo showcases some capabilities of the engine.
