@@ -89,7 +89,7 @@ namespace Liara::Systems
         assert(m_PipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
         Graphics::PipelineConfigInfo pipelineConfig{};
-        Graphics::Liara_Pipeline::DefaultPipelineConfigInfo(pipelineConfig, m_SettingsManager);
+        Graphics::Liara_Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
         pipelineConfig.m_RenderPass = render_pass;
         pipelineConfig.m_PipelineLayout = m_PipelineLayout;
         m_Pipeline = std::make_unique<Graphics::Liara_Pipeline>(m_Device, "shaders/SimpleShader.vert.spv", "shaders/SimpleShader.frag.spv", pipelineConfig, m_SettingsManager);

@@ -30,7 +30,7 @@ jobs:
             version: "39"
             container: fedora:39
             pkg_manager: dnf
-            packages: "gcc-c++ ninja-build vulkan-devel vulkan-validation-layers-devel SDL2-devel fmt-devel pkg-config vulkan-tools libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel wget dnf-plugins-core"
+            packages: "gcc-c++ ninja-build vulkan-devel vulkan-validation-layers-devel SDL2-devel fmt-devel pkg-config vulkan-tools libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel wget dnf-plugins-core shaderc"
             update_cmd: "dnf update -y && dnf install -y"
             setup_compiler: ""
           - name: archlinux
@@ -69,29 +69,10 @@ jobs:
         run: |
           ${{ matrix.distro.setup_compiler }}
 
-      - name: Install CMake 3.25+
-        run: |
-          # Remove old cmake if present
-          if command -v cmake >/dev/null 2>&1; then
-            if [ "${{ matrix.distro.pkg_manager }}" = "apt" ]; then
-              apt remove -y cmake
-            elif [ "${{ matrix.distro.pkg_manager }}" = "dnf" ]; then
-              dnf remove -y cmake
-            elif [ "${{ matrix.distro.pkg_manager }}" = "pacman" ]; then
-              pacman -R --noconfirm cmake || true
-            fi
-          fi
-          
-          # Clean potential conflicts in /usr/local
-          rm -rf /usr/local/share/cmake* /usr/local/bin/cmake* /usr/local/bin/ctest* /usr/local/bin/cpack*
-
-          # Install CMake 3.25+ from official releases
-          cd /tmp
-          wget -q https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.tar.gz
-          tar -xzf cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.tar.gz
-          cp -rf cmake-${{ env.CMAKE_VERSION }}-linux-x86_64/* /usr/local/
-          ln -sf /usr/local/bin/cmake /usr/bin/cmake
-          ln -sf /usr/local/bin/ctest /usr/bin/ctest
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.25'
 
       - name: Verify CMake version
         run: cmake --version
@@ -116,9 +97,22 @@ jobs:
             apt install -y vulkan-sdk
 
           elif [ "${{ matrix.distro.name }}" = "fedora" ]; then
-            # Fedora: Add Lunarg repo and install
-            dnf config-manager --add-repo https://packages.lunarg.com/vulkan/lunarg-vulkan-repo.repo
-            dnf install -y vulkan-sdk
+            # Determine if we need sudo (containers run as root)
+            if [ "$(id -u)" -eq 0 ]; then
+              SUDO=""
+            else
+              SUDO="sudo"
+            fi
+          
+            # Fedora: Install Vulkan SDK manually since repo might be unreliable
+            cd /tmp
+            wget -q https://sdk.lunarg.com/sdk/download/${{ env.VULKAN_SDK_VERSION }}/linux/vulkansdk-linux-x86_64-${{ env.VULKAN_SDK_VERSION }}.tar.gz
+            tar -xzf vulkansdk-linux-x86_64-${{ env.VULKAN_SDK_VERSION }}.tar.gz
+          
+            # Copy glslc and related tools to system path  
+            ${SUDO} cp ${{ env.VULKAN_SDK_VERSION }}/x86_64/bin/glslc /usr/local/bin/
+            ${SUDO} cp ${{ env.VULKAN_SDK_VERSION }}/x86_64/bin/glslangValidator /usr/local/bin/ || true
+            ${SUDO} chmod +x /usr/local/bin/glslc
 
           elif [ "${{ matrix.distro.name }}" = "archlinux" ]; then
             # Arch: shaderc should already be installed, but double-check
@@ -138,6 +132,7 @@ jobs:
             echo "Searching for glslc in common locations:"
             find /usr -name "*glslc*" 2>/dev/null | head -10 || echo "No glslc found in /usr"
             find /opt -name "*glslc*" 2>/dev/null | head -5 || echo "No glslc found in /opt"
+            find /tmp -name "*glslc*" 2>/dev/null | head -5 || echo "No glslc found in /tmp"
             exit 1
           fi
 
@@ -232,16 +227,13 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential ninja-build libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config vulkan-tools libglm-dev wget fuse
 
-      - name: Install CMake 3.25+
-        run: |
-          sudo apt remove -y cmake
-          # Clean potential conflicts
-          sudo rm -rf /usr/local/share/cmake* /usr/local/bin/cmake* /usr/local/bin/ctest* /usr/local/bin/cpack*
-          cd /tmp
-          wget -q https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.tar.gz
-          tar -xzf cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.tar.gz
-          sudo cp -rf cmake-${{ env.CMAKE_VERSION }}-linux-x86_64/* /usr/local/
-          sudo ln -sf /usr/local/bin/cmake /usr/bin/cmake
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.25'
+
+      - name: Verify CMake version
+        run: cmake --version
 
       - name: Configure and build
         run: |

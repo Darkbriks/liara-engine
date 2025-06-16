@@ -14,7 +14,7 @@ namespace Liara::Graphics::Renderers
         ~Liara_ForwardRenderer() override;
 
         [[nodiscard]] VkRenderPass GetRenderPass() const override { return m_SwapChain->GetRenderPass(); }
-        [[nodiscard]] uint32_t GetImageCount() const override { return static_cast<uint32_t>(m_SwapChain->ImageCount();) }
+        [[nodiscard]] uint32_t GetImageCount() const override { return static_cast<uint32_t>(m_SwapChain->ImageCount()); }
         [[nodiscard]] float GetAspectRatio() const override { return m_SwapChain->ExtentAspectRatio(); }
         [[nodiscard]] uint32_t GetFrameIndex() const override
         {

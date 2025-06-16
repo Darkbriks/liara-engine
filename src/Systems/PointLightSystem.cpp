@@ -120,7 +120,7 @@ namespace Liara::Systems
         assert(m_PipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
         Graphics::PipelineConfigInfo pipelineConfig{};
-        Graphics::Liara_Pipeline::DefaultPipelineConfigInfo(pipelineConfig, m_SettingsManager);
+        Graphics::Liara_Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
         pipelineConfig.m_BindingDescriptions.clear();
         pipelineConfig.m_AttributeDescriptions.clear();
         pipelineConfig.m_RenderPass = render_pass;

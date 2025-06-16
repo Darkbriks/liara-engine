@@ -48,7 +48,7 @@ namespace Liara::Graphics
         Liara_Pipeline(const Liara_Pipeline&) = delete;
         Liara_Pipeline& operator=(const Liara_Pipeline&) = delete;
 
-        static void DefaultPipelineConfigInfo(PipelineConfigInfo& configInfo, const Core::Liara_SettingsManager& settings_manager);
+        static void DefaultPipelineConfigInfo(PipelineConfigInfo &configInfo);
 
         void Bind(VkCommandBuffer commandBuffer) const;
 

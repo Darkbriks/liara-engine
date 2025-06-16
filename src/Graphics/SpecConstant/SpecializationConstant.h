@@ -119,7 +119,7 @@ namespace Liara::Graphics
             m_Initialized = true;
         }
 
-        static void InitializeGlobal(const Core::Liara_SettingsManager& settingsManager)
+        static void InitializeGlobal()
         {
             GetInstance().Initialize();
         }
