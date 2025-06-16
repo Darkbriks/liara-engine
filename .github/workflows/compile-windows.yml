@@ -105,11 +105,13 @@ jobs:
         shell: cmd
         run: |
           cd build
+          cd app
           dir ${{ matrix.build_type }} /b
-          if exist "${{ matrix.build_type }}\app\Demo.exe" (
+          if exist "${{ matrix.build_type }}\Demo.exe" (
             echo "Demo.exe found successfully"
           ) else (
             echo "ERROR: Demo.exe not found!"
+            dir ${{ matrix.build_type }} /s
             exit /b 1
           )
 

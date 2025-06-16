@@ -6,6 +6,14 @@ find_program(LIARA_GLSLC_EXECUTABLE
         ${VULKAN_SDK_PATH}/Bin32
         $ENV{VULKAN_SDK}/Bin
         $ENV{VULKAN_SDK}/Bin32
+        ${VULKAN_SDK_PATH}/bin
+        $ENV{VULKAN_SDK}/bin
+        $ENV{VULKAN_SDK}/x86_64/bin
+        /usr/bin
+        /usr/local/bin
+        /opt/vulkan-sdk/*/x86_64/bin
+        PATHS
+        ENV PATH
         DOC "Path to glslc executable"
 )
 

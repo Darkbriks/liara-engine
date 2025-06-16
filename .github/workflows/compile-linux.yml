@@ -219,14 +219,6 @@ jobs:
             exit 1
           fi
 
-          # Vérifier les bibliothèques essentielles
-          REQUIRED_LIBS=("libshaderc_shared.so" "libSPIRV-Tools.so")
-          for lib in "${REQUIRED_LIBS[@]}"; do
-            if [ ! -f "${VULKAN_SDK}/lib/${lib}" ]; then
-              echo "WARNING: Required library ${lib} not found"
-            fi
-          done
-
           # Nettoyer les fichiers temporaires
           cd /
           rm -rf "${TEMP_DIR}"
@@ -288,10 +280,10 @@ jobs:
       - name: Create portable archive
         if: matrix.build_type == 'Release'
         run: |
-          cd build
+          cd build/app
           mkdir -p package
           cp Demo package/
-          cp -r ../assets package/ 2>/dev/null || echo "No assets directory found"
+          cp -r ./assets package/ 2>/dev/null || echo "No assets directory found"
           if [ -d "shaders" ]; then
             cp -r shaders package/
           fi
