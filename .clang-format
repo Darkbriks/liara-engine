@@ -68,23 +68,31 @@ ReferenceAlignment: Left      # Type& var
 SortIncludes: CaseInsensitive
 IncludeBlocks: Regroup
 IncludeCategories:
+  # 0. SDL.h Doit être en premier pour correctement detecter le main
+  - Regex: '^<SDL\.h>$'
+    Priority: 0
+    SortPriority: 0
   # 1. Header correspondant (.h pour .cpp)
-  - Regex: '^".*\.h"$'
+  - Regex: '^(?!.*(Demo|Core|Graphics|Listener|Systems|Plateform)).*\.h$'
     Priority: 1
     SortPriority: 1
-  # 2. Headers du projet Liara
-  - Regex: '^"(Core|Graphics|Systems|Plateform)/.*"$'
+  # 2. Headers de dépendances internes (autres modules du projet)
+  - Regex: '^"(Demo|AnyOtherApp)/.*"$'
     Priority: 2
     SortPriority: 2
-  # 3. Headers externes (Vulkan, SDL, etc.)
-  - Regex: '^<(vulkan|SDL|glm|fmt|imgui)/.*>$'
+  # 3. Headers du projet Liara
+  - Regex: '^"(Core|Graphics|Listener|Systems|Plateform)/.*"$'
     Priority: 3
     SortPriority: 3
-  # 4. Headers système C++
-  - Regex: '^<.*>$'
+  # 4. Headers externes (Vulkan, SDL, etc.)
+  - Regex: '^<(vulkan|SDL|glm|fmt|imgui)/.*>$'
     Priority: 4
     SortPriority: 4
-  # 5. Template implementations (.tpp) - TOUJOURS EN DERNIER
+  # 5. Headers système C++
+  - Regex: '^<.*>$'
+    Priority: 5
+    SortPriority: 5
+  # 6. Template implementations (.tpp) - TOUJOURS EN DERNIER
   - Regex: '^".*\.tpp"$'
     Priority: 99
     SortPriority: 99

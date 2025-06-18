@@ -1,16 +1,17 @@
 #include "SimpleRenderSystem.h"
+
+#include "Core/Components/TransformComponent3d.h"
 #include "Core/FrameInfo.h"
 #include "Core/Liara_GameObject.h"
-#include "Core/Components/TransformComponent3d.h"
 #include "Graphics/Liara_Model.h"
 #include "Graphics/Liara_Pipeline.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <ranges>
-
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
+
+#include <ranges>
 #include <stdexcept>
 
 namespace Liara::Systems
@@ -22,55 +23,53 @@ namespace Liara::Systems
     };
 
     SimpleRenderSystem::SimpleRenderSystem(Graphics::Liara_Device& device,
-                                          VkRenderPass render_pass,
-                                          VkDescriptorSetLayout descriptor_set_layout,
-                                          const Core::Liara_SettingsManager& settings_manager)
-        : m_Device(device), m_SettingsManager(settings_manager)
-    {
-        CreatePipelineLayout(descriptor_set_layout);
-        CreatePipeline(render_pass);
+                                           VkRenderPass renderPass,
+                                           VkDescriptorSetLayout descriptorSetLayout,
+                                           const Core::Liara_SettingsManager& settingsManager)
+        : m_Device(device)
+        , m_SettingsManager(settingsManager) {
+        CreatePipelineLayout(descriptorSetLayout);
+        CreatePipeline(renderPass);
     }
 
-    SimpleRenderSystem::~SimpleRenderSystem()
-    {
+    SimpleRenderSystem::~SimpleRenderSystem() {
         vkDestroyPipelineLayout(m_Device.GetDevice(), m_PipelineLayout, nullptr);
     }
 
-    void SimpleRenderSystem::Render(const Core::FrameInfo &frame_info) const
-    {
-        m_Pipeline->Bind(frame_info.m_CommandBuffer);
+    void SimpleRenderSystem::Render(const Core::FrameInfo& frameInfo) const {
+        m_Pipeline->Bind(frameInfo.m_CommandBuffer);
 
-        vkCmdBindDescriptorSets(
-            frame_info.m_CommandBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_PipelineLayout,
-            0,
-            1,
-            &frame_info.m_GlobalDescriptorSet,
-            0,
-            nullptr
-        );
+        vkCmdBindDescriptorSets(frameInfo.m_CommandBuffer,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                m_PipelineLayout,
+                                0,
+                                1,
+                                &frameInfo.m_GlobalDescriptorSet,
+                                0,
+                                nullptr);
 
-        for (auto &snd: frame_info.m_GameObjects | std::views::values)
-        {
+        for (auto& snd : frameInfo.m_GameObjects | std::views::values) {
             auto& obj = snd;
-            if (!obj.m_Model) { continue; }
+            if (!obj.model) { continue; }
             SimplePushConstantData push{};
-            push.modelMatrix = obj.m_Transform.GetMat4();
-            push.normalMatrix = obj.m_Transform.GetNormalMatrix();
-            vkCmdPushConstants(frame_info.m_CommandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
-            obj.m_Model->Bind(frame_info.m_CommandBuffer);
-            obj.m_Model->Draw(frame_info.m_CommandBuffer);
+            push.modelMatrix = obj.transform.GetMat4();
+            push.normalMatrix = obj.transform.GetNormalMatrix();
+            vkCmdPushConstants(frameInfo.m_CommandBuffer,
+                               m_PipelineLayout,
+                               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                               0,
+                               sizeof(SimplePushConstantData),
+                               &push);
+            obj.model->Bind(frameInfo.m_CommandBuffer);
+            obj.model->Draw(frameInfo.m_CommandBuffer);
         }
     }
 
-    void SimpleRenderSystem::CreatePipelineLayout(VkDescriptorSetLayout descriptor_set_layout)
-    {
+    void SimpleRenderSystem::CreatePipelineLayout(VkDescriptorSetLayout descriptorSetLayout) {
         constexpr VkPushConstantRange pushConstantRange{
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData)
-        };
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData)};
 
-        const std::vector<VkDescriptorSetLayout> layouts = {descriptor_set_layout};
+        const std::vector<VkDescriptorSetLayout> layouts = {descriptorSetLayout};
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -78,20 +77,23 @@ namespace Liara::Systems
         pipelineLayoutInfo.pSetLayouts = layouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = 1;
         pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-        if (vkCreatePipelineLayout(m_Device.GetDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
-        {
+        if (vkCreatePipelineLayout(m_Device.GetDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout)
+            != VK_SUCCESS) {
             throw std::runtime_error("Failed to create pipeline layout!");
         }
     }
 
-    void SimpleRenderSystem::CreatePipeline(VkRenderPass render_pass)
-    {
+    void SimpleRenderSystem::CreatePipeline(VkRenderPass renderPass) {
         assert(m_PipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
         Graphics::PipelineConfigInfo pipelineConfig{};
         Graphics::Liara_Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
-        pipelineConfig.m_RenderPass = render_pass;
+        pipelineConfig.m_RenderPass = renderPass;
         pipelineConfig.m_PipelineLayout = m_PipelineLayout;
-        m_Pipeline = std::make_unique<Graphics::Liara_Pipeline>(m_Device, "shaders/SimpleShader.vert.spv", "shaders/SimpleShader.frag.spv", pipelineConfig, m_SettingsManager);
+        m_Pipeline = std::make_unique<Graphics::Liara_Pipeline>(m_Device,
+                                                                "shaders/SimpleShader.vert.spv",
+                                                                "shaders/SimpleShader.frag.spv",
+                                                                pipelineConfig,
+                                                                m_SettingsManager);
     }
 }

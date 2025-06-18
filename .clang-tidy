@@ -98,11 +98,9 @@ CheckOptions:
 
   # === NAMING ===
   readability-identifier-naming.ClassCase: 'CamelCase'
-  readability-identifier-naming.ClassPrefix: 'Liara_'
   readability-identifier-naming.FunctionCase: 'CamelCase'
   readability-identifier-naming.MemberCase: 'camelBack'
-  readability-identifier-naming.MemberPrefix: 'm_'
-  readability-identifier-naming.ConstantCase: 'UPPER_CASE'
+  # readability-identifier-naming.ConstantCase: 'UPPER_CASE' # TODO: Find a way to separate constants from parameters
   readability-identifier-naming.EnumCase: 'CamelCase'
   readability-identifier-naming.NamespaceCase: 'CamelCase'
   readability-identifier-naming.ConstParameterCase: 'camelBack'
@@ -111,3 +109,4 @@ CheckOptions:
   readability-identifier-naming.VariableCase: 'camelBack'
   readability-identifier-naming.PrivateMemberPrefix: 'm_'
   readability-identifier-naming.ProtectedMemberPrefix: 'm_'
+  readability-identifier-naming.MinIdentifierLength: 2

@@ -1,14 +1,20 @@
 #pragma once
-
-#include <memory>
-#include <vulkan/vulkan_core.h>
-
 #include "Liara_System.h"
 
 #include "Core/Liara_SettingsManager.h"
 
-namespace Liara::Graphics { class Liara_Pipeline; class Liara_Device; }
-namespace Liara::Graphics::Ubo { struct GlobalUbo; }
+#include <memory>
+#include <vulkan/vulkan_core.h>
+
+namespace Liara::Graphics
+{
+    class Liara_Pipeline;
+    class Liara_Device;
+}
+namespace Liara::Graphics::Ubo
+{
+    struct GlobalUbo;
+}
 
 namespace Liara::Systems
 {
@@ -16,17 +22,17 @@ namespace Liara::Systems
     {
     public:
         SimpleRenderSystem(Graphics::Liara_Device& device,
-                          VkRenderPass render_pass,
-                          VkDescriptorSetLayout descriptor_set_layout,
-                          const Core::Liara_SettingsManager& settings_manager);
+                           VkRenderPass renderPass,
+                           VkDescriptorSetLayout descriptorSetLayout,
+                           const Core::Liara_SettingsManager& settingsManager);
         ~SimpleRenderSystem() override;
 
-        void Update(const Core::FrameInfo& /*frame_info*/, Graphics::Ubo::GlobalUbo& /*ubo*/) override {}
-        void Render(const Core::FrameInfo& frame_info) const override;
+        void Update(const Core::FrameInfo&, Graphics::Ubo::GlobalUbo&) override {}
+        void Render(const Core::FrameInfo& frameInfo) const override;
 
     private:
-        void CreatePipelineLayout(VkDescriptorSetLayout descriptor_set_layout);
-        void CreatePipeline(VkRenderPass render_pass);
+        void CreatePipelineLayout(VkDescriptorSetLayout descriptorSetLayout);
+        void CreatePipeline(VkRenderPass renderPass);
 
         Graphics::Liara_Device& m_Device;
         std::unique_ptr<Graphics::Liara_Pipeline> m_Pipeline;

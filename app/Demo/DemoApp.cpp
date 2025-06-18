@@ -1,76 +1,89 @@
 #include "DemoApp.h"
-#include "Listener/KeybordMovementController.h"
-#include "Core/FrameInfo.h"
+
+#include "Core/ApplicationInfo.h"
 #include "Core/ImGui/ImGuiElementEngineStats.h"
+#include "Core/Liara_App.h"
+#include "Graphics/Liara_Model.h"
+#include "Listener/KeybordMovementController.h"
 #include "Systems/ImGuiSystem.h"
 #include "Systems/PointLightSystem.h"
 #include "Systems/SimpleRenderSystem.h"
 
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/trigonometric.hpp>
+#include <memory>
+#include <utility>
+#include <vector>
+
+#include "fmt/core.h"
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-DemoApp::DemoApp(const Liara::Core::ApplicationInfo& app_info) : Liara_App(app_info) , m_Controller(*m_SettingsManager)
-{
-    fmt::print("Starting {} v{}\n", app_info.get_display_name(), app_info.version.to_string());
+DemoApp::DemoApp(const Liara::Core::ApplicationInfo& appInfo)
+    : Liara_App(appInfo)
+    , m_Controller(*m_SettingsManager) {
+    fmt::print("Starting {} v{}\n", appInfo.get_display_name(), appInfo.version.to_string());
 
-    if (!app_info.description.empty()) {
-        fmt::print("Description: {}\n", app_info.description);
-    }
+    if (!appInfo.description.empty()) { fmt::print("Description: {}\n", appInfo.description); }
 
     LoadGameObjects();
 
     m_Player = std::make_unique<Liara::Core::Liara_GameObject>(Liara::Core::Liara_GameObject::CreateGameObject());
-    m_Player->m_Transform.position.z = -2.5f;
+    m_Player->transform.position.z = -2.5f;  // NOLINT
 }
 
-void DemoApp::ProcessInput(const float frameTime)
-{
+void DemoApp::ProcessInput(const float frameTime) {
     m_Controller.moveInPlaneXZ(m_Window.GetWindow(), frameTime, *m_Player);
-    m_Camera.SetViewYXZ(m_Player->m_Transform.position, m_Player->m_Transform.rotation);
+    m_Camera.SetViewYXZ(m_Player->transform.position, m_Player->transform.rotation);
 }
 
-void DemoApp::InitSystems()
-{
-    AddSystem(std::make_unique<Liara::Systems::SimpleRenderSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
-    AddSystem(std::make_unique<Liara::Systems::PointLightSystem>(m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
-    auto imguiSystem = std::make_unique<Liara::Systems::ImGuiSystem>(m_Window, m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_RendererManager.GetRenderer().GetImageCount());
+void DemoApp::InitSystems() {
+    AddSystem(std::make_unique<Liara::Systems::SimpleRenderSystem>(
+        m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
+    AddSystem(std::make_unique<Liara::Systems::PointLightSystem>(
+        m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
+    auto imguiSystem = std::make_unique<Liara::Systems::ImGuiSystem>(m_Window,
+                                                                     m_Device,
+                                                                     m_RendererManager.GetRenderer().GetRenderPass(),
+                                                                     m_RendererManager.GetRenderer().GetImageCount());
     imguiSystem->AddElement(std::make_unique<Liara::Core::ImGuiElements::EngineStats>(m_ApplicationInfo));
     AddSystem(std::move(imguiSystem));
 }
 
 
-void DemoApp::LoadGameObjects()
-{
-    std::shared_ptr<Liara::Graphics::Liara_Model> model = Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/viking_room.obj", 1);
-    auto viking_room = Liara::Core::Liara_GameObject::CreateGameObject();
-    viking_room.m_Model = model;
-    viking_room.m_Transform.position = {0.f, .75f, 0.f};
-    viking_room.m_Transform.scale = {1.5f, 1.5f, 1.5f};
-    viking_room.m_Transform.rotation = {glm::radians(90.f), glm::radians(135.f), 0.f};
-    m_GameObjects.emplace(viking_room.GetId(), std::move(viking_room));
+void DemoApp::LoadGameObjects() {
+    const std::shared_ptr model =
+        Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/viking_room.obj", 1);
+    auto vikingRoom = Liara::Core::Liara_GameObject::CreateGameObject();
+    vikingRoom.model = model;
+    vikingRoom.transform.position = {0.F, .75F, 0.F};
+    vikingRoom.transform.scale = {1.5F, 1.5F, 1.5F};
+    vikingRoom.transform.rotation = {glm::radians(90.F), glm::radians(135.F), 0.f};
+    m_GameObjects.emplace(vikingRoom.GetId(), std::move(vikingRoom));
 
-    std::vector<glm::vec3> lightColors{
-        {1.f, .1f, .1f},
-        {.1f, .1f, 1.f},
-        {.1f, 1.f, .1f},
-        {1.f, 1.f, .1f},
-        {.1f, 1.f, 1.f},
+    const std::vector<glm::vec3> lightColors{
+        {1.F, .1F, .1F},
+        {.1F, .1F, 1.F},
+        {.1F, 1.F, .1F},
+        {1.F, 1.F, .1F},
+        {.1F, 1.F, 1.F},
     };
 
-    for (size_t i = 0; i < lightColors.size(); i++)
-    {
-        auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.5f);
-        pointLight.m_color = lightColors[i];
-        auto rotateLight = glm::rotate(
-            glm::mat4(1.f),
-            (static_cast<float>(i) * glm::two_pi<float>()) / static_cast<float>(lightColors.size()),
-            {0.f, -1.f, 0.f});
-        pointLight.m_Transform.position = glm::vec3(rotateLight * glm::vec4(-1.f, -0.3f, -1.f, 1.f));
+    for (size_t i = 0; i < lightColors.size(); i++) {
+        auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.5F);
+        pointLight.color = lightColors[i];
+        auto rotateLight =
+            glm::rotate(glm::mat4(1.F),
+                        (static_cast<float>(i) * glm::two_pi<float>()) / static_cast<float>(lightColors.size()),
+                        {0.F, -1.F, 0.F});
+        pointLight.transform.position = glm::vec3(rotateLight * glm::vec4(-1.F, -0.3F, -1.F, 1.F));
         m_GameObjects.emplace(pointLight.GetId(), std::move(pointLight));
     }
 
-    auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.5f);
-    pointLight.m_color = {1.f, 1.f, 1.f};
-    pointLight.m_Transform.position = {0.f, -0.25f, 0.f};
+    auto pointLight = Liara::Core::Liara_GameObject::MakePointLight(0.5F);
+    pointLight.color = {1.F, 1.F, 1.F};
+    pointLight.transform.position = {0.F, -0.25F, 0.F};
     m_GameObjects.emplace(pointLight.GetId(), std::move(pointLight));
 }
