@@ -2,9 +2,9 @@ name: Linux Build
 
 on:
   push:
-    branches: [ 3d-rendering, version-* ]
+    branches: [ main, version-* ]
   pull_request:
-    branches: [ 3d-rendering ]
+    branches: [ main ]
 
 env:
   VULKAN_SDK_VERSION: "1.3.280.0"

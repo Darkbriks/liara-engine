@@ -1,0 +1,57 @@
+# Liara Engine - EditorConfig
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Code C/C++
+[*.{c,cpp,cxx,cc,C,h,hpp,hxx,hh,H,tpp,txx}]
+indent_style = space
+indent_size = 4
+max_line_length = 120
+
+# Shaders GLSL
+[*.{vert,frag,geom,comp,tesc,tese,glsl}]
+indent_style = space
+indent_size = 4
+max_line_length = 120
+
+# CMake
+[{CMakeLists.txt,*.cmake}]
+indent_style = space
+indent_size = 4
+max_line_length = 120
+
+# YAML (GitHub Actions, configs)
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+max_line_length = 100
+
+# JSON
+[*.json]
+indent_style = space
+indent_size = 2
+max_line_length = 120
+
+# Markdown
+[*.md]
+indent_style = space
+indent_size = 2
+max_line_length = 80
+trim_trailing_whitespace = false
+
+# Configuration files
+[*.{toml,ini,cfg}]
+indent_style = space
+indent_size = 2
+
+# Scripts
+[*.{sh,ps1}]
+indent_style = space
+indent_size = 2
+max_line_length = 100

@@ -2,6 +2,7 @@
 
 [![Linux Build](https://github.com/Darkbriks/LiaraEngine_CPP_VULKAN/actions/workflows/compile-linux.yml/badge.svg)](https://github.com/Darkbriks/LiaraEngine_CPP_VULKAN/actions/workflows/compile-linux.yml)
 [![Windows Build](https://github.com/Darkbriks/LiaraEngine_CPP_VULKAN/actions/workflows/compile-windows.yml/badge.svg)](https://github.com/Darkbriks/LiaraEngine_CPP_VULKAN/actions/workflows/compile-windows.yml)
+[![Code Style](https://github.com/username/liara-engine/workflows/Code%20Style%20Check/badge.svg)](https://github.com/username/liara-engine/actions)
 [![License](https://img.shields.io/github/license/Darkbriks/LiaraEngine_CPP_VULKAN)](LICENSE)
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
 [![Vulkan](https://img.shields.io/badge/Vulkan-1.3-red.svg)](https://www.vulkan.org/)
@@ -134,7 +135,7 @@ Liara Engine
 - [x] Rework of CMake build system
 - [ ] Add Catch2 for unit testing
 - [x] Add README.md documentation (work in progress)
-- [ ] Better definition of coding style
+- [x] Better definition of coding style (clang-format, clang-tidy, dedicated GitHub Action)
 
 ### v0.18 - Advanced Rendering & ECS
 
