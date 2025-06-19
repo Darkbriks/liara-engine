@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
@@ -58,14 +59,14 @@ namespace Liara::Core
                                                     const std::string_view prerelease = "") {
         return ApplicationInfo{
             .name = name,
-            .display_name = displayName,
+            .displayName = displayName,
             .description = description.empty() ? "Application built with Liara Engine" : description,
             .version = {.major = major, .minor = minor, .patch = patch, .prerelease = prerelease},
             .organization = organization,
             .website = website,
             .copyright = copyright,
-            .build_config = LIARA_BUILD_CONFIG,
-            .target_platform = LIARA_TARGET_PLATFORM
+            .buildConfig = LIARA_BUILD_CONFIG,
+            .targetPlatform = LIARA_TARGET_PLATFORM
         };
     }
 }
@@ -79,7 +80,7 @@ namespace Liara::Core
 #define LIARA_APPLICATION(AppClass, name, major, minor, patch, ...)                                           \
     int main(int, char*[]) {                                                                                  \
         constexpr auto app_info = Liara::Core::CreateApplicationInfo(name, major, minor, patch, __VA_ARGS__); \
-        static_assert(Liara::Core::is_valid_app_info(app_info),                                               \
+        static_assert(Liara::Core::IsValidAppInfo(app_info),                                                  \
                       "Invalid application info provided to LIARA_APPLICATION");                              \
         return Liara::Core::RunApplication<AppClass>(app_info);                                               \
     }
@@ -90,7 +91,7 @@ namespace Liara::Core
 #define LIARA_APPLICATION_EX(AppClass, app_info_expr)                               \
     int main(int, char*[]) {                                                        \
         constexpr auto app_info = app_info_expr;                                    \
-        static_assert(Liara::Core::is_valid_app_info(app_info),                     \
+        static_assert(Liara::Core::IsValidAppInfo(app_info),                        \
                       "Invalid application info provided to LIARA_APPLICATION_EX"); \
         return Liara::Core::RunApplication<AppClass>(app_info);                     \
     }

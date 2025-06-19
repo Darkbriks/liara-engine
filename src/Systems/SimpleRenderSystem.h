@@ -1,10 +1,11 @@
 #pragma once
-#include "Liara_System.h"
-
 #include "Core/Liara_SettingsManager.h"
 
-#include <memory>
 #include <vulkan/vulkan_core.h>
+
+#include <memory>
+
+#include "Liara_System.h"
 
 namespace Liara::Graphics
 {

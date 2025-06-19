@@ -1,48 +1,52 @@
 #pragma once
-
 #include "Liara_Camera.h"
 #include "Liara_GameObject.h"
+#include "Systems/PointLightSystem.h"
+
+#include <vulkan/vulkan_core.h>
+
+
 
 namespace Liara::Core
 {
     struct FrameInfo
     {
-        int m_FrameIndex;
-        float m_DeltaTime;
-        VkCommandBuffer m_CommandBuffer;
-        Liara_Camera &m_Camera;
-        VkDescriptorSet m_GlobalDescriptorSet;
-        Liara_GameObject::Map &m_GameObjects;
+        int frameIndex;
+        float deltaTime;
+        VkCommandBuffer commandBuffer;
+        Liara_Camera& camera;
+        VkDescriptorSet globalDescriptorSet;
+        Liara_GameObject::Map& gameObjects;
     };
 
     struct FrameStats
     {
-        uint64_t m_TriangleCount = 0;
-        uint64_t m_VertexCount = 0;
-        uint64_t m_DrawCallCount = 0;
-        double m_MeshDrawTime = 0.0f;
+        uint64_t triangleCount = 0;
+        uint64_t vertexCount = 0;
+        uint64_t drawCallCount = 0;
+        double meshDrawTime = 0.0f;
 
-        uint64_t m_PreviousTriangleCount = 0;
-        uint64_t m_PreviousVertexCount = 0;
-        uint64_t m_PreviousDrawCallCount = 0;
-        double m_PreviousMeshDrawTime = 0.0f;
+        uint64_t previousTriangleCount = 0;
+        uint64_t previousVertexCount = 0;
+        uint64_t previousDrawCallCount = 0;
+        double previousMeshDrawTime = 0.0f;
 
-        void Reset()
-        {
-            m_PreviousTriangleCount = m_TriangleCount;
-            m_PreviousVertexCount = m_VertexCount;
-            m_PreviousDrawCallCount = m_DrawCallCount;
-            m_PreviousMeshDrawTime = m_MeshDrawTime;
+        void Reset() {
+            previousTriangleCount = triangleCount;
+            previousVertexCount = vertexCount;
+            previousDrawCallCount = drawCallCount;
+            previousMeshDrawTime = meshDrawTime;
 
-            m_TriangleCount = 0;
-            m_VertexCount = 0;
-            m_DrawCallCount = 0;
-            m_MeshDrawTime = 0.0f;
+            triangleCount = 0;
+            vertexCount = 0;
+            drawCallCount = 0;
+            meshDrawTime = 0.0f;
         }
     };
 }
 
 namespace Liara
 {
-    inline Core::FrameStats g_FrameStats{};
+    // TODO: Use a more robust frame stats system
+    inline Core::FrameStats frameStats{};
 }

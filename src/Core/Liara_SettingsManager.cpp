@@ -1,9 +1,5 @@
 #include "Liara_SettingsManager.h"
 
-#include "ApplicationInfo.h"
-#include "Config.h"
-#include "Liara_SettingSerializer.h"
-
 #include <vulkan/vulkan_core.h>
 
 #include <any>
@@ -17,6 +13,10 @@
 #include <type_traits>
 #include <variant>
 #include <vector>
+
+#include "ApplicationInfo.h"
+#include "Config.h"
+#include "Liara_SettingSerializer.h"
 
 namespace Liara::Core
 {
@@ -42,14 +42,14 @@ namespace Liara::Core
         RegisterSetting("texture.use_mipmaps", true, SettingFlags::SERIALIZABLE);
 
         // Register application information settings
-        static_assert(is_valid_app_info({}), "DEFAULT ApplicationInfo must be valid");
-        if (!is_valid_app_info(appInfo)) { throw std::invalid_argument("Invalid ApplicationInfo provided"); }
+        static_assert(IsValidAppInfo({}), "DEFAULT ApplicationInfo must be valid");
+        if (!IsValidAppInfo(appInfo)) { throw std::invalid_argument("Invalid ApplicationInfo provided"); }
 
         RegisterSetting("global.app_name", std::string(appInfo.name), SettingFlags::NONE);
-        RegisterSetting("global.app_display_name", std::string(appInfo.get_display_name()), SettingFlags::NONE);
+        RegisterSetting("global.app_display_name", std::string(appInfo.GetDisplayName()), SettingFlags::NONE);
         RegisterSetting("global.app_description", std::string(appInfo.description), SettingFlags::NONE);
-        RegisterSetting("global.app_version", appInfo.version.packed(), SettingFlags::NONE);
-        RegisterSetting("global.app_version_string", appInfo.version.to_string(), SettingFlags::NONE);
+        RegisterSetting("global.app_version", appInfo.version.Packed(), SettingFlags::NONE);
+        RegisterSetting("global.app_version_string", appInfo.version.ToString(), SettingFlags::NONE);
 
         if (!appInfo.organization.empty()) {
             RegisterSetting("global.app_organization", std::string(appInfo.organization), SettingFlags::NONE);
@@ -61,8 +61,8 @@ namespace Liara::Core
             RegisterSetting("global.app_copyright", std::string(appInfo.copyright), SettingFlags::NONE);
         }
 
-        RegisterSetting("global.app_build_config", std::string(appInfo.build_config), SettingFlags::NONE);
-        RegisterSetting("global.app_target_platform", std::string(appInfo.target_platform), SettingFlags::NONE);
+        RegisterSetting("global.app_build_config", std::string(appInfo.buildConfig), SettingFlags::NONE);
+        RegisterSetting("global.app_target_platform", std::string(appInfo.targetPlatform), SettingFlags::NONE);
 
         RegisterSetting("global.engine_name", std::string(ENGINE_NAME), SettingFlags::NONE);
         RegisterSetting("global.engine_version",

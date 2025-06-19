@@ -37,31 +37,31 @@ namespace Liara::Systems
     }
 
     void SimpleRenderSystem::Render(const Core::FrameInfo& frameInfo) const {
-        m_Pipeline->Bind(frameInfo.m_CommandBuffer);
+        m_Pipeline->Bind(frameInfo.commandBuffer);
 
-        vkCmdBindDescriptorSets(frameInfo.m_CommandBuffer,
+        vkCmdBindDescriptorSets(frameInfo.commandBuffer,
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 m_PipelineLayout,
                                 0,
                                 1,
-                                &frameInfo.m_GlobalDescriptorSet,
+                                &frameInfo.globalDescriptorSet,
                                 0,
                                 nullptr);
 
-        for (auto& snd : frameInfo.m_GameObjects | std::views::values) {
+        for (auto& snd : frameInfo.gameObjects | std::views::values) {
             auto& obj = snd;
             if (!obj.model) { continue; }
             SimplePushConstantData push{};
             push.modelMatrix = obj.transform.GetMat4();
             push.normalMatrix = obj.transform.GetNormalMatrix();
-            vkCmdPushConstants(frameInfo.m_CommandBuffer,
+            vkCmdPushConstants(frameInfo.commandBuffer,
                                m_PipelineLayout,
                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                                0,
                                sizeof(SimplePushConstantData),
                                &push);
-            obj.model->Bind(frameInfo.m_CommandBuffer);
-            obj.model->Draw(frameInfo.m_CommandBuffer);
+            obj.model->Bind(frameInfo.commandBuffer);
+            obj.model->Draw(frameInfo.commandBuffer);
         }
     }
 

@@ -1,7 +1,13 @@
 #pragma once
 
-namespace Liara::Core { struct FrameInfo; }
-namespace Liara::Graphics::Ubo { struct GlobalUbo; }
+namespace Liara::Core
+{
+    struct FrameInfo;
+}
+namespace Liara::Graphics::Ubo
+{
+    struct GlobalUbo;
+}
 
 namespace Liara::Core
 {
@@ -13,6 +19,6 @@ namespace Liara::Core
         ImGuiElement(const ImGuiElement&) = delete;
         ImGuiElement& operator=(const ImGuiElement&) = delete;
 
-        virtual void Draw(const FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) = 0;
+        virtual void Draw(const FrameInfo& frameInfo, Graphics::Ubo::GlobalUbo& ubo) = 0;
     };
 }

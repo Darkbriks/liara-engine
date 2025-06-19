@@ -4,8 +4,8 @@
 #include "Core/FrameInfo.h"
 #include "Core/Liara_GameObject.h"
 #include "Graphics/Liara_Pipeline.h"
-#include "Graphics/Ubo/GlobalUbo.h"
 #include "Graphics/SpecConstant/SpecializationConstant.h"
+#include "Graphics/Ubo/GlobalUbo.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -13,11 +13,12 @@
 
 #include <fmt/core.h>
 #include <glm/glm.hpp>
-#include "glm/gtx/rotate_vector.hpp"
+#include <vulkan/vulkan.h>
 
 #include <ranges>
 #include <stdexcept>
-#include <vulkan/vulkan.h>
+
+#include "glm/gtx/rotate_vector.hpp"
 
 namespace Liara::Systems
 {
@@ -43,7 +44,7 @@ namespace Liara::Systems
     void PointLightSystem::Update(const Core::FrameInfo& frameInfo, Graphics::Ubo::GlobalUbo& ubo) {
         UpdateLightCache(frameInfo);
 
-        const auto rotateLight = glm::rotate(glm::mat4(1.f), frameInfo.m_DeltaTime, {0.f, -1.f, 0.f});
+        const auto rotateLight = glm::rotate(glm::mat4(1.f), frameInfo.deltaTime, {0.f, -1.f, 0.f});
 
         const size_t lightCount =
             std::min(m_CachedPointLights.size(), static_cast<size_t>(Graphics::Constants::MAX_LIGHTS));
@@ -64,14 +65,14 @@ namespace Liara::Systems
     void PointLightSystem::Render(const Core::FrameInfo& frameInfo) const {
         if (m_CachedPointLights.empty()) { return; }
 
-        m_Pipeline->Bind(frameInfo.m_CommandBuffer);
+        m_Pipeline->Bind(frameInfo.commandBuffer);
 
-        vkCmdBindDescriptorSets(frameInfo.m_CommandBuffer,
+        vkCmdBindDescriptorSets(frameInfo.commandBuffer,
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 m_PipelineLayout,
                                 0,
                                 1,
-                                &frameInfo.m_GlobalDescriptorSet,
+                                &frameInfo.globalDescriptorSet,
                                 0,
                                 nullptr);
 
@@ -81,14 +82,14 @@ namespace Liara::Systems
             push.color = glm::vec4(gameObject->color, gameObject->pointLight->intensity);
             push.radius = gameObject->transform.scale.x;
 
-            vkCmdPushConstants(frameInfo.m_CommandBuffer,
+            vkCmdPushConstants(frameInfo.commandBuffer,
                                m_PipelineLayout,
                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                                0,
                                sizeof(PointLightPushConstants),
                                &push);
 
-            vkCmdDraw(frameInfo.m_CommandBuffer, 6, 1, 0, 0);
+            vkCmdDraw(frameInfo.commandBuffer, 6, 1, 0, 0);
         }
     }
 
@@ -127,7 +128,7 @@ namespace Liara::Systems
         m_CachedPointLights.clear();
         m_CachedPointLights.reserve(Graphics::Constants::MAX_LIGHTS);
 
-        for (auto& gameObject : frameInfo.m_GameObjects | std::views::values) {
+        for (auto& gameObject : frameInfo.gameObjects | std::views::values) {
             if (gameObject.pointLight) {
                 m_CachedPointLights.push_back(&gameObject);
 
@@ -139,12 +140,12 @@ namespace Liara::Systems
             }
         }
 
-        m_LastGameObjectCount = frameInfo.m_GameObjects.size();
+        m_LastGameObjectCount = frameInfo.gameObjects.size();
         m_CacheNeedsRebuild = false;
     }
 
     void PointLightSystem::UpdateLightCache(const Core::FrameInfo& frameInfo) {
-        if (m_CacheNeedsRebuild || m_LastGameObjectCount != frameInfo.m_GameObjects.size()) {
+        if (m_CacheNeedsRebuild || m_LastGameObjectCount != frameInfo.gameObjects.size()) {
             RebuildLightCache(frameInfo);
         }
     }

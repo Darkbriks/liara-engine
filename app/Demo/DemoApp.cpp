@@ -12,6 +12,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/trigonometric.hpp>
+
 #include <memory>
 #include <utility>
 #include <vector>
@@ -24,7 +25,7 @@
 DemoApp::DemoApp(const Liara::Core::ApplicationInfo& appInfo)
     : Liara_App(appInfo)
     , m_Controller(*m_SettingsManager) {
-    fmt::print("Starting {} v{}\n", appInfo.get_display_name(), appInfo.version.to_string());
+    fmt::print("Starting {} v{}\n", appInfo.GetDisplayName(), appInfo.version.ToString());
 
     if (!appInfo.description.empty()) { fmt::print("Description: {}\n", appInfo.description); }
 

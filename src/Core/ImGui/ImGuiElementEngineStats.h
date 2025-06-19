@@ -1,42 +1,46 @@
 #pragma once
 
-#include "ImGuiElement.h"
 #include "Core/FrameInfo.h"
 
 #include <imgui.h>
 
+#include "ImGuiElement.h"
+
 namespace Liara::Core::ImGuiElements
 {
-    class EngineStats : public ImGuiElement
+    class EngineStats final : public ImGuiElement
     {
     public:
-        explicit EngineStats(const ApplicationInfo& app_info) : app_info(app_info) {}
+        explicit EngineStats(const ApplicationInfo& appInfo)
+            : m_app_info(appInfo) {}
 
         ~EngineStats() override = default;
 
-        void Draw(const FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& /*ubo*/) override
-        {
+        void Draw(const FrameInfo& frameInfo, Graphics::Ubo::GlobalUbo&) override {
             ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
 
-            ImGui::Begin("Engine Stats", nullptr,
-                         ImGuiWindowFlags_NoResize |
-                         ImGuiWindowFlags_NoMove |
-                         ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::Begin("Engine Stats",
+                         nullptr,
+                         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 
             if (ImGui::CollapsingHeader("Application Info")) {
-                ImGui::Text("Name: %s", app_info.get_display_name().data());
-                ImGui::Text("Version: %s", app_info.version.to_string().c_str());
-                ImGui::Text("Build: %s (%s)", app_info.build_config.data(), app_info.target_platform.data());
-                if (!app_info.organization.empty()) {
-                    ImGui::Text("Organization: %s", app_info.organization.data());
+                ImGui::Text("Name: %s", m_app_info.GetDisplayName().data());
+                ImGui::Text("Version: %s", m_app_info.version.ToString().c_str());
+                ImGui::Text("Build: %s (%s)", m_app_info.buildConfig.data(), m_app_info.targetPlatform.data());
+                if (!m_app_info.organization.empty()) {
+                    ImGui::Text("Organization: %s", m_app_info.organization.data());
                 }
             }
 
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", frame_info.m_DeltaTime * 1000.0f, 1.0f / frame_info.m_DeltaTime);
-            ImGui::Text("Number of Game Objects: %ld", frame_info.m_GameObjects.size());
-            ImGui::Text("Triangle Count: %ld Vertex Count: %ld", g_FrameStats.m_PreviousTriangleCount, g_FrameStats.m_PreviousVertexCount);
-            ImGui::Text("Draw Call Count: %ld", g_FrameStats.m_PreviousDrawCallCount);
-            ImGui::Text("Mesh Draw Time: %.3f ms", g_FrameStats.m_PreviousMeshDrawTime);
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                        frameInfo.deltaTime * 1000.0f,
+                        1.0f / frameInfo.deltaTime);
+            ImGui::Text("Number of Game Objects: %ld", frameInfo.gameObjects.size());
+            ImGui::Text("Triangle Count: %ld Vertex Count: %ld",
+                        frameStats.previousTriangleCount,
+                        frameStats.previousVertexCount);
+            ImGui::Text("Draw Call Count: %ld", frameStats.previousDrawCallCount);
+            ImGui::Text("Mesh Draw Time: %.3f ms", frameStats.previousMeshDrawTime);
 
             // TODO:
             // - Add Plot for Frame Time
@@ -47,6 +51,6 @@ namespace Liara::Core::ImGuiElements
         }
 
     private:
-        const ApplicationInfo& app_info;
+        const ApplicationInfo& m_app_info;
     };
 }

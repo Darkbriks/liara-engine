@@ -1,12 +1,13 @@
 #pragma once
-#include "Liara_System.h"
-
 #include "Core/Liara_SettingsManager.h"
 
 #include <vulkan/vulkan_core.h>
 
+#include <cstddef>
 #include <memory>
 #include <vector>
+
+#include "Liara_System.h"
 
 namespace Liara::Core
 {
