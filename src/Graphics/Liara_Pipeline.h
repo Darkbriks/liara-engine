@@ -1,7 +1,10 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "Core/Liara_SettingsManager.h"
 
+#include <vulkan/vulkan_core.h>
+
+#include <cstdint>
 #include <string>
 #include <vector>
 

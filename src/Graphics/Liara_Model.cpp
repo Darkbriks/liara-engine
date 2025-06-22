@@ -2,33 +2,42 @@
 
 #include "Core/FrameInfo.h"
 #include "Core/Liara_Utils.h"
+#include "Graphics/Liara_Buffer.h"
+#include "Graphics/Liara_Device.h"
 
+#include <vulkan/vulkan_core.h>
+
+#include <cassert>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
+#include <functional>
+#include <memory>
+#include <ratio>
+#include <stdexcept>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/hash.hpp>
+#include <glm/gtx/hash.hpp> // IWYU pragma: keep
 
 #ifndef ENGINE_DIR
     #define ENGINE_DIR "./"
 #endif
 
-namespace std
+template <> struct std::hash<Liara::Graphics::Liara_Model::Vertex>
 {
-    template <> struct hash<Liara::Graphics::Liara_Model::Vertex>
-    {
-        size_t operator()(const Liara::Graphics::Liara_Model::Vertex& vertex) const noexcept {
-            size_t seed = 0;
-            Liara::Core::HashCombine(
-                seed, vertex.position, vertex.color, vertex.normal, vertex.uv, vertex.specularExponent);
-            return seed;
-        }
-    };
-}
+    size_t operator()(const Liara::Graphics::Liara_Model::Vertex& vertex) const noexcept {
+        size_t seed = 0;
+        Liara::Core::HashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv, vertex.specularExponent);
+        return seed;
+    }
+};
 
 namespace Liara::Graphics
 {
@@ -160,27 +169,27 @@ namespace Liara::Graphics
                 Vertex vertex{};
 
                 if (vertex_index >= 0) {
-                    vertex.position = {attrib.vertices[3 * vertex_index + 0],
-                                       attrib.vertices[3 * vertex_index + 1],
-                                       attrib.vertices[3 * vertex_index + 2]};
+                    vertex.position = {attrib.vertices[(3ul * vertex_index) + 0],
+                                       attrib.vertices[(3ul * vertex_index) + 1],
+                                       attrib.vertices[(3ul * vertex_index) + 2]};
 
-                    vertex.color = {attrib.colors[3 * vertex_index + 0],
-                                    attrib.colors[3 * vertex_index + 1],
-                                    attrib.colors[3 * vertex_index + 2]};
+                    vertex.color = {attrib.colors[(3ul * vertex_index) + 0],
+                                    attrib.colors[(3ul * vertex_index) + 1],
+                                    attrib.colors[(3ul * vertex_index) + 2]};
 
                     vertex.specularExponent = specularExponent;
                 }
 
                 if (normal_index >= 0) {
-                    vertex.normal = {attrib.normals[3 * normal_index + 0],
-                                     attrib.normals[3 * normal_index + 1],
-                                     attrib.normals[3 * normal_index + 2]};
+                    vertex.normal = {attrib.normals[(3ul * normal_index) + 0],
+                                     attrib.normals[(3ul * normal_index) + 1],
+                                     attrib.normals[(3ul * normal_index) + 2]};
                 }
 
                 if (texcoord_index >= 0) {
                     // Flip the y coordinate to match with Vulkan's texture coordinate system
-                    vertex.uv = {attrib.texcoords[2 * texcoord_index + 0],
-                                 1.0f - attrib.texcoords[2 * texcoord_index + 1]};
+                    vertex.uv = {attrib.texcoords[(2ul * texcoord_index) + 0],
+                                 1.0f - attrib.texcoords[(2ul * texcoord_index) + 1]};
                 }
 
                 if (!uniqueVertices.contains(vertex)) {

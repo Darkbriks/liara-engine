@@ -1,7 +1,16 @@
 #include "Liara_Texture.h"
 
+#include "Core/Liara_SettingsManager.h"
+#include "Graphics/Liara_Device.h"
+
+#include <vulkan/vulkan_core.h>
+
+#include <algorithm>
 #include <cassert>
+#include <cmath>
+#include <cstdint>
 #include <stdexcept>
+#include <string>
 
 #include "Liara_Buffer.h"
 
@@ -265,7 +274,8 @@ namespace Liara::Graphics
         barrier.subresourceRange.layerCount = 1;
         barrier.subresourceRange.levelCount = 1;
 
-        auto mipWidth = static_cast<int32_t>(m_Width), mipHeight = static_cast<int32_t>(m_Height);
+        auto mipWidth = static_cast<int32_t>(m_Width);
+        auto mipHeight = static_cast<int32_t>(m_Height);
 
         for (uint16_t i = 1; i < m_MipLevels; i++) {
             barrier.subresourceRange.baseMipLevel = i - 1;

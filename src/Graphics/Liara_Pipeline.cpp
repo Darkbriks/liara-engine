@@ -1,8 +1,17 @@
 #include "Liara_Pipeline.h"
 
+#include "Graphics/Liara_Device.h"
+
+#include <vulkan/vulkan_core.h>
+
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
+#include <ios>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "Liara_Model.h"
 #include "SpecConstant/SpecializationConstant.h"

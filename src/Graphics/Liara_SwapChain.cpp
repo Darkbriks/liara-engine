@@ -1,10 +1,18 @@
 #include "Liara_SwapChain.h"
 
-#include <fmt/core.h>
+#include "Core/Liara_SettingsManager.h"
+#include "Graphics/Liara_Device.h"
 
+#include <vulkan/vulkan_core.h>
+
+#include <algorithm>
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <limits>
+#include <memory>
 #include <stdexcept>
+#include <vector>
 
 #include "GraphicsConstants.h"
 

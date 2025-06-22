@@ -1,5 +1,10 @@
 #pragma once
 
+#include "Core/Liara_SettingsManager.h"
+
+#include <vulkan/vulkan_core.h>
+
+#include <cstdint>
 #include <stb/stb_image.h>
 #include <string>
 

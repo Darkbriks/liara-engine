@@ -54,7 +54,7 @@ CheckOptions:
   modernize-use-equals-delete.IgnoreMacros: false
 
   # === READABILITY ===
-  readability-function-size.LineThreshold: 50
+  readability-function-size.LineThreshold: 100
   readability-function-size.StatementThreshold: 50
   readability-function-size.BranchThreshold: 10
   readability-function-size.ParameterThreshold: 8
