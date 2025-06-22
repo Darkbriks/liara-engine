@@ -286,8 +286,10 @@ jobs:
   build-appimage:
     runs-on: ubuntu-22.04
     needs: build-linux
-    # Seulement si le build Ubuntu Release a réussi
-    if: needs.build-linux.result == 'success'
+    if: |
+      needs.build-linux.result == 'success' && 
+      contains(needs.build-linux.outputs.*, 'ubuntu') &&
+      contains(needs.build-linux.outputs.*, 'Release')
 
     steps:
       - name: Checkout code (pour les métadonnées)
@@ -322,7 +324,12 @@ jobs:
             fuse \
             file \
             imagemagick \
-            desktop-file-utils
+            desktop-file-utils \
+            libsdl2-dev \
+            libsdl2-2.0-0 \
+            libvulkan1 \
+            libfmt8 \
+            libglm-dev
 
       - name: Prepare AppImage structure
         run: |
@@ -331,18 +338,21 @@ jobs:
           mkdir -p AppDir/usr/share/pixmaps
           mkdir -p AppDir/usr/share/doc/${{ github.event.repository.name }}
           
-          # Trouver et copier l'exécutable Demo
-          DEMO_PATH=$(find build-artifacts -name "Demo" -type f | head -1)
-          if [ -z "$DEMO_PATH" ]; then
-            echo "ERROR: Demo executable not found in artifacts!"
+          DEMO_PATH="build-artifacts/build/app/Demo"
+          if [ ! -f "$DEMO_PATH" ]; then
+            echo "ERROR: Demo executable not found at expected path: $DEMO_PATH"
             echo "Available files:"
-            find build-artifacts -type f
+            find build-artifacts -type f -name "Demo"
             exit 1
           fi
           
           echo "Found Demo at: $DEMO_PATH"
           cp "$DEMO_PATH" AppDir/usr/bin/
           chmod +x AppDir/usr/bin/Demo
+          
+          # Vérifier que l'exécutable fonctionne
+          echo "Testing Demo executable..."
+          ldd AppDir/usr/bin/Demo || echo "Could not analyze dependencies"
           
           # Copier les assets s'ils existent
           if [ -d "build-artifacts/assets" ]; then
@@ -356,19 +366,13 @@ jobs:
           SHADER_DIR="AppDir/usr/share/${{ github.event.repository.name }}/shaders"
           mkdir -p "$SHADER_DIR"
           
-          # Chercher les fichiers .spv dans tous les sous-répertoires
-          SHADER_COUNT=0
-          while IFS= read -r -d '' shader_file; do
-            cp "$shader_file" "$SHADER_DIR/"
-            SHADER_COUNT=$((SHADER_COUNT + 1))
-          done < <(find build-artifacts -name "*.spv" -type f -print0 2>/dev/null)
-          
-          echo "Copied $SHADER_COUNT shader files"
-          
-          if [ $SHADER_COUNT -eq 0 ]; then
-            echo "Warning: No shader files found!"
-            echo "Available files in build-artifacts:"
-            find build-artifacts -type f
+          # Chercher les fichiers .spv dans build-artifacts/build/shaders/
+          if [ -d "build-artifacts/build/shaders" ]; then
+            find build-artifacts/build/shaders -name "*.spv" -type f -exec cp {} "$SHADER_DIR/" \;
+            SHADER_COUNT=$(find build-artifacts/build/shaders -name "*.spv" -type f | wc -l)
+            echo "Copied $SHADER_COUNT shader files"
+          else
+            echo "Warning: No shaders directory found at build-artifacts/build/shaders"
           fi
 
       - name: Create desktop file
@@ -447,14 +451,50 @@ jobs:
 
       - name: Build AppImage
         run: |
+          # Vérifier les dépendances disponibles dans le système
+          echo "=== System libraries check ==="
+          ldconfig -p | grep -E "(SDL2|vulkan|fmt)" || echo "Some libraries may be missing"
+          
           # Utiliser linuxdeploy pour résoudre les dépendances
+          echo "=== Running linuxdeploy ==="
           ./linuxdeploy-x86_64.AppImage \
             --appdir AppDir \
             --desktop-file AppDir/usr/share/applications/${{ github.event.repository.name }}.desktop \
             --icon-file AppDir/usr/share/pixmaps/${{ github.event.repository.name }}.png \
-            --executable AppDir/usr/bin/Demo
+            --executable AppDir/usr/bin/Demo \
+            --verbosity=2
+          
+          # En cas d'échec, essayer une approche alternative
+          if [ $? -ne 0 ]; then
+            echo "=== linuxdeploy failed, trying alternative approach ==="
+          
+            # Copier manuellement les bibliothèques essentielles
+            mkdir -p AppDir/usr/lib
+          
+            # Trouver et copier SDL2
+            SDL2_LIB=$(ldconfig -p | grep "libSDL2-2.0.so.0" | awk '{print $NF}' | head -1)
+            if [ -n "$SDL2_LIB" ] && [ -f "$SDL2_LIB" ]; then
+              cp "$SDL2_LIB" AppDir/usr/lib/
+              echo "Copied SDL2: $SDL2_LIB"
+            fi
+          
+            # Copier fmt si nécessaire
+            FMT_LIB=$(ldconfig -p | grep "libfmt.so" | awk '{print $NF}' | head -1)
+            if [ -n "$FMT_LIB" ] && [ -f "$FMT_LIB" ]; then
+              cp "$FMT_LIB" AppDir/usr/lib/
+              echo "Copied fmt: $FMT_LIB"
+            fi
+          
+            # Relancer linuxdeploy
+            ./linuxdeploy-x86_64.AppImage \
+              --appdir AppDir \
+              --desktop-file AppDir/usr/share/applications/${{ github.event.repository.name }}.desktop \
+              --icon-file AppDir/usr/share/pixmaps/${{ github.event.repository.name }}.png \
+              --verbosity=2
+          fi
           
           # Créer l'AppImage finale
+          echo "=== Creating AppImage ==="
           ./appimagetool-x86_64.AppImage AppDir \
             ${{ github.event.repository.name }}-${{ github.ref_name }}-x86_64.AppImage
 
