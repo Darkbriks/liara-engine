@@ -127,8 +127,8 @@ jobs:
           path: |
             build/${{ matrix.build_type }}/Demo.exe
             build/${{ matrix.build_type }}/*.dll
-            build/shaders/*.spv
-            assets/
+            build/${{ matrix.build_type }}/shaders/*.spv
+            build/${{ matrix.build_type }}/assets/**
           retention-days: 30
 
       - name: Upload build logs on failure
