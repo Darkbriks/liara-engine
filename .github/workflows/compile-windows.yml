@@ -124,11 +124,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: liara-engine-windows-${{ matrix.build_type }}-${{ github.ref_name }}
-          path: |
-            build/${{ matrix.build_type }}/Demo.exe
-            build/${{ matrix.build_type }}/*.dll
-            build/shaders/*.spv
-            assets/
+          # path: |
+          #  build/${{ matrix.build_type }}/app/Demo.exe
+          #  build/${{ matrix.build_type }}/*.dll
+          #  build/shaders/*.spv
+          #  assets/
+          # For testing purposes, upload the entire build directory
+          path: build/${{ matrix.build_type }}
           retention-days: 30
 
       - name: Upload build logs on failure
