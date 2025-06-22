@@ -1,0 +1,390 @@
+name: Linux Build
+
+on:
+  push:
+    branches: [ main, version-* ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  VULKAN_SDK_VERSION: "1.3.280.0"
+  CMAKE_VERSION: "3.25.3"
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        distro:
+          - name: ubuntu
+            version: "22.04"
+            container: ubuntu:22.04
+            pkg_manager: apt
+            packages: "sudo build-essential ninja-build file libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config vulkan-tools libglm-dev software-properties-common wget curl ca-certificates"
+            update_cmd: "apt update && apt install -y"
+            setup_compiler: "add-apt-repository ppa:ubuntu-toolchain-r/test -y && apt update && apt install -y gcc-13 g++-13 && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13"
+          - name: fedora
+            version: "39"
+            container: fedora:39
+            pkg_manager: dnf
+            packages: "gcc-c++ ninja-build vulkan-devel vulkan-validation-layers-devel SDL2-devel fmt-devel pkg-config vulkan-tools libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel wget dnf-plugins-core"
+            update_cmd: "dnf update -y && dnf install -y"
+            setup_compiler: ""
+          - name: archlinux
+            version: "latest"
+            container: archlinux:latest
+            pkg_manager: pacman
+            packages: "base-devel ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf vulkan-tools glm wget shaderc"
+            update_cmd: "pacman -Syu --noconfirm"
+            setup_compiler: ""
+
+    container:
+      image: ${{ matrix.distro.container }}
+
+    steps:
+      - name: Install Git
+        run: |
+          if [ "${{ matrix.distro.pkg_manager }}" = "apt" ]; then
+            apt update && apt install -y git
+          elif [ "${{ matrix.distro.pkg_manager }}" = "dnf" ]; then
+            dnf install -y git
+          elif [ "${{ matrix.distro.pkg_manager }}" = "pacman" ]; then
+            pacman -Sy --noconfirm git
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          ${{ matrix.distro.update_cmd }} ${{ matrix.distro.packages }}
+
+      - name: Setup compiler
+        if: matrix.distro.name == 'ubuntu'
+        run: |
+          ${{ matrix.distro.setup_compiler }}
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '${{ env.CMAKE_VERSION }}'
+
+      - name: Verify CMake version
+        run: cmake --version
+
+      - name: Cache Vulkan SDK
+        uses: actions/cache@v4
+        id: vulkan-cache
+        with:
+          path: /opt/vulkan-sdk/${{ env.VULKAN_SDK_VERSION }}
+          key: vulkan-sdk-${{ env.VULKAN_SDK_VERSION }}-${{ runner.os }}
+          restore-keys: |
+            vulkan-sdk-${{ env.VULKAN_SDK_VERSION }}-
+            vulkan-sdk-
+
+      - name: Install Vulkan SDK and verify glslc
+        run: |
+          # Check if glslc is already available from installed packages
+          if command -v glslc >/dev/null 2>&1; then
+            echo "glslc found: $(which glslc)"
+            glslc --version
+            exit 0
+          fi
+
+          echo "glslc not found in packages, installing from Vulkan SDK for ${{ matrix.distro.name }}..."
+
+          # Variables de configuration
+          VULKAN_SDK_DIR="/opt/vulkan-sdk"
+          VULKAN_SDK_PATH="${VULKAN_SDK_DIR}/${{ env.VULKAN_SDK_VERSION }}"
+          VULKAN_INSTALLER="vulkansdk-linux-x86_64-${{ env.VULKAN_SDK_VERSION }}.tar.xz"
+          VULKAN_URL="https://sdk.lunarg.com/sdk/download/${{ env.VULKAN_SDK_VERSION }}/linux/${VULKAN_INSTALLER}"
+          TEMP_DIR="/tmp/vulkan-install"
+
+          # Vérifier si le cache a été restauré avec succès
+          if [ "${{ steps.vulkan-cache.outputs.cache-hit }}" = "true" ] && [ -d "${VULKAN_SDK_PATH}" ] && [ -x "${VULKAN_SDK_PATH}/x86_64/bin/glslc" ]; then
+            echo "✓ Vulkan SDK restored from cache"
+            export VULKAN_SDK="${VULKAN_SDK_PATH}/x86_64"
+            export PATH="${VULKAN_SDK}/bin:${PATH}"
+            export LD_LIBRARY_PATH="${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}"
+            export VK_LAYER_PATH="${VULKAN_SDK}/etc/vulkan/explicit_layer.d"
+
+            # Sauvegarder les variables d'environnement pour les étapes suivantes
+            echo "VULKAN_SDK=${VULKAN_SDK}" >> $GITHUB_ENV
+            echo "PATH=${VULKAN_SDK}/bin:${PATH}" >> $GITHUB_ENV
+            echo "LD_LIBRARY_PATH=${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+            echo "VK_LAYER_PATH=${VULKAN_SDK}/etc/vulkan/explicit_layer.d" >> $GITHUB_ENV
+
+            echo "✓ Cache restored glslc location: $(which glslc)"
+            glslc --version
+            exit 0
+          fi
+
+          # Créer les répertoires nécessaires
+          sudo mkdir -p "${VULKAN_SDK_DIR}" "${TEMP_DIR}"
+          cd "${TEMP_DIR}"
+
+          echo "Downloading Vulkan SDK ${{ env.VULKAN_SDK_VERSION }}..."
+
+          # Télécharger avec retry et vérification
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+
+          while [ ${RETRY_COUNT} -lt ${MAX_RETRIES} ]; do
+            if wget --progress=dot:giga --timeout=30 --tries=2 "${VULKAN_URL}"; then
+              echo "Download successful"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "Download failed, retry ${RETRY_COUNT}/${MAX_RETRIES}"
+              sleep 5
+            fi
+          done
+
+          if [ ${RETRY_COUNT} -eq ${MAX_RETRIES} ]; then
+            echo "ERROR: Failed to download Vulkan SDK after ${MAX_RETRIES} attempts"
+            exit 1
+          fi
+
+          # Vérifier l'intégrité du fichier téléchargé
+          if [ ! -f "${VULKAN_INSTALLER}" ]; then
+            echo "ERROR: Downloaded file not found"
+            exit 1
+          fi
+
+          # Vérifier la taille minimale (SDK doit faire au moins 100MB)
+          MIN_SIZE=104857600  # 100MB en bytes
+          ACTUAL_SIZE=$(stat -c%s "${VULKAN_INSTALLER}")
+          if [ ${ACTUAL_SIZE} -lt ${MIN_SIZE} ]; then
+            echo "ERROR: Downloaded file too small (${ACTUAL_SIZE} bytes), probably corrupted"
+            exit 1
+          fi
+
+          echo "Extracting Vulkan SDK..."
+
+          # Extraire avec vérification
+          if ! tar -tf "${VULKAN_INSTALLER}" >/dev/null 2>&1; then
+            echo "ERROR: Downloaded archive is corrupted"
+            exit 1
+          fi
+
+          # Extraire dans un répertoire temporaire d'abord
+          mkdir -p extract_temp
+          if ! tar -xf "${VULKAN_INSTALLER}" -C extract_temp; then
+            echo "ERROR: Failed to extract Vulkan SDK"
+            exit 1
+          fi
+
+          # Trouver le répertoire racine extrait (format peut varier)
+          EXTRACTED_DIR=$(find extract_temp -maxdepth 1 -type d -name "*${{ env.VULKAN_SDK_VERSION }}*" | head -1)
+          if [ -z "${EXTRACTED_DIR}" ]; then
+            echo "ERROR: Could not find extracted SDK directory"
+            ls -la extract_temp/
+            exit 1
+          fi
+
+          echo "Moving SDK to ${VULKAN_SDK_PATH}..."
+
+          # Déplacer vers le répertoire final avec permissions appropriées
+          sudo rm -rf "${VULKAN_SDK_PATH}"
+          sudo mv "${EXTRACTED_DIR}" "${VULKAN_SDK_PATH}"
+          sudo chown -R root:root "${VULKAN_SDK_PATH}"
+          sudo chmod -R 755 "${VULKAN_SDK_PATH}"
+
+          # Configurer les variables d'environnement
+          export VULKAN_SDK="${VULKAN_SDK_PATH}/x86_64"
+          export PATH="${VULKAN_SDK}/bin:${PATH}"
+          export LD_LIBRARY_PATH="${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}"
+          export VK_LAYER_PATH="${VULKAN_SDK}/etc/vulkan/explicit_layer.d"
+
+          # Vérifications finales robustes
+          echo "Performing final verification..."
+
+          # Vérifier que glslc existe et est exécutable
+          if [ ! -x "${VULKAN_SDK}/bin/glslc" ]; then
+            echo "ERROR: glslc not found or not executable at ${VULKAN_SDK}/bin/glslc"
+            find "${VULKAN_SDK_PATH}" -name "*glslc*" -type f 2>/dev/null || echo "No glslc found in SDK"
+            exit 1
+          fi
+
+          # Vérifier que glslc fonctionne
+          if ! "${VULKAN_SDK}/bin/glslc" --version >/dev/null 2>&1; then
+            echo "ERROR: glslc found but not working properly"
+            "${VULKAN_SDK}/bin/glslc" --version || echo "glslc version check failed"
+            ldd "${VULKAN_SDK}/bin/glslc" || echo "ldd check failed"
+            exit 1
+          fi
+
+          # Nettoyer les fichiers temporaires
+          cd /
+          rm -rf "${TEMP_DIR}"
+
+          # Afficher les informations finales
+          echo "✓ Vulkan SDK installation successful!"
+          echo "✓ SDK Path: ${VULKAN_SDK}"
+          echo "✓ glslc location: $(which glslc)"
+          echo "✓ glslc version:"
+          glslc --version
+
+          # Sauvegarder les variables d'environnement pour les étapes suivantes
+          echo "VULKAN_SDK=${VULKAN_SDK}" >> $GITHUB_ENV
+          echo "PATH=${VULKAN_SDK}/bin:${PATH}" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+          echo "VK_LAYER_PATH=${VULKAN_SDK}/etc/vulkan/explicit_layer.d" >> $GITHUB_ENV
+
+      - name: Cache CMake build dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps
+          key: cmake-deps-${{ matrix.distro.name }}-${{ matrix.build_type }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            cmake-deps-${{ matrix.distro.name }}-${{ matrix.build_type }}-
+            cmake-deps-${{ matrix.distro.name }}-
+
+      - name: Configure CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: Build project
+        run: |
+          cd build
+          ninja -j$(nproc)
+
+      - name: Build shaders
+        run: |
+          cd build
+          ninja LiaraShaders
+
+      - name: Test executable
+        run: |
+          cd build/app
+          if [ -f "Demo" ]; then
+            echo "Demo executable found successfully"
+            file Demo
+            ldd Demo || echo "Static executable or missing libs"
+          else
+            echo "ERROR: Demo executable not found!"
+            ls -la
+            exit 1
+          fi
+
+      - name: Create portable archive
+        if: matrix.build_type == 'Release'
+        run: |
+          cd build/app
+          mkdir -p package
+          cp Demo package/
+          cp -r ./assets package/ 2>/dev/null || echo "No assets directory found"
+          if [ -d "shaders" ]; then
+            cp -r shaders package/
+          fi
+          cd package
+          tar -czf ../../${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-x86_64.tar.gz *
+
+      - name: Upload artifacts (Release builds on version tags)
+        if: matrix.build_type == 'Release' && startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: liara-engine-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-${{ github.ref_name }}
+          path: |
+            ${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-x86_64.tar.gz
+          retention-days: 30
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-${{ github.run_number }}
+          path: |
+            build/CMakeFiles/CMakeOutput.log
+            build/CMakeFiles/CMakeError.log
+            build/**/*.log
+          retention-days: 7
+
+  # Job séparé pour créer une AppImage portable (Ubuntu uniquement)
+  build-appimage:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-linux
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential ninja-build libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config vulkan-tools libglm-dev wget fuse
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.25'
+
+      - name: Verify CMake version
+        run: cmake --version
+
+      - name: Configure and build
+        run: |
+          mkdir build && cd build
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=AppDir/usr
+          ninja -j$(nproc)
+          ninja LiaraShaders
+
+      - name: Create AppImage
+        run: |
+          cd build
+          mkdir -p AppDir/usr/bin
+          cp Demo AppDir/usr/bin/
+          
+          # Copy assets and shaders
+          if [ -d "../assets" ]; then
+            cp -r ../assets AppDir/usr/
+          fi
+          if [ -d "shaders" ]; then
+            cp -r shaders AppDir/usr/
+          fi
+          
+          # Create desktop file
+          cat > AppDir/liara-engine.desktop << EOF
+          [Desktop Entry]
+          Type=Application
+          Name=Liara Engine Demo
+          Exec=Demo
+          Icon=liara-engine
+          Categories=Game;Development;
+          EOF
+          
+          # Create basic icon (you might want to replace with actual icon)
+          mkdir -p AppDir/usr/share/pixmaps
+          echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" | base64 -d > AppDir/usr/share/pixmaps/liara-engine.png
+          
+          # Download linuxdeploy and appimagetool
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x *.AppImage
+          
+          # Create AppImage
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --desktop-file AppDir/liara-engine.desktop
+          ./appimagetool-x86_64.AppImage AppDir ${{ github.event.repository.name }}-${{ github.ref_name }}-x86_64.AppImage
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: liara-engine-appimage-${{ github.ref_name }}
+          path: build/${{ github.event.repository.name }}-${{ github.ref_name }}-x86_64.AppImage
+          retention-days: 30

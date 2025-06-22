@@ -1,53 +1,61 @@
 #include "Liara_Descriptor.h"
 
-#include <stdexcept>
+#include "Graphics/Liara_Device.h"
+
+#include <vulkan/vulkan_core.h>
+
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <ranges>
+#include <stdexcept>
+#include <vector>
 
 namespace Liara::Graphics::Descriptors
 {
     // *************** Descriptor Allocator Builder *********************
 
-    Liara_DescriptorAllocator::Builder& Liara_DescriptorAllocator::Builder::AddPoolSize(
-        const VkDescriptorType descriptorType, const uint32_t count)
-    {
+    Liara_DescriptorAllocator::Builder&
+    Liara_DescriptorAllocator::Builder::AddPoolSize(const VkDescriptorType descriptorType, const uint32_t count) {
         m_PoolSizes.push_back({descriptorType, count});
         return *this;
     }
 
-    Liara_DescriptorAllocator::Builder& Liara_DescriptorAllocator::Builder::SetPoolFlags(const VkDescriptorPoolCreateFlags flags)
-    {
+    Liara_DescriptorAllocator::Builder&
+    Liara_DescriptorAllocator::Builder::SetPoolFlags(const VkDescriptorPoolCreateFlags flags) {
         m_PoolFlags = flags;
         return *this;
     }
 
-    Liara_DescriptorAllocator::Builder& Liara_DescriptorAllocator::Builder::SetMaxSets(const uint32_t count)
-    {
+    Liara_DescriptorAllocator::Builder& Liara_DescriptorAllocator::Builder::SetMaxSets(const uint32_t count) {
         m_MaxSets = count;
         return *this;
     }
 
-    std::unique_ptr<Liara_DescriptorAllocator> Liara_DescriptorAllocator::Builder::Build() const
-    {
+    std::unique_ptr<Liara_DescriptorAllocator> Liara_DescriptorAllocator::Builder::Build() const {
         return std::make_unique<Liara_DescriptorAllocator>(m_Device, m_MaxSets, m_PoolFlags, m_PoolSizes);
     }
 
     // *************** Descriptor Allocator Implementation *********************
 
-    Liara_DescriptorAllocator::Liara_DescriptorAllocator(Liara_Device& device, const uint32_t maxSets, const VkDescriptorPoolCreateFlags flags,
-                                             const std::vector<VkDescriptorPoolSize>& poolSizes)
-        : m_Device(device), m_PoolSizes(poolSizes), m_MaxSets(maxSets), m_Flags(flags) {}
+    Liara_DescriptorAllocator::Liara_DescriptorAllocator(Liara_Device& device,
+                                                         const uint32_t maxSets,
+                                                         const VkDescriptorPoolCreateFlags flags,
+                                                         const std::vector<VkDescriptorPoolSize>& poolSizes)
+        : m_Device(device)
+        , m_PoolSizes(poolSizes)
+        , m_MaxSets(maxSets)
+        , m_Flags(flags) {}
 
-    Liara_DescriptorAllocator::~Liara_DescriptorAllocator()
-    {
-        for (const auto pool: m_FreePools) { vkDestroyDescriptorPool(m_Device.GetDevice(), pool, nullptr); }
-        for (const auto pool: m_UsedPools) { vkDestroyDescriptorPool(m_Device.GetDevice(), pool, nullptr); }
+    Liara_DescriptorAllocator::~Liara_DescriptorAllocator() {
+        for (auto* const pool : m_FreePools) { vkDestroyDescriptorPool(m_Device.GetDevice(), pool, nullptr); }
+        for (auto* const pool : m_UsedPools) { vkDestroyDescriptorPool(m_Device.GetDevice(), pool, nullptr); }
     }
 
-    VkDescriptorPool Liara_DescriptorAllocator::GrabPool()
-    {
-        if (!m_FreePools.empty())
-        {
+    VkDescriptorPool Liara_DescriptorAllocator::GrabPool() {
+        if (!m_FreePools.empty()) {
             VkDescriptorPool pool = m_FreePools.back();
             m_FreePools.pop_back();
             return pool;
@@ -60,19 +68,16 @@ namespace Liara::Graphics::Descriptors
         poolInfo.maxSets = m_MaxSets;
         poolInfo.flags = m_Flags;
 
-        VkDescriptorPool descriptorPool;
-        if (vkCreateDescriptorPool(m_Device.GetDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-        {
+        VkDescriptorPool descriptorPool = nullptr;
+        if (vkCreateDescriptorPool(m_Device.GetDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create descriptor pool");
         }
 
         return descriptorPool;
     }
 
-    bool Liara_DescriptorAllocator::Allocate(VkDescriptorSet* set, VkDescriptorSetLayout layout)
-    {
-        if (m_CurrentPool == VK_NULL_HANDLE)
-        {
+    bool Liara_DescriptorAllocator::Allocate(VkDescriptorSet* set, VkDescriptorSetLayout layout) {
+        if (m_CurrentPool == VK_NULL_HANDLE) {
             m_CurrentPool = GrabPool();
             m_UsedPools.push_back(m_CurrentPool);
         }
@@ -83,25 +88,20 @@ namespace Liara::Graphics::Descriptors
         allocInfo.pSetLayouts = &layout;
         allocInfo.descriptorSetCount = 1;
 
-        if (VkResult result = vkAllocateDescriptorSets(m_Device.GetDevice(), &allocInfo, set); result == VK_SUCCESS)
-        {
-            return true;
-        }
-        else if (result == VK_ERROR_FRAGMENTED_POOL || result == VK_ERROR_OUT_OF_POOL_MEMORY)
-        {
+        VkResult result = vkAllocateDescriptorSets(m_Device.GetDevice(), &allocInfo, set);
+        if (result == VK_SUCCESS) { return true; }
+        if (result == VK_ERROR_FRAGMENTED_POOL || result == VK_ERROR_OUT_OF_POOL_MEMORY) {
             m_CurrentPool = GrabPool();
             m_UsedPools.push_back(m_CurrentPool);
 
             result = vkAllocateDescriptorSets(m_Device.GetDevice(), &allocInfo, set);
             return result == VK_SUCCESS;
         }
-        else { return false; }
+        return false;
     }
 
-    void Liara_DescriptorAllocator::ResetPools()
-    {
-        for (auto pool: m_UsedPools)
-        {
+    void Liara_DescriptorAllocator::ResetPools() {
+        for (auto* pool : m_UsedPools) {
             vkResetDescriptorPool(m_Device.GetDevice(), pool, 0);
             m_FreePools.push_back(pool);
         }
@@ -110,66 +110,55 @@ namespace Liara::Graphics::Descriptors
     }
 
     // *************** Descriptor Layout Cache Builder *********************
-    std::unique_ptr<Liara_DescriptorLayoutCache> Liara_DescriptorLayoutCache::Builder::Build() const
-    {
+    std::unique_ptr<Liara_DescriptorLayoutCache> Liara_DescriptorLayoutCache::Builder::Build() const {
         return std::make_unique<Liara_DescriptorLayoutCache>(m_Device);
     }
 
 
     // *************** Descriptor Layout Cache Implementation *********************
 
-    Liara_DescriptorLayoutCache::~Liara_DescriptorLayoutCache()
-    {
-        for (auto& [fst, snd]: m_LayoutCache) { vkDestroyDescriptorSetLayout(m_Device.GetDevice(), snd, nullptr); }
+    Liara_DescriptorLayoutCache::~Liara_DescriptorLayoutCache() {
+        for (const auto& layout : m_LayoutCache | std::views::values) {
+            vkDestroyDescriptorSetLayout(m_Device.GetDevice(), layout, nullptr);
+        }
     }
 
-    VkDescriptorSetLayout Liara_DescriptorLayoutCache::CreateLayout(const VkDescriptorSetLayoutCreateInfo* info)
-    {
+    VkDescriptorSetLayout Liara_DescriptorLayoutCache::CreateLayout(const VkDescriptorSetLayoutCreateInfo* info) {
         LayoutInfo key;
         key.bindings.assign(info->pBindings, info->pBindings + info->bindingCount);
-        std::sort(key.bindings.begin(), key.bindings.end(),
-                  [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b)
-                  {
-                      return a.binding < b.binding;
-                  });
+        std::ranges::sort(key.bindings,
+                          [](const VkDescriptorSetLayoutBinding& first, const VkDescriptorSetLayoutBinding& second) {
+                              return first.binding < second.binding;
+                          });
 
         if (const auto it = m_LayoutCache.find(key); it != m_LayoutCache.end()) { return it->second; }
-        else
-        {
-            VkDescriptorSetLayout layout;
-            if (vkCreateDescriptorSetLayout(m_Device.GetDevice(), info, nullptr, &layout) != VK_SUCCESS)
-            {
-                throw std::runtime_error("Failed to create descriptor set layout");
-            }
-            m_LayoutCache[key] = layout;
-            return layout;
+
+        VkDescriptorSetLayout layout = nullptr;
+        if (vkCreateDescriptorSetLayout(m_Device.GetDevice(), info, nullptr, &layout) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create descriptor set layout");
         }
+        m_LayoutCache[key] = layout;
+        return layout;
     }
 
-    bool Liara_DescriptorLayoutCache::LayoutInfo::operator==(const LayoutInfo& other) const
-    {
+    bool Liara_DescriptorLayoutCache::LayoutInfo::operator==(const LayoutInfo& other) const {
         if (other.bindings.size() != bindings.size()) { return false; }
-        else
-        {
-            //compare each of the bindings is the same. Bindings are sorted so they will match
-            for (int i = 0; i < bindings.size(); i++)
-            {
-                if (other.bindings[i].binding != bindings[i].binding) { return false; }
-                if (other.bindings[i].descriptorType != bindings[i].descriptorType) { return false; }
-                if (other.bindings[i].descriptorCount != bindings[i].descriptorCount) { return false; }
-                if (other.bindings[i].stageFlags != bindings[i].stageFlags) { return false; }
-            }
-            return true;
+
+        // compare each of the bindings is the same. Bindings are sorted so they will match
+        for (size_t i = 0; i < bindings.size(); i++) {
+            if (other.bindings[i].binding != bindings[i].binding) { return false; }
+            if (other.bindings[i].descriptorType != bindings[i].descriptorType) { return false; }
+            if (other.bindings[i].descriptorCount != bindings[i].descriptorCount) { return false; }
+            if (other.bindings[i].stageFlags != bindings[i].stageFlags) { return false; }
         }
+        return true;
     }
 
-    size_t Liara_DescriptorLayoutCache::LayoutInfo::hash() const
-    {
+    size_t Liara_DescriptorLayoutCache::LayoutInfo::hash() const {
         size_t result = std::hash<size_t>()(bindings.size());
-        for (const auto& b: bindings)
-        {
-            const size_t bindingHash = b.binding | (b.descriptorType << 8) | (b.descriptorCount << 16) | (
-                                           b.stageFlags << 24);
+        for (const auto& binding : bindings) {
+            const size_t bindingHash = binding.binding | (binding.descriptorType << 8) | (binding.descriptorCount << 16)
+                                       | (binding.stageFlags << 24);
             result ^= std::hash<size_t>()(bindingHash);
         }
         return result;
@@ -177,12 +166,15 @@ namespace Liara::Graphics::Descriptors
 
     // *************** Descriptor Builder Implementation *********************
 
-    Liara_DescriptorBuilder::Liara_DescriptorBuilder(Liara_DescriptorLayoutCache& layoutCache, Liara_DescriptorAllocator& allocator)
-        : m_Cache(layoutCache), m_Alloc(allocator) {}
+    Liara_DescriptorBuilder::Liara_DescriptorBuilder(Liara_DescriptorLayoutCache& layoutCache,
+                                                     Liara_DescriptorAllocator& allocator)
+        : m_Cache(layoutCache)
+        , m_Alloc(allocator) {}
 
-    Liara_DescriptorBuilder& Liara_DescriptorBuilder::BindBuffer(const uint32_t binding, const VkDescriptorBufferInfo* bufferInfo,
-                                                     const VkDescriptorType type, const VkShaderStageFlags stageFlags)
-    {
+    Liara_DescriptorBuilder& Liara_DescriptorBuilder::BindBuffer(const uint32_t binding,
+                                                                 const VkDescriptorBufferInfo* bufferInfo,
+                                                                 const VkDescriptorType type,
+                                                                 const VkShaderStageFlags stageFlags) {
         VkDescriptorSetLayoutBinding newBinding{};
         newBinding.binding = binding;
         newBinding.descriptorType = type;
@@ -202,9 +194,10 @@ namespace Liara::Graphics::Descriptors
         return *this;
     }
 
-    Liara_DescriptorBuilder& Liara_DescriptorBuilder::BindImage(const uint32_t binding, const VkDescriptorImageInfo* imageInfo,
-                                                    const VkDescriptorType type, const VkShaderStageFlags stageFlags)
-    {
+    Liara_DescriptorBuilder& Liara_DescriptorBuilder::BindImage(const uint32_t binding,
+                                                                const VkDescriptorImageInfo* imageInfo,
+                                                                const VkDescriptorType type,
+                                                                const VkShaderStageFlags stageFlags) {
         VkDescriptorSetLayoutBinding newBinding{};
         newBinding.binding = binding;
         newBinding.descriptorType = type;
@@ -224,8 +217,7 @@ namespace Liara::Graphics::Descriptors
         return *this;
     }
 
-    bool Liara_DescriptorBuilder::Build(VkDescriptorSet& set, VkDescriptorSetLayout& layout)
-    {
+    bool Liara_DescriptorBuilder::Build(VkDescriptorSet& set, VkDescriptorSetLayout& layout) {
         // Build layout first
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -241,9 +233,9 @@ namespace Liara::Graphics::Descriptors
         return true;
     }
 
-    void Liara_DescriptorBuilder::Overwrite(const VkDescriptorSet& set)
-    {
-        for (auto& write: m_Writes) { write.dstSet = set; }
-        vkUpdateDescriptorSets(m_Alloc.m_Device.GetDevice(), static_cast<uint32_t>(m_Writes.size()), m_Writes.data(), 0, nullptr);
+    void Liara_DescriptorBuilder::Overwrite(const VkDescriptorSet& set) {
+        for (auto& write : m_Writes) { write.dstSet = set; }
+        vkUpdateDescriptorSets(
+            m_Alloc.m_Device.GetDevice(), static_cast<uint32_t>(m_Writes.size()), m_Writes.data(), 0, nullptr);
     }
 }

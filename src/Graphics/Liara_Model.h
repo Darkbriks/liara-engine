@@ -1,13 +1,20 @@
 #pragma once
 
-#include "Liara_Device.h"
+#include <vulkan/vulkan_core.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "glm/ext/vector_float2.hpp"
+#include "glm/ext/vector_float3.hpp"
 #include "Liara_Buffer.h"
+#include "Liara_Device.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+
 #include <memory>
-#include <glm/glm.hpp>
-#include <vulkan/vulkan.h>
 
 namespace Liara::Graphics
 {
@@ -20,21 +27,21 @@ namespace Liara::Graphics
             glm::vec3 color;
             glm::vec3 normal;
             glm::vec2 uv;
-            uint32_t specularExponent; // TODO : Bad way to do this, but it's just for waiting for the texture system
+            uint32_t specularExponent;  // TODO : Bad way to do this, but it's just for waiting for the texture system
 
             static std::vector<VkVertexInputBindingDescription> GetBindingDescriptions();
             static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
 
-            bool operator==(const Vertex& other) const
-            {
-                return position == other.position && color == other.color && normal == other.normal && uv == other.uv && specularExponent == other.specularExponent;
+            bool operator==(const Vertex& other) const {
+                return position == other.position && color == other.color && normal == other.normal && uv == other.uv
+                       && specularExponent == other.specularExponent;
             }
         };
 
         struct Builder
         {
-            std::vector<Vertex> vertices{};
-            std::vector<uint32_t> indices{};
+            std::vector<Vertex> vertices;
+            std::vector<uint32_t> indices;
 
             void LoadModel(const std::string& filename, uint32_t specularExponent);
         };
@@ -46,7 +53,8 @@ namespace Liara::Graphics
         Liara_Model& operator=(const Liara_Model&) = delete;
 
         // TODO : Remove specularExponent, and use a texture based value
-        static std::unique_ptr<Liara_Model> CreateModelFromFile(Liara_Device& device, const std::string& filename, uint32_t specularExponent = 1);
+        static std::unique_ptr<Liara_Model>
+        CreateModelFromFile(Liara_Device& device, const std::string& filename, uint32_t specularExponent = 1);
 
         void Bind(VkCommandBuffer commandBuffer) const;
         void Draw(VkCommandBuffer commandBuffer) const;

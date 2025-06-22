@@ -9,73 +9,155 @@
 
 #pragma once
 
-#include <cstdint>
+#include <array>
+#include <span>
+#include <mutex>
 #include <vulkan/vulkan_core.h>
 
-namespace Liara::Graphics::SpecConstant
+#include "Graphics/GraphicsConstants.h"
+
+#include "Utils/Singleton.h"
+
+namespace Liara::Core { class Liara_SettingsManager; }
+
+namespace Liara::Graphics
 {
     /**
-     * @class SpecConstant
-     * @brief Class that encapsulates Vulkan specialization constants.
+     * @class SpecConstantRegistry
+     * @brief Compile-time registry for specialization constants
      */
-    class SpecConstant
+    template<typename... Types>
+    class SpecConstantRegistry
     {
-        static constexpr size_t specDataSize = 1;                           ///< The number of specialization constants.
-
-        static constexpr uint32_t (*specDataPtr[specDataSize])() = {        ///< The array of function pointers to get the specialization constant values.
-            []() { return static_cast<uint32_t>(Singleton<Liara_Settings>::GetInstanceSync().GetMaxLights()); }
-        };
-
-        static uint32_t SpecData[specDataSize];                             ///< The array of specialization constant values.
-        static bool SpecDataInitialized;                                    ///< Whether the specialization constant values have been initialized.
-
     public:
-        /**
-         * @brief Returns a vector of `VkSpecializationMapEntry` that maps specialization indices to specific constants.
-         *
-         * This method generates a list of specialization map entries for each element of `specData`, allowing Vulkan
-         * to know where and how to apply specializations to the shader.
-         *
-         * @return A vector of `VkSpecializationMapEntry` structures.
-         */
-        static std::vector<VkSpecializationMapEntry> GetMapEntries()
+        static void Initialize(Types... values) noexcept
         {
-            std::vector<VkSpecializationMapEntry> mapEntries(specDataSize);
-            for (size_t i = 0; i < specDataSize; i++)
-            {
-                mapEntries[i].constantID = static_cast<uint32_t>(i);
-                mapEntries[i].offset = static_cast<uint32_t>(i * sizeof(uint32_t));
-                mapEntries[i].size = sizeof(uint32_t);
+            if (s_Initialized) {
+                fmt::print(stderr, "Warning: SpecConstantRegistry already initialized\n");
+                return;
             }
 
-            return mapEntries;
+            if constexpr (ConstantCount > 0) {
+                s_Data = {static_cast<uint32_t>(values)...};
+                s_Initialized = true;
+            }
         }
 
-        /**
-         * @brief Returns a `VkSpecializationInfo` structure with the specialization constant data.
-         *
-         * This method generates a `VkSpecializationInfo` structure with the specialization constant data and map entries.
-         *
-         * @return A `VkSpecializationInfo` structure.
-         */
+        static std::array<VkSpecializationMapEntry, sizeof...(Types)> GetMapEntries()
+        {
+            if (!s_Initialized) { throw std::runtime_error("SpecConstantRegistry not initialized"); }
+
+            std::array<VkSpecializationMapEntry, ConstantCount> entries{};
+            for (size_t i = 0; i < ConstantCount; ++i) {
+                entries[i] = VkSpecializationMapEntry{
+                    .constantID = static_cast<uint32_t>(i),
+                    .offset = static_cast<uint32_t>(i * sizeof(uint32_t)),
+                    .size = sizeof(uint32_t)
+                };
+            }
+            return entries;
+        }
+
         static VkSpecializationInfo GetSpecializationInfo()
         {
-            if (!SpecDataInitialized)
-            {
-                for (size_t i = 0; i < specDataSize; i++) { SpecData[i] = specDataPtr[i](); }
-                SpecDataInitialized = true;
+            if (!s_Initialized) {
+                //throw std::runtime_error("SpecConstantRegistry not initialized");
             }
 
-            VkSpecializationInfo specializationInfo{};
-            specializationInfo.mapEntryCount = static_cast<uint32_t>(specDataSize);
-            specializationInfo.pMapEntries = GetMapEntries().data();
-            specializationInfo.dataSize = sizeof(SpecData);
-            specializationInfo.pData = SpecData;
+            static const auto mapEntries = GetMapEntries();
 
-            return specializationInfo;
+            return VkSpecializationInfo{
+                .mapEntryCount = static_cast<uint32_t>(ConstantCount),
+                .pMapEntries = mapEntries.data(),
+                .dataSize = sizeof(s_Data),
+                .pData = s_Data.data()
+            };
         }
+
+        static std::span<const uint32_t> GetData() noexcept
+        {
+            return std::span<const uint32_t>{s_Data};
+        }
+
+        static constexpr size_t Size() noexcept { return ConstantCount; }
+        static bool IsInitialized() noexcept { return s_Initialized; }
+
+        static void Reset() noexcept
+        {
+            s_Initialized = false;
+            s_Data = {};
+        }
+
+    private:
+        static constexpr size_t ConstantCount = sizeof...(Types);
+        using DataArray = std::array<uint32_t, ConstantCount>;
+
+        static inline DataArray s_Data{};
+        static inline bool s_Initialized = false;
     };
 
-    uint32_t SpecConstant::SpecData[specDataSize];
-    bool SpecConstant::SpecDataInitialized = false;
+    using GraphicsSpecConstants = SpecConstantRegistry<uint32_t>; // MAX_LIGHTS
+
+    /**
+     * @class SpecConstant
+     * @brief Main interface for specialization constants with settings injection
+     */
+    class SpecConstant : public Singleton<SpecConstant>
+    {
+    public:
+
+        void Initialize()
+        {
+            std::lock_guard<std::mutex> lock(m_Mutex);
+
+            if (m_Initialized) {
+                fmt::print(stderr, "Warning: SpecConstant already initialized\n");
+                return;
+            }
+
+            GraphicsSpecConstants::Initialize(Constants::MAX_LIGHTS);
+            m_Initialized = true;
+        }
+
+        static void InitializeGlobal()
+        {
+            GetInstance().Initialize();
+        }
+
+        static VkSpecializationInfo GetSpecializationInfo()
+        {
+            auto& instance = GetInstance();
+            std::lock_guard<std::mutex> lock(instance.m_Mutex);
+
+            if (!instance.m_Initialized) { throw std::runtime_error("SpecConstant not initialized"); }
+
+            return GraphicsSpecConstants::GetSpecializationInfo();
+        }
+
+        static uint32_t GetMaxLights()
+        {
+            auto& instance = GetInstance();
+            std::lock_guard<std::mutex> lock(instance.m_Mutex);
+
+            if (!instance.m_Initialized) { throw std::runtime_error("SpecConstant not initialized"); }
+
+            const auto data = GraphicsSpecConstants::GetData();
+            return data.empty() ? 10 : data[0];
+        }
+
+        static bool IsInitialized()
+        {
+            auto& instance = GetInstance();
+            std::lock_guard<std::mutex> lock(instance.m_Mutex);
+            return instance.m_Initialized;
+        }
+
+    private:
+        friend class Singleton<SpecConstant>;
+
+        SpecConstant() = default;
+
+        bool m_Initialized = false;
+        std::mutex m_Mutex;
+    };
 }

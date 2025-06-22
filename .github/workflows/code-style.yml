@@ -1,0 +1,337 @@
+name: Code Style Check
+
+on:
+  push:
+    branches: [ main, version-* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  code-style:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      statuses: write
+      checks: write
+
+    steps:
+      - name: Setup Git in container
+        run: |
+          pacman -Sy --noconfirm git
+          git config --global --add safe.directory /github/workspace
+          git config --global --add safe.directory '*'
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Git setup
+        run: |
+          pwd
+          ls -la
+          git status
+          git log --oneline -5
+
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm base-devel ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf vulkan-tools glm wget shaderc clang
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files: |
+            src/**/*.{cpp,h,hpp,tpp}
+            app/**/*.{cpp,h,hpp,tpp}
+          files_ignore: |
+            external/**
+            build/**
+            .git/**
+          separator: "\n"
+        continue-on-error: true
+
+      - name: List files to check
+        run: |
+          # Fonction pour détecter les fichiers C++ modifiés
+          get_cpp_files() {
+            find src app -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.tpp" \) 2>/dev/null | \
+              grep -v -E "(external/|build/)" || true
+          }
+          
+          # Stratégie par priorité
+          if [[ "${{ steps.changed-files.outcome }}" == "success" && "${{ steps.changed-files.outputs.any_changed }}" == "true" ]]; then
+            echo "Utilisation de tj-actions/changed-files"
+            echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' > files_to_check.txt
+          
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "Fallback PR: comparaison avec base branch"
+            # Assure-toi d'avoir la branche de base
+            git fetch origin ${{ github.base_ref }} || git fetch origin main || git fetch origin master
+          
+            if git show-ref --verify --quiet refs/remotes/origin/${{ github.base_ref }}; then
+              git diff --name-only origin/${{ github.base_ref }}...HEAD | \
+                grep -E '\.(cpp|h|hpp|tpp)$' | \
+                grep -v -E "(external/|build/)" > files_to_check.txt 2>/dev/null || touch files_to_check.txt
+            else
+              echo "Base branch non trouvée, vérification complète"
+              get_cpp_files > files_to_check.txt
+            fi
+          
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "Fallback Push: comparaison avec commit précédent"
+            # Pour les push, compare avec le commit précédent
+            if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+              # Sur main, vérification complète
+              get_cpp_files > files_to_check.txt
+            else
+              # Sur les autres branches, compare avec HEAD~1
+              git diff --name-only HEAD~1..HEAD | \
+                grep -E '\.(cpp|h|hpp|tpp)$' | \
+                grep -v -E "(external/|build/)" > files_to_check.txt 2>/dev/null || touch files_to_check.txt
+            fi
+          
+          else
+            echo "Fallback général: vérification complète"
+            get_cpp_files > files_to_check.txt
+          fi
+          
+          # Vérification du résultat
+          if [[ ! -f files_to_check.txt ]]; then
+            touch files_to_check.txt
+          fi
+          
+          echo "Fichiers à vérifier ($(wc -l < files_to_check.txt)):"
+          if [[ -s files_to_check.txt ]]; then
+            cat files_to_check.txt
+          else
+            echo "Aucun fichier C++ à vérifier"
+          fi
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.25.3'
+
+      - name: Verify CMake version
+        run: cmake --version
+
+      - name: Cache CMake build dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps
+          key: cmake-deps-archlinux-Release-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            cmake-deps-archlinux-Release-
+            cmake-deps-archlinux-
+
+      - name: Configure CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+
+      - name: Run clang-format check
+        id: format-check
+        run: |
+          if [[ ! -s files_to_check.txt ]]; then
+            echo "No files to check"
+            exit 0
+          fi
+          
+          FORMAT_ISSUES=0
+          echo "## Clang-Format Issues" >> format_report.md
+          echo "" >> format_report.md
+          
+          while IFS= read -r file; do
+            if [[ -f "$file" ]]; then
+              if ! clang-format --dry-run --Werror "$file" 2>/dev/null; then
+                echo "**$file** has formatting issues" >> format_report.md
+                FORMAT_ISSUES=$((FORMAT_ISSUES + 1))
+          
+                # Générer un diff pour montrer les problèmes
+                echo "<details><summary>Show diff</summary>" >> format_report.md
+                echo "" >> format_report.md
+                echo "\`\`\`diff" >> format_report.md
+                clang-format "$file" | diff -u "$file" - || true >> format_report.md
+                echo "\`\`\`" >> format_report.md
+                echo "</details>" >> format_report.md
+                echo "" >> format_report.md
+              fi
+            fi
+          done < files_to_check.txt
+          
+          if [[ $FORMAT_ISSUES -eq 0 ]]; then
+            echo "All files are properly formatted" >> format_report.md
+          else
+            echo "Found $FORMAT_ISSUES formatting issues" >> format_report.md
+          fi
+          
+          echo "FORMAT_ISSUES=$FORMAT_ISSUES" >> $GITHUB_OUTPUT
+
+      - name: Run clang-tidy check
+        id: tidy-check
+        run: |
+          if [[ ! -s files_to_check.txt ]]; then
+            echo "No files to check"
+            exit 0
+          fi
+          
+          # Créer un compile_commands.json minimal pour clang-tidy
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
+          cd ..
+          
+          TIDY_ISSUES=0
+          echo "## Clang-Tidy Issues" >> tidy_report.md
+          echo "" >> tidy_report.md
+          
+          while IFS= read -r file; do
+            if [[ -f "$file" ]]; then
+              echo "Checking $file with clang-tidy..."
+              if ! clang-tidy "$file" -p build/ --quiet > tidy_output.tmp 2>&1; then
+                if [[ -s tidy_output.tmp ]]; then
+                  echo "**$file** has tidy warnings:" >> tidy_report.md
+                  echo "<details><summary>Show issues</summary>" >> tidy_report.md
+                  echo "" >> tidy_report.md
+                  echo "\`\`\`" >> tidy_report.md
+                  cat tidy_output.tmp >> tidy_report.md
+                  echo "\`\`\`" >> tidy_report.md
+                  echo "</details>" >> tidy_report.md
+                  echo "" >> tidy_report.md
+                  TIDY_ISSUES=$((TIDY_ISSUES + 1))
+                fi
+              fi
+            fi
+          done < files_to_check.txt
+          
+          if [[ $TIDY_ISSUES -eq 0 ]]; then
+            echo "No clang-tidy issues found" >> tidy_report.md
+          fi
+          
+          echo "TIDY_ISSUES=$TIDY_ISSUES" >> $GITHUB_OUTPUT
+
+      - name: Auto-fix formatting (if enabled)
+        id: auto-fix
+        if: steps.format-check.outputs.FORMAT_ISSUES != '0' && github.event_name == 'pull_request'
+        run: |
+          echo "AUTO_FIX_AVAILABLE=true" >> $GITHUB_OUTPUT
+          
+          # Appliquer les corrections automatiques
+          while IFS= read -r file; do
+            if [[ -f "$file" ]]; then
+              clang-format -i "$file"
+            fi
+          done < files_to_check.txt
+          
+          # Créer un patch
+          git diff > style_fixes.patch
+          
+          if [[ -s style_fixes.patch ]]; then
+            echo "## Auto-fix Available" >> autofix_report.md
+            echo "" >> autofix_report.md
+            echo "The following automatic fixes can be applied:" >> autofix_report.md
+            echo "" >> autofix_report.md
+            echo "<details><summary>Show patch</summary>" >> autofix_report.md
+            echo "" >> autofix_report.md
+            echo "\`\`\`diff" >> autofix_report.md
+            cat style_fixes.patch >> autofix_report.md
+            echo "\`\`\`" >> autofix_report.md
+            echo "</details>" >> autofix_report.md
+            echo "" >> autofix_report.md
+            echo "You can apply these fixes locally with:" >> autofix_report.md
+            echo "\`\`\`bash" >> autofix_report.md
+            echo "# Download and apply the patch" >> autofix_report.md
+            echo "curl -L \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/style_fixes\" -o style_fixes.patch" >> autofix_report.md
+            echo "git apply style_fixes.patch" >> autofix_report.md
+            echo "\`\`\`" >> autofix_report.md
+          fi
+
+      - name: Upload auto-fix patch
+        if: steps.auto-fix.outputs.AUTO_FIX_AVAILABLE == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: style_fixes
+          path: style_fixes.patch
+          retention-days: 30
+
+      - name: Create summary comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let comment = "# Code Style Check Results\n\n";
+            
+            // Format report
+            if (fs.existsSync('format_report.md')) {
+              comment += fs.readFileSync('format_report.md', 'utf8') + "\n\n";
+            }
+            
+            // Tidy report  
+            if (fs.existsSync('tidy_report.md')) {
+              comment += fs.readFileSync('tidy_report.md', 'utf8') + "\n\n";
+            }
+            
+            // Auto-fix report
+            if (fs.existsSync('autofix_report.md')) {
+              comment += fs.readFileSync('autofix_report.md', 'utf8') + "\n\n";
+            }
+            
+            // Find and update existing comment or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('📋 Code Style Check Results')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+      - name: Determine exit code
+        run: |
+          FORMAT_ISSUES=${{ steps.format-check.outputs.FORMAT_ISSUES || 0 }}
+          TIDY_ISSUES=${{ steps.tidy-check.outputs.TIDY_ISSUES || 0 }}
+          TOTAL_ISSUES=$((FORMAT_ISSUES + TIDY_ISSUES))
+          
+          if [[ "${{ github.base_ref }}" == "main" ]]; then
+            # MR vers main : bloquer si problèmes
+            if [[ $TOTAL_ISSUES -gt 0 ]]; then
+              echo "Blocking merge to main due to $TOTAL_ISSUES style issues"
+              exit 1
+            fi
+          else
+            # Dev branches : warnings seulement
+            if [[ $TOTAL_ISSUES -gt 0 ]]; then
+              echo "Found $TOTAL_ISSUES style issues (warnings only)"
+            fi
+          fi
+          
+          echo "Code style check completed"

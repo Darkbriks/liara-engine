@@ -1,11 +1,17 @@
 #pragma once
 
-#include "ImGuiElement.h"
-
 #include <imgui.h>
 
-namespace Liara::Core { struct FrameInfo; }
-namespace Liara::Graphics::Ubo { struct GlobalUbo; }
+#include "ImGuiElement.h"
+
+namespace Liara::Core
+{
+    struct FrameInfo;
+}
+namespace Liara::Graphics::Ubo
+{
+    struct GlobalUbo;
+}
 
 namespace Liara::Core::ImGuiElements
 {
@@ -15,12 +21,9 @@ namespace Liara::Core::ImGuiElements
         Demo() = default;
         ~Demo() override = default;
 
-        void Draw(const FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) override
-        {
-            ImGui::ShowDemoWindow(&show_demo_window);
-        }
+        void Draw(const FrameInfo&, Graphics::Ubo::GlobalUbo&) override { ImGui::ShowDemoWindow(&m_show_demo_window); }
 
-        protected:
-            bool show_demo_window = true;
+    protected:
+        bool m_show_demo_window = true;
     };
 }

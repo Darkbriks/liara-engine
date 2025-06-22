@@ -1,5 +1,5 @@
 /**
-* @file Liara_Device.h
+ * @file Liara_Device.h
  * @brief Defines the `Liara_Device` class, which encapsulates Vulkan device management.
  *
  * This class is responsible for creating and managing a Vulkan logical device, command pool, and surface
@@ -7,10 +7,13 @@
  */
 
 #pragma once
-
+#include "Core/Liara_SettingsManager.h"
 #include "Plateform/Liara_Window.h"
 
-#include <string>
+#include <vulkan/vulkan_core.h>
+
+#include <cstdint>
+#include <SDL2/SDL_vulkan.h>
 #include <vector>
 
 namespace Liara::Graphics
@@ -21,9 +24,9 @@ namespace Liara::Graphics
      */
     struct SwapChainSupportDetails
     {
-        VkSurfaceCapabilitiesKHR m_Capabilities;        ///< Surface capabilities
-        std::vector<VkSurfaceFormatKHR> m_Formats;      ///< Surface formats
-        std::vector<VkPresentModeKHR> m_PresentModes;   ///< Present modes
+        VkSurfaceCapabilitiesKHR capabilities;       ///< Surface capabilities
+        std::vector<VkSurfaceFormatKHR> formats;     ///< Surface formats
+        std::vector<VkPresentModeKHR> presentModes;  ///< Present modes
     };
 
     /**
@@ -32,16 +35,16 @@ namespace Liara::Graphics
      */
     struct QueueFamilyIndices
     {
-        uint32_t m_GraphicsFamily{};                     ///< Graphics family index
-        uint32_t m_PresentFamily{};                      ///< Present family index
-        bool m_GraphicsFamilyHasValue = false;          ///< Graphics family has value
-        bool m_PresentFamilyHasValue = false;           ///< Present family has value
+        uint32_t graphicsFamily{};            ///< Graphics family index
+        uint32_t presentFamily{};             ///< Present family index
+        bool graphicsFamilyHasValue = false;  ///< Graphics family has value
+        bool presentFamilyHasValue = false;   ///< Present family has value
 
         /**
          * @brief Checks if the queue families are complete (i.e., valid).
          * @return true if both graphics and present family indices are valid.
          */
-        [[nodiscard]] bool IsComplete() const { return m_GraphicsFamilyHasValue && m_PresentFamilyHasValue; }
+        [[nodiscard]] bool IsComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue; }
     };
 
     /**
@@ -56,8 +59,9 @@ namespace Liara::Graphics
         /**
          * @brief Constructor to create a Vulkan logical device based on the window provided.
          * @param window Reference to a `Plateform::Liara_Window` object.
+         * @param settings Reference to a `Core::Liara_SettingsContext` object containing graphics settings.
          */
-        explicit Liara_Device(Plateform::Liara_Window &window);
+        explicit Liara_Device(Plateform::Liara_Window& window, Core::Liara_SettingsManager& settings);
 
         /**
          * @brief Destructor that cleans up Vulkan resources.
@@ -65,10 +69,10 @@ namespace Liara::Graphics
         ~Liara_Device();
 
         // Not copyable or movable
-        Liara_Device(const Liara_Device &) = delete;
-        Liara_Device &operator=(const Liara_Device &) = delete;
-        Liara_Device(Liara_Device &&) = delete;
-        Liara_Device &operator=(Liara_Device &&) = delete;
+        Liara_Device(const Liara_Device&) = delete;
+        Liara_Device& operator=(const Liara_Device&) = delete;
+        Liara_Device(Liara_Device&&) = delete;
+        Liara_Device& operator=(Liara_Device&&) = delete;
 
         [[nodiscard]] VkCommandPool GetCommandPool() const { return m_CommandPool; }
         [[nodiscard]] VkDevice GetDevice() const { return m_Device; }
@@ -77,13 +81,15 @@ namespace Liara::Graphics
         [[nodiscard]] VkQueue GetPresentQueue() const { return m_PresentQueue; }
         [[nodiscard]] VkInstance GetInstance() const { return m_Instance; }
         [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
-        [[nodiscard]] uint32_t GetGraphicsQueueFamily() const { return FindPhysicalQueueFamilies().m_GraphicsFamily; }
+        [[nodiscard]] uint32_t GetGraphicsQueueFamily() const { return FindPhysicalQueueFamilies().graphicsFamily; }
 
         /**
          * @brief Retrieves swap chain support details for the physical device.
          * @return A `SwapChainSupportDetails` structure containing swap chain support info.
          */
-        [[nodiscard]] SwapChainSupportDetails GetSwapChainSupport() const { return QuerySwapChainSupport(m_PhysicalDevice); }
+        [[nodiscard]] SwapChainSupportDetails GetSwapChainSupport() const {
+            return QuerySwapChainSupport(m_PhysicalDevice);
+        }
 
         /**
          * @brief Finds a suitable memory type for a given memory property.
@@ -97,7 +103,9 @@ namespace Liara::Graphics
          * @brief Finds queue families for the physical device.
          * @return A `QueueFamilyIndices` structure with indices for graphics and present families.
          */
-        [[nodiscard]] QueueFamilyIndices FindPhysicalQueueFamilies() const { return FindQueueFamilies(m_PhysicalDevice); }
+        [[nodiscard]] QueueFamilyIndices FindPhysicalQueueFamilies() const {
+            return FindQueueFamilies(m_PhysicalDevice);
+        }
 
         /**
          * @brief Finds a supported Vulkan format from a list of candidates.
@@ -106,7 +114,9 @@ namespace Liara::Graphics
          * @param features Format features (e.g., color attachment).
          * @return The chosen supported format.
          */
-        [[nodiscard]] VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
+        [[nodiscard]] VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates,
+                                                   VkImageTiling tiling,
+                                                   VkFormatFeatureFlags features) const;
 
         // Buffer Helper Functions
         /**
@@ -117,7 +127,11 @@ namespace Liara::Graphics
          * @param buffer The buffer to be created.
          * @param bufferMemory The memory to be allocated for the buffer.
          */
-        void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory) const;
+        void CreateBuffer(VkDeviceSize size,
+                          VkBufferUsageFlags usage,
+                          VkMemoryPropertyFlags properties,
+                          VkBuffer& buffer,
+                          VkDeviceMemory& bufferMemory) const;
 
         /**
          * @brief Begins a single-time command buffer for immediate commands.
@@ -147,7 +161,8 @@ namespace Liara::Graphics
          * @param height The height of the image.
          * @param layerCount The number of layers in the image.
          */
-        void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount) const;
+        void
+        CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount) const;
 
         /**
          * @brief Creates an image with specified properties.
@@ -156,9 +171,12 @@ namespace Liara::Graphics
          * @param image The created image.
          * @param imageMemory The allocated memory for the image.
          */
-        void CreateImageWithInfo(const VkImageCreateInfo &imageInfo, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory) const;
+        void CreateImageWithInfo(const VkImageCreateInfo& imageInfo,
+                                 VkMemoryPropertyFlags properties,
+                                 VkImage& image,
+                                 VkDeviceMemory& imageMemory) const;
 
-        VkPhysicalDeviceProperties m_Properties{};  ///< Physical device properties
+        VkPhysicalDeviceProperties deviceProperties{};  ///< Physical device properties
 
     private:
         /**
@@ -203,7 +221,7 @@ namespace Liara::Graphics
          * @brief Gets the required Vulkan instance extensions.
          * @return A vector of required extension names.
          */
-        [[nodiscard]] std::vector<const char *> GetRequiredExtensions() const;
+        [[nodiscard]] std::vector<const char*> GetRequiredExtensions() const;
 
         /**
          * @brief Checks if the Vulkan validation layers are supported.
@@ -216,7 +234,7 @@ namespace Liara::Graphics
          * @param device The physical device to check.
          * @return true if the device supports bindless textures.
          */
-        bool CheckBindlessTextureSupport(VkPhysicalDevice device) const;
+        static bool CheckBindlessTextureSupport(VkPhysicalDevice device);
 
         /**
          * @brief Finds the queue families for a given Vulkan physical device.
@@ -229,7 +247,7 @@ namespace Liara::Graphics
          * @brief Populates the debug messenger creation info structure.
          * @param createInfo The structure to be populated.
          */
-        void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
+        static void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
         /**
          * @brief Checks if SDL2-specific extensions are required for the Vulkan instance.
@@ -250,20 +268,22 @@ namespace Liara::Graphics
          */
         SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
 
-        // Vulkan handles
-        VkInstance m_Instance{};                                ///< Vulkan instance
-        VkDebugUtilsMessengerEXT m_DebugMessenger{};            ///< Vulkan debug messenger
-        VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;     ///< Vulkan physical device
-        Plateform::Liara_Window &m_Window;                      ///< Reference to the window
-        VkCommandPool m_CommandPool{};                          ///< Vulkan command pool
+        Core::Liara_SettingsManager& m_SettingsManager;
 
-        VkDevice m_Device{};                                    ///< Vulkan logical device
-        VkSurfaceKHR m_Surface{};                               ///< Vulkan surface
-        VkQueue m_GraphicsQueue{};                              ///< Vulkan graphics queue
-        VkQueue m_PresentQueue{};                               ///< Vulkan present queue
+        // Vulkan handles
+        VkInstance m_Instance{};                             ///< Vulkan instance
+        VkDebugUtilsMessengerEXT m_DebugMessenger{};         ///< Vulkan debug messenger
+        VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;  ///< Vulkan physical device
+        Plateform::Liara_Window& m_Window;                   ///< Reference to the window
+        VkCommandPool m_CommandPool{};                       ///< Vulkan command pool
+
+        VkDevice m_Device{};        ///< Vulkan logical device
+        VkSurfaceKHR m_Surface{};   ///< Vulkan surface
+        VkQueue m_GraphicsQueue{};  ///< Vulkan graphics queue
+        VkQueue m_PresentQueue{};   ///< Vulkan present queue
 
         // Validation layers and device extensions required by the application
-        const std::vector<const char *> m_ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
-        const std::vector<const char *> m_DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+        const std::vector<const char*> m_ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
+        const std::vector<const char*> m_DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     };
 }

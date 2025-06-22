@@ -1,9 +1,14 @@
 #pragma once
 
-#include "Liara_Device.h"
+#include "Core/Liara_SettingsManager.h"
 
+#include <vulkan/vulkan_core.h>
+
+#include <cstdint>
+#include <stb/stb_image.h>
 #include <string>
-#include <stb_image.h>
+
+#include "Liara_Device.h"
 
 namespace Liara::Graphics
 {
@@ -18,14 +23,15 @@ namespace Liara::Graphics
          */
         struct Builder
         {
-            int width{};                                    ///< The width of the texture
-            int height{};                                   ///< The height of the texture
-            int channels{};                                 ///< The number of channels in the texture
-            VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;      ///< The format of the texture
-            stbi_uc* pixels{};                              ///< Pixels data of the texture
+            int width{};                                ///< The width of the texture
+            int height{};                               ///< The height of the texture
+            int channels{};                             ///< The number of channels in the texture
+            VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;  ///< The format of the texture
+            stbi_uc* pixels{};                          ///< Pixels data of the texture
             /**
              * @brief Flag to check if there was an error while loading the texture
-             * @note Can be triggered by a failed load or if the texture is too large. A message will be printed to stderr
+             * @note Can be triggered by a failed load or if the texture is too large. A message will be printed to
+             * stderr
              */
             bool errorFlag = false;
 
@@ -38,8 +44,9 @@ namespace Liara::Graphics
              * @brief Loads a texture image from a file
              *
              * @param filename The file name of the texture to load
+             * @param settingsManager The settings manager to use for texture settings
              */
-            void LoadTexture(const std::string& filename);
+            void LoadTexture(const std::string& filename, const Core::Liara_SettingsManager& settingsManager);
         };
 
         /**
@@ -48,8 +55,9 @@ namespace Liara::Graphics
          *
          * @param device The device to create the texture on
          * @param builder The builder object containing the texture data
+         * @param settingsManager The settings manager to use for texture settings
          */
-        Liara_Texture(Liara_Device& device, const Builder& builder);
+        Liara_Texture(Liara_Device& device, const Builder& builder, const Core::Liara_SettingsManager& settingsManager);
 
         /**
          * @brief Constructor for the Liara_Texture class
@@ -64,15 +72,21 @@ namespace Liara::Graphics
          * @param height The height of the texture
          * @param format The format of the texture
          * @param usage The usage of the texture
+         * @param settingsManager The settings manager to use for texture settings
          */
-        Liara_Texture(Liara_Device& device, int width, int height, VkFormat format, VkImageUsageFlags usage);
-        ~Liara_Texture(); ///< Destructor to clean up the texture
+        Liara_Texture(Liara_Device& device,
+                      int width,
+                      int height,
+                      VkFormat format,
+                      VkImageUsageFlags usage,
+                      const Core::Liara_SettingsManager& settingsManager);
+        ~Liara_Texture();  ///< Destructor to clean up the texture
 
         Liara_Texture(const Liara_Texture&) = delete;
         Liara_Texture& operator=(const Liara_Texture&) = delete;
 
-        [[nodiscard]] VkFormat GetFormat() const { return m_Format; }           ///< Get the format of the texture
-        [[nodiscard]] VkDescriptorImageInfo GetDescriptorInfo() const;          ///< Get the descriptor info of the texture
+        [[nodiscard]] VkFormat GetFormat() const { return m_Format; }   ///< Get the format of the texture
+        [[nodiscard]] VkDescriptorImageInfo GetDescriptorInfo() const;  ///< Get the descriptor info of the texture
 
     private:
         void CreateTextureImage(const stbi_uc* pixels);
@@ -84,6 +98,7 @@ namespace Liara::Graphics
         void GenerateMipmaps() const;
 
         Liara_Device& m_Device;
+        const Core::Liara_SettingsManager& m_SettingsManager;
 
         VkImage m_Image{};
         VkDeviceMemory m_ImageMemory{};

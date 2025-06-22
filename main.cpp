@@ -1,34 +1,20 @@
-#include "app/FirstApp/FirstApp.h"
+#include <SDL.h>
 
-#include <iostream>
-#include <cstdlib>
+#include "Demo/DemoApp.h"
 
-#include "Core/Liara_Settings.h"
+#include "Core/Application.h"
+#include "Core/ApplicationInfo.h"
 
-int Run()
-{
-    try
-    {
-        Liara::Liara_Settings& settings = Liara::Singleton<Liara::Liara_Settings>::GetInstance();
-        settings.LoadFromFile("settings.cfg");
+constexpr Liara::Core::ApplicationInfo appInfo = {
+    .name = "DemoApp",
+    .displayName = "Liara Engine Demo",
+    .description = "Liara Engine capabilities demonstration application",
+    .version = {.major = 0, .minor = 2, .patch = 0, .prerelease = "beta"},
+    .organization = "Darkbriks",
+    .website = "https://github.com/Darkbriks/liara-engine",
+    .copyright = "© 2025 Darkbriks",
+    .buildConfig = LIARA_BUILD_CONFIG,
+    .targetPlatform = LIARA_TARGET_PLATFORM
+};
 
-        FirstApp app;
-        app.Run();
-
-        settings.SaveToFile("settings.cfg", true, true);
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
-}
-
-#if WIN32
-    #include <Windows.h>
-    int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, INT) { return Run(); }
-#else
-    int main() { return Run(); }
-#endif
+LIARA_APPLICATION_EX(DemoApp, appInfo);

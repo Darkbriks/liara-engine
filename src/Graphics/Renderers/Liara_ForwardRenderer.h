@@ -10,11 +10,11 @@ namespace Liara::Graphics::Renderers
     class Liara_ForwardRenderer final : public Liara_Renderer
     {
     public:
-        Liara_ForwardRenderer(Plateform::Liara_Window& window, Liara_Device& device);
+        Liara_ForwardRenderer(Core::Liara_SettingsManager& settingsManager, Plateform::Liara_Window& window, Liara_Device& device);
         ~Liara_ForwardRenderer() override;
 
         [[nodiscard]] VkRenderPass GetRenderPass() const override { return m_SwapChain->GetRenderPass(); }
-        [[nodiscard]] uint32_t GetImageCount() const override { return m_SwapChain->ImageCount(); }
+        [[nodiscard]] uint32_t GetImageCount() const override { return static_cast<uint32_t>(m_SwapChain->ImageCount()); }
         [[nodiscard]] float GetAspectRatio() const override { return m_SwapChain->ExtentAspectRatio(); }
         [[nodiscard]] uint32_t GetFrameIndex() const override
         {
@@ -44,5 +44,10 @@ namespace Liara::Graphics::Renderers
         uint32_t m_CurrentImageIndex{};
         uint32_t m_CurrentFrameIndex{};
         bool m_IsFrameStarted{false};
+
+        bool m_NeedsSwapChainRecreation{false};
+        bool m_FullscreenChanged{false};
+        bool m_VsyncState{false};
+        bool m_VsyncChanged{false};
     };
 }

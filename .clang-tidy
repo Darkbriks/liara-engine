@@ -1,0 +1,115 @@
+# Liara Engine - Clang Tidy Configuration
+
+---
+Checks: >
+  bugprone-*,
+  performance-*,
+  modernize-*,
+  readability-*,
+  cppcoreguidelines-*,
+  clang-analyzer-*,
+  concurrency-*,
+  portability-*,
+  misc-*,
+  readability-identifier-naming-*,
+  
+  # Désactiver certains checks
+  -readability-magic-numbers,
+  -readability-uppercase-literal-suffix,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-type-vararg,
+  -modernize-use-trailing-return-type,
+  -readability-named-parameter,
+  -readability-braces-around-statements,
+  -misc-non-private-member-variables-in-classes,
+  -modernize-avoid-c-arrays,
+  -cppcoreguidelines-avoid-c-arrays,
+
+WarningsAsErrors: 'true'
+HeaderFilterRegex: '^((?!external|assets|build).)*$' # Exclure les répertoires
+FormatStyle: file
+
+CheckOptions:
+  # === PERFORMANCE ===
+  performance-unnecessary-copy-initialization.AllowedTypes: ''
+  performance-unnecessary-value-parameter.AllowedTypes: 'glm::vec3;glm::vec4;glm::mat4'
+  performance-for-range-copy.AllowedTypes: 'glm::vec3;glm::vec4;glm::mat4'
+
+  # === MODERNIZE ===
+  modernize-use-auto.MinTypeNameLength: 8
+  modernize-use-auto.RemoveStars: true
+  modernize-use-nodiscard.ReplacementString: '[[nodiscard]]'
+  modernize-use-override.IgnoreDestructors: false
+  modernize-loop-convert.MaxCopySize: 16
+  modernize-loop-convert.MinConfidence: reasonable
+  modernize-pass-by-value.IncludeStyle: google
+  modernize-raw-string-literal.DelimiterStem: 'lit'
+  modernize-replace-auto-ptr.IncludeStyle: google
+  modernize-use-emplace.ContainersWithPushBack: 'vector;deque;list'
+  modernize-use-emplace.SmartPointers: 'std::shared_ptr;std::unique_ptr;std::auto_ptr;std::weak_ptr'
+  modernize-use-equals-default.IgnoreMacros: false
+  modernize-use-equals-delete.IgnoreMacros: false
+
+  # === READABILITY ===
+  readability-function-size.LineThreshold: 100
+  readability-function-size.StatementThreshold: 50
+  readability-function-size.BranchThreshold: 10
+  readability-function-size.ParameterThreshold: 8
+  readability-function-size.NestingThreshold: 5
+  readability-function-size.VariableThreshold: 20
+
+  readability-simplify-boolean-expr.ChainedConditionalReturn: true
+  readability-simplify-boolean-expr.ChainedConditionalAssignment: true
+
+  readability-container-size-empty.ExcludedComparisonTypes: ''
+  readability-redundant-smartptr-get.IgnoreMacros: false
+  readability-static-accessed-through-instance.NameSpecifierNestingThreshold: 2
+
+  # === CPPCOREGUIDELINES ===
+  cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
+  cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions: true
+  cppcoreguidelines-explicit-virtual-functions.IgnoreDestructors: true
+  cppcoreguidelines-macro-usage.AllowedRegexp: '^(LIARA_|GLM_|VK_|SDL_)'
+  cppcoreguidelines-avoid-do-while.IgnoreMacros: 'true'
+
+  # === BUGPRONE ===
+  bugprone-argument-comment.StrictMode: false
+  bugprone-easily-swappable-parameters.MinimumLength: 3
+  bugprone-exception-escape.FunctionsThatShouldNotThrow: 'main'
+  bugprone-misplaced-widening-cast.CheckImplicitCasts: true
+  bugprone-sizeof-expression.WarnOnSizeOfCompareToConstant: true
+  bugprone-string-constructor.WarnOnLargeLength: true
+  bugprone-suspicious-string-compare.WarnOnImplicitComparison: true
+  bugprone-suspicious-string-compare.WarnOnLogicalNotComparison: true
+  bugprone-too-small-loop-variable.MagnitudeBitsUpperLimit: '16'
+
+  # === MISC ===
+  misc-throw-by-value-catch-by-reference.CheckThrowTemporaries: true
+  misc-unused-parameters.StrictMode: true
+
+  # === CONCURRENCY ===
+  concurrency-mt-unsafe.FunctionSet: 'any'
+
+  # === PORTABILITY ===
+  portability-simd-intrinsics.Suggest: false
+
+  # === NAMING ===
+  # readability-identifier-naming.ClassCase: 'CamelCase'
+  # readability-identifier-naming.ClassRegexp: '^(Liara_)?[A-Z][a-zA-Z0-9]*$'
+  readability-identifier-naming.FunctionCase: 'CamelCase'
+  readability-identifier-naming.MemberCase: 'camelBack'
+  # readability-identifier-naming.ConstantCase: 'UPPER_CASE' # TODO: Find a way to separate constants from parameters
+  readability-identifier-naming.EnumCase: 'CamelCase'
+  readability-identifier-naming.NamespaceCase: 'CamelCase'
+  readability-identifier-naming.ConstParameterCase: 'camelBack'
+  readability-identifier-naming.LocalConstantCase: 'camelBack'
+  readability-identifier-naming.ParameterCase: 'camelBack'
+  readability-identifier-naming.VariableCase: 'camelBack'
+  readability-identifier-naming.PrivateMemberPrefix: 'm_'
+  readability-identifier-naming.ProtectedMemberPrefix: 'm_'
+  readability-identifier-length.MinimumParameterNameLength: 2
+  readability-identifier-length.MinimumVariableNameLength: 2
+  readability-identifier-length.MinimumLoopCounterNameLength: 2

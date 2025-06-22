@@ -1,106 +1,123 @@
 #include "Liara_ForwardRenderer.h"
 
+#include "Core/Liara_SettingsManager.h"
+#include "Graphics/GraphicsConstants.h"
+#include "Graphics/Liara_Device.h"
+#include "Graphics/Renderers/Liara_Renderer.h"
+#include "Plateform/Liara_Window.h"
+
+#include <vulkan/vulkan_core.h>
+
 #include <array>
+#include <cassert>
+#include <cstdint>
+#include <memory>
+#include <SDL2/SDL_events.h>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace Liara::Graphics::Renderers
 {
-    Liara_ForwardRenderer::Liara_ForwardRenderer(Plateform::Liara_Window& window, Liara_Device& device) : Liara_Renderer(window, device)
-    {
+    Liara_ForwardRenderer::Liara_ForwardRenderer(Core::Liara_SettingsManager& settingsManager,
+                                                 Plateform::Liara_Window& window,
+                                                 Liara_Device& device)
+        : Liara_Renderer(settingsManager, window, device) {
         CreateSwapChain();
         CreateCommandBuffers();
+
+        settingsManager.Subscribe<Plateform::WindowSettings>("window." + std::to_string(window.GetID()),
+                                                             [this](const Plateform::WindowSettings& settings) {
+                                                                 if (settings.wasResized) {
+                                                                     m_NeedsSwapChainRecreation = true;
+                                                                 }
+                                                                 if (settings.wasFullscreenChanged) {
+                                                                     m_FullscreenChanged = true;
+                                                                 }
+                                                             });
+
+        settingsManager.Subscribe<bool>("graphics.vsync", [this](const bool vsync) {
+            if (vsync != m_VsyncState) {
+                m_VsyncState = vsync;
+                m_VsyncChanged = true;
+            }
+        });
     }
 
-    Liara_ForwardRenderer::~Liara_ForwardRenderer()
-    {
-        FreeCommandBuffers();
-    }
+    Liara_ForwardRenderer::~Liara_ForwardRenderer() { FreeCommandBuffers(); }
 
-    VkCommandBuffer Liara_ForwardRenderer::BeginFrame()
-    {
+    VkCommandBuffer Liara_ForwardRenderer::BeginFrame() {
         assert(!m_IsFrameStarted && "Can't call BeginFrame while already in progress");
         const auto result = m_SwapChain->AcquireNextImage(&m_CurrentImageIndex);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR)
-        {
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             CreateSwapChain();
             return nullptr;
         }
 
-        if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-        {
+        if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
             throw std::runtime_error("Failed to acquire swap chain image!");
         }
 
         m_IsFrameStarted = true;
 
-        const auto commandBuffer = GetCurrentCommandBuffer();
+        auto* const commandBuffer = GetCurrentCommandBuffer();
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-        {
+        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
             throw std::runtime_error("Failed to begin recording command buffer!");
         }
         return commandBuffer;
     }
 
-    void Liara_ForwardRenderer::EndFrame()
-    {
-        Liara_Settings& settings = Singleton<Liara_Settings>::GetInstance();
-
+    void Liara_ForwardRenderer::EndFrame() {
         assert(m_IsFrameStarted && "Can't call EndFrame while frame is not in progress");
-        const auto commandBuffer = GetCurrentCommandBuffer();
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-        {
+        auto* const commandBuffer = GetCurrentCommandBuffer();
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to record command buffer!");
         }
 
         if (const auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex);
-            result == VK_ERROR_OUT_OF_DATE_KHR ||
-            result == VK_SUBOPTIMAL_KHR ||
-            settings.NeedsSwapchainRecreation() ||
-            settings.WasResized(m_Window.GetID()))
-        {
+            result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_NeedsSwapChainRecreation
+            || m_VsyncChanged) {
             m_Window.ResizeWindow();
             CreateSwapChain();
-            settings.SwapchainRecreated();
+            m_NeedsSwapChainRecreation = false;
+            m_VsyncChanged = false;
         }
-        else if (result != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to present swap chain image!");
-        }
+        else if (result != VK_SUCCESS) { throw std::runtime_error("Failed to present swap chain image!"); }
 
-        if (settings.WasFullscreenChanged(m_Window.GetID()))
-        {
+        if (m_FullscreenChanged) {
             m_Window.UpdateFullscreenMode();
+            m_FullscreenChanged = false;
         }
 
-        settings.ResetWindowFlags(m_Window.GetID());
+        auto settings = m_SettingsManager.Get<Plateform::WindowSettings>("window." + std::to_string(m_Window.GetID()));
+        settings.ResetFlags();
 
         m_IsFrameStarted = false;
-        m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Liara_SwapChain::MAX_FRAMES_IN_FLIGHT;
+        m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Constants::MAX_FRAMES_IN_FLIGHT;
     }
 
-    void Liara_ForwardRenderer::BeginRenderPass(VkCommandBuffer command_buffer) const
-    {
+    void Liara_ForwardRenderer::BeginRenderPass(VkCommandBuffer commandBuffer) const {
         assert(m_IsFrameStarted && "Can't call BeginSwapChainRenderPass if frame is not in progress");
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = m_SwapChain->GetRenderPass();
         renderPassInfo.framebuffer = m_SwapChain->GetFrameBuffer(static_cast<int>(m_CurrentImageIndex));
-        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.offset = {.x = 0, .y = 0};
         renderPassInfo.renderArea.extent = m_SwapChain->GetSwapChainExtent();
 
         std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {0.1f, 0.1f, 0.1f, 1.0f};
-        clearValues[1].depthStencil = {1.0f, 0};
+        clearValues[0].color = Constants::CLEAR_COLOR_VALUE;
+        clearValues[1].depthStencil = {.depth = 1.0f, .stencil = 0};
 
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
-        vkCmdBeginRenderPass(command_buffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         VkViewport viewport{};
         viewport.x = 0.0f;
@@ -109,21 +126,22 @@ namespace Liara::Graphics::Renderers
         viewport.height = static_cast<float>(m_SwapChain->GetSwapChainExtent().height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-        const VkRect2D scissor{{0, 0}, m_SwapChain->GetSwapChainExtent()};
-        vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-        vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+        const VkRect2D scissor{
+            {0, 0},
+            m_SwapChain->GetSwapChainExtent()
+        };
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     }
 
-    void Liara_ForwardRenderer::EndRenderPass(VkCommandBuffer command_buffer) const
-    {
+    void Liara_ForwardRenderer::EndRenderPass(VkCommandBuffer commandBuffer) const {
         assert(m_IsFrameStarted && "Can't call EndSwapChainRenderPass if frame is not in progress");
 
-        vkCmdEndRenderPass(command_buffer);
+        vkCmdEndRenderPass(commandBuffer);
     }
 
-    void Liara_ForwardRenderer::CreateCommandBuffers()
-    {
-        m_CommandBuffers.resize(Liara_SwapChain::MAX_FRAMES_IN_FLIGHT);
+    void Liara_ForwardRenderer::CreateCommandBuffers() {
+        m_CommandBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
         VkCommandBufferAllocateInfo commandBufferAllocInfo{};
         commandBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -131,44 +149,37 @@ namespace Liara::Graphics::Renderers
         commandBufferAllocInfo.commandPool = m_Device.GetCommandPool();
         commandBufferAllocInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
 
-        if (vkAllocateCommandBuffers(m_Device.GetDevice(), &commandBufferAllocInfo, m_CommandBuffers.data()) != VK_SUCCESS)
-        {
+        if (vkAllocateCommandBuffers(m_Device.GetDevice(), &commandBufferAllocInfo, m_CommandBuffers.data())
+            != VK_SUCCESS) {
             throw std::runtime_error("Failed to allocate command buffers!");
         }
     }
 
-    void Liara_ForwardRenderer::FreeCommandBuffers()
-    {
-        vkFreeCommandBuffers(
-            m_Device.GetDevice(),
-            m_Device.GetCommandPool(),
-            static_cast<uint32_t>(m_CommandBuffers.size()),
-            m_CommandBuffers.data());
+    void Liara_ForwardRenderer::FreeCommandBuffers() {
+        vkFreeCommandBuffers(m_Device.GetDevice(),
+                             m_Device.GetCommandPool(),
+                             static_cast<uint32_t>(m_CommandBuffers.size()),
+                             m_CommandBuffers.data());
         m_CommandBuffers.clear();
     }
 
-    void Liara_ForwardRenderer::CreateSwapChain()
-    {
+    void Liara_ForwardRenderer::CreateSwapChain() {
         auto extent = m_Window.GetExtent();
-        while (extent.width == 0 || extent.height == 0)
-        {
+        while (extent.width == 0 || extent.height == 0) {
             SDL_WaitEvent(nullptr);
             extent = m_Window.GetExtent();
         }
 
         vkDeviceWaitIdle(m_Device.GetDevice());
 
-        if (m_SwapChain == nullptr)
-        {
-            m_SwapChain = std::make_unique<Liara_SwapChain>(m_Device, extent);
+        if (m_SwapChain == nullptr) {
+            m_SwapChain = std::make_unique<Liara_SwapChain>(m_Device, extent, m_SettingsManager);
         }
-        else
-        {
-            std::shared_ptr<Liara_SwapChain> old_swap_chain = std::move(m_SwapChain);
-            m_SwapChain = std::make_unique<Liara_SwapChain>(m_Device, extent, old_swap_chain);
+        else {
+            const std::shared_ptr<Liara_SwapChain> oldSwapChain = std::move(m_SwapChain);
+            m_SwapChain = std::make_unique<Liara_SwapChain>(m_Device, extent, oldSwapChain);
 
-            if (!old_swap_chain->CompareSwapFormat(*m_SwapChain))
-            {
+            if (!oldSwapChain->CompareSwapFormat(*m_SwapChain)) {
                 throw std::runtime_error("Swap chain image or depth format has changed!");
             }
         }
