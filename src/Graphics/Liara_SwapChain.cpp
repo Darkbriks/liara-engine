@@ -1,35 +1,43 @@
 #include "Liara_SwapChain.h"
 
+#include <fmt/core.h>
+
 #include <array>
 #include <limits>
 #include <stdexcept>
-#include <fmt/core.h>
 
 #include "GraphicsConstants.h"
 
 namespace Liara::Graphics
 {
-    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, const VkExtent2D windowExtent, const Core::Liara_SettingsManager &settings)
-    : m_SettingsManager(settings), m_Device{deviceRef}, m_WindowExtent{windowExtent}, m_OldSwapChain(nullptr)
-    {
+    Liara_SwapChain::Liara_SwapChain(Liara_Device& deviceRef,
+                                     const VkExtent2D windowExtent,
+                                     const Core::Liara_SettingsManager& settings)
+        : m_SettingsManager(settings)
+        , m_Device{deviceRef}
+        , m_WindowExtent{windowExtent}
+        , m_OldSwapChain(nullptr) {
         Init();
     }
 
-    Liara_SwapChain::Liara_SwapChain(Liara_Device &deviceRef, const VkExtent2D windowExtent, const std::shared_ptr<Liara_SwapChain>& oldSwapChain)
-    : m_SettingsManager{oldSwapChain->m_SettingsManager}, m_Device{deviceRef}, m_WindowExtent{windowExtent}, m_OldSwapChain(oldSwapChain)
-    {
+    Liara_SwapChain::Liara_SwapChain(Liara_Device& deviceRef,
+                                     const VkExtent2D windowExtent,
+                                     const std::shared_ptr<Liara_SwapChain>& oldSwapChain)
+        : m_SettingsManager{oldSwapChain->m_SettingsManager}
+        , m_Device{deviceRef}
+        , m_WindowExtent{windowExtent}
+        , m_OldSwapChain(oldSwapChain) {
         Init();
         m_OldSwapChain = nullptr;
     }
 
-    Liara_SwapChain::~Liara_SwapChain()
-    {
+    Liara_SwapChain::~Liara_SwapChain() {
         for (size_t i = 0; i < m_ImageAvailableSemaphores.size(); i++) {
             vkDestroySemaphore(m_Device.GetDevice(), m_ImageAvailableSemaphores[i], nullptr);
             vkDestroySemaphore(m_Device.GetDevice(), m_RenderFinishedSemaphores[i], nullptr);
         }
 
-        for (const auto imageView: m_SwapChainImageViews) {
+        for (const auto imageView : m_SwapChainImageViews) {
             vkDestroyImageView(m_Device.GetDevice(), imageView, nullptr);
         }
         m_SwapChainImageViews.clear();
@@ -45,7 +53,7 @@ namespace Liara::Graphics
             vkFreeMemory(m_Device.GetDevice(), m_DepthImageMemorys[i], nullptr);
         }
 
-        for (const auto framebuffer: m_SwapChainFramebuffers) {
+        for (const auto framebuffer : m_SwapChainFramebuffers) {
             vkDestroyFramebuffer(m_Device.GetDevice(), framebuffer, nullptr);
         }
 
@@ -56,8 +64,7 @@ namespace Liara::Graphics
         }
     }
 
-    VkResult Liara_SwapChain::AcquireNextImage(uint32_t *imageIndex) const
-    {
+    VkResult Liara_SwapChain::AcquireNextImage(uint32_t* imageIndex) const {
         vkWaitForFences(m_Device.GetDevice(), 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
 
         // Problème: on ne connaît pas encore imageIndex, donc on ne peut pas utiliser
@@ -67,23 +74,20 @@ namespace Liara::Graphics
         // Cela fonctionne car on a au maximum MAX_FRAMES_IN_FLIGHT frames en parallèle
         const auto semaphoreIndex = static_cast<uint32_t>(m_CurrentFrame);
 
-        const VkResult result = vkAcquireNextImageKHR(
-            m_Device.GetDevice(),
-            m_SwapChain,
-            std::numeric_limits<uint64_t>::max(),
-            m_ImageAvailableSemaphores[semaphoreIndex],
-            VK_NULL_HANDLE,
-            imageIndex);
+        const VkResult result = vkAcquireNextImageKHR(m_Device.GetDevice(),
+                                                      m_SwapChain,
+                                                      std::numeric_limits<uint64_t>::max(),
+                                                      m_ImageAvailableSemaphores[semaphoreIndex],
+                                                      VK_NULL_HANDLE,
+                                                      imageIndex);
 
         return result;
     }
 
-    VkResult Liara_SwapChain::SubmitCommandBuffers(const VkCommandBuffer *buffers, const uint32_t *imageIndex)
-    {
+    VkResult Liara_SwapChain::SubmitCommandBuffers(const VkCommandBuffer* buffers, const uint32_t* imageIndex) {
         const uint32_t imgIndex = *imageIndex;
 
-        if (m_ImagesInFlight[imgIndex] != VK_NULL_HANDLE)
-        {
+        if (m_ImagesInFlight[imgIndex] != VK_NULL_HANDLE) {
             vkWaitForFences(m_Device.GetDevice(), 1, &m_ImagesInFlight[imgIndex], VK_TRUE, UINT64_MAX);
         }
 
@@ -107,8 +111,8 @@ namespace Liara::Graphics
 
         vkResetFences(m_Device.GetDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
 
-        if (vkQueueSubmit(m_Device.GetGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrame]) != VK_SUCCESS)
-        {
+        if (vkQueueSubmit(m_Device.GetGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrame])
+            != VK_SUCCESS) {
             throw std::runtime_error("failed to submit draw command buffer!");
         }
 
@@ -129,8 +133,7 @@ namespace Liara::Graphics
         return result;
     }
 
-    void Liara_SwapChain::Init()
-    {
+    void Liara_SwapChain::Init() {
         CreateSwapChain();
         CreateImageViews();
         CreateRenderPass();
@@ -140,8 +143,7 @@ namespace Liara::Graphics
     }
 
 
-    void Liara_SwapChain::CreateSwapChain()
-    {
+    void Liara_SwapChain::CreateSwapChain() {
         auto [m_Capabilities, m_Formats, m_PresentModes] = m_Device.GetSwapChainSupport();
 
         auto [format, colorSpace] = ChooseSwapSurfaceFormat(m_Formats);
@@ -149,8 +151,7 @@ namespace Liara::Graphics
         VkExtent2D extent = ChooseSwapExtent(m_Capabilities);
 
         uint32_t imageCount = m_Capabilities.minImageCount + 1;
-        if (m_Capabilities.maxImageCount > 0 && imageCount > m_Capabilities.maxImageCount)
-        {
+        if (m_Capabilities.maxImageCount > 0 && imageCount > m_Capabilities.maxImageCount) {
             imageCount = m_Capabilities.maxImageCount;
         }
 
@@ -166,19 +167,17 @@ namespace Liara::Graphics
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
         const QueueFamilyIndices indices = m_Device.FindPhysicalQueueFamilies();
-        const uint32_t queueFamilyIndices[] = {indices.m_GraphicsFamily, indices.m_PresentFamily};
+        const uint32_t queueFamilyIndices[] = {indices.graphicsFamily, indices.presentFamily};
 
-        if (indices.m_GraphicsFamily != indices.m_PresentFamily)
-        {
+        if (indices.graphicsFamily != indices.presentFamily) {
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             createInfo.queueFamilyIndexCount = 2;
             createInfo.pQueueFamilyIndices = queueFamilyIndices;
         }
-        else
-        {
+        else {
             createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            createInfo.queueFamilyIndexCount = 0; // Optional
-            createInfo.pQueueFamilyIndices = nullptr; // Optional
+            createInfo.queueFamilyIndexCount = 0;      // Optional
+            createInfo.pQueueFamilyIndices = nullptr;  // Optional
         }
 
         createInfo.preTransform = m_Capabilities.currentTransform;
@@ -189,8 +188,7 @@ namespace Liara::Graphics
 
         createInfo.oldSwapchain = m_OldSwapChain == nullptr ? VK_NULL_HANDLE : m_OldSwapChain->m_SwapChain;
 
-        if (vkCreateSwapchainKHR(m_Device.GetDevice(), &createInfo, nullptr, &m_SwapChain) != VK_SUCCESS)
-        {
+        if (vkCreateSwapchainKHR(m_Device.GetDevice(), &createInfo, nullptr, &m_SwapChain) != VK_SUCCESS) {
             throw std::runtime_error("failed to create swap chain!");
         }
 
@@ -208,11 +206,9 @@ namespace Liara::Graphics
         m_SwapChainExtent = extent;
     }
 
-    void Liara_SwapChain::CreateImageViews()
-    {
+    void Liara_SwapChain::CreateImageViews() {
         m_SwapChainImageViews.resize(m_SwapChainImages.size());
-        for (size_t i = 0; i < m_SwapChainImages.size(); i++)
-        {
+        for (size_t i = 0; i < m_SwapChainImages.size(); i++) {
             VkImageViewCreateInfo viewInfo{};
             viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             viewInfo.image = m_SwapChainImages[i];
@@ -224,15 +220,13 @@ namespace Liara::Graphics
             viewInfo.subresourceRange.baseArrayLayer = 0;
             viewInfo.subresourceRange.layerCount = 1;
 
-            if (vkCreateImageView(m_Device.GetDevice(), &viewInfo, nullptr, &m_SwapChainImageViews[i]) != VK_SUCCESS)
-            {
+            if (vkCreateImageView(m_Device.GetDevice(), &viewInfo, nullptr, &m_SwapChainImageViews[i]) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create texture image view!");
             }
         }
     }
 
-    void Liara_SwapChain::CreateRenderPass()
-    {
+    void Liara_SwapChain::CreateRenderPass() {
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = FindDepthFormat();
         depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -270,10 +264,12 @@ namespace Liara::Graphics
         VkSubpassDependency dependency = {};
         dependency.dstSubpass = 0;
         dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        dependency.dstStageMask =
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
         dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
         dependency.srcAccessMask = 0;
-        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        dependency.srcStageMask =
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 
         const std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
         VkRenderPassCreateInfo renderPassInfo = {};
@@ -285,17 +281,14 @@ namespace Liara::Graphics
         renderPassInfo.dependencyCount = 1;
         renderPassInfo.pDependencies = &dependency;
 
-        if (vkCreateRenderPass(m_Device.GetDevice(), &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS)
-        {
+        if (vkCreateRenderPass(m_Device.GetDevice(), &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS) {
             throw std::runtime_error("failed to create render pass!");
         }
     }
 
-    void Liara_SwapChain::CreateFramebuffers()
-    {
+    void Liara_SwapChain::CreateFramebuffers() {
         m_SwapChainFramebuffers.resize(ImageCount());
-        for (size_t i = 0; i < ImageCount(); i++)
-        {
+        for (size_t i = 0; i < ImageCount(); i++) {
             std::array<VkImageView, 2> attachments = {m_SwapChainImageViews[i], m_DepthImageViews[i]};
 
             auto [width, height] = GetSwapChainExtent();
@@ -308,15 +301,14 @@ namespace Liara::Graphics
             framebufferInfo.height = height;
             framebufferInfo.layers = 1;
 
-            if (vkCreateFramebuffer(m_Device.GetDevice(), &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]) != VK_SUCCESS)
-            {
+            if (vkCreateFramebuffer(m_Device.GetDevice(), &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i])
+                != VK_SUCCESS) {
                 throw std::runtime_error("failed to create framebuffer!");
             }
         }
     }
 
-    void Liara_SwapChain::CreateDepthResources()
-    {
+    void Liara_SwapChain::CreateDepthResources() {
         const VkFormat depthFormat = FindDepthFormat();
         m_SwapChainDepthFormat = depthFormat;
         auto [width, height] = GetSwapChainExtent();
@@ -325,8 +317,7 @@ namespace Liara::Graphics
         m_DepthImageMemorys.resize(ImageCount());
         m_DepthImageViews.resize(ImageCount());
 
-        for (size_t i = 0; i < m_DepthImages.size(); i++)
-        {
+        for (size_t i = 0; i < m_DepthImages.size(); i++) {
             VkImageCreateInfo imageInfo{};
             imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
             imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -343,7 +334,8 @@ namespace Liara::Graphics
             imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
             imageInfo.flags = 0;
 
-            m_Device.CreateImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImages[i], m_DepthImageMemorys[i]);
+            m_Device.CreateImageWithInfo(
+                imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImages[i], m_DepthImageMemorys[i]);
 
             VkImageViewCreateInfo viewInfo{};
             viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -356,15 +348,13 @@ namespace Liara::Graphics
             viewInfo.subresourceRange.baseArrayLayer = 0;
             viewInfo.subresourceRange.layerCount = 1;
 
-            if (vkCreateImageView(m_Device.GetDevice(), &viewInfo, nullptr, &m_DepthImageViews[i]) != VK_SUCCESS)
-            {
+            if (vkCreateImageView(m_Device.GetDevice(), &viewInfo, nullptr, &m_DepthImageViews[i]) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create texture image view!");
             }
         }
     }
 
-    void Liara_SwapChain::CreateSyncObjects()
-    {
+    void Liara_SwapChain::CreateSyncObjects() {
         const size_t imageCount = ImageCount();
 
         m_ImageAvailableSemaphores.resize(imageCount);
@@ -380,30 +370,27 @@ namespace Liara::Graphics
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        for (size_t i = 0; i < imageCount; i++)
-        {
-            if (vkCreateSemaphore(m_Device.GetDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(m_Device.GetDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]) != VK_SUCCESS)
-            {
+        for (size_t i = 0; i < imageCount; i++) {
+            if (vkCreateSemaphore(m_Device.GetDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i])
+                    != VK_SUCCESS
+                || vkCreateSemaphore(m_Device.GetDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i])
+                       != VK_SUCCESS) {
                 throw std::runtime_error("failed to create image semaphores!");
             }
         }
 
-        for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            if (vkCreateFence(m_Device.GetDevice(), &fenceInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS)
-            {
+        for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
+            if (vkCreateFence(m_Device.GetDevice(), &fenceInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create frame fence!");
             }
         }
     }
 
-    VkSurfaceFormatKHR Liara_SwapChain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
-    {
-        for (const auto &availableFormat: availableFormats)
-        {
-            if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-            {
+    VkSurfaceFormatKHR
+    Liara_SwapChain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+        for (const auto& availableFormat : availableFormats) {
+            if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM
+                && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
                 return availableFormat;
             }
         }
@@ -411,14 +398,11 @@ namespace Liara::Graphics
         return availableFormats[0];
     }
 
-    VkPresentModeKHR Liara_SwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes) const
-    {
-        if (!m_SettingsManager.GetBool("graphics.vsync"))
-        {
-            for (const auto &availablePresentMode: availablePresentModes)
-            {
-                if (static_cast<uint32_t>(availablePresentMode) == m_SettingsManager.GetUInt("graphics.present_mode"))
-                {
+    VkPresentModeKHR
+    Liara_SwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) const {
+        if (!m_SettingsManager.GetBool("graphics.vsync")) {
+            for (const auto& availablePresentMode : availablePresentModes) {
+                if (static_cast<uint32_t>(availablePresentMode) == m_SettingsManager.GetUInt("graphics.present_mode")) {
                     return availablePresentMode;
                 }
             }
@@ -427,22 +411,24 @@ namespace Liara::Graphics
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkExtent2D Liara_SwapChain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) const
-    {
-        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) { return capabilities.currentExtent; }
-        else
-        {
+    VkExtent2D Liara_SwapChain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const {
+        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+            return capabilities.currentExtent;
+        }
+        else {
             VkExtent2D actualExtent = m_WindowExtent;
-            actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
-            actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+            actualExtent.width = std::max(capabilities.minImageExtent.width,
+                                          std::min(capabilities.maxImageExtent.width, actualExtent.width));
+            actualExtent.height = std::max(capabilities.minImageExtent.height,
+                                           std::min(capabilities.maxImageExtent.height, actualExtent.height));
             return actualExtent;
         }
     }
 
-    VkFormat Liara_SwapChain::FindDepthFormat() const
-    {
+    VkFormat Liara_SwapChain::FindDepthFormat() const {
         return m_Device.FindSupportedFormat(
             {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-            VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
 }

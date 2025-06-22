@@ -1,7 +1,13 @@
 #pragma once
 
-namespace Liara::Core { struct FrameInfo; }
-namespace Liara::Graphics::Ubo { struct GlobalUbo; }
+namespace Liara::Core
+{
+    struct FrameInfo;
+}
+namespace Liara::Graphics::Ubo
+{
+    struct GlobalUbo;
+}
 
 namespace Liara::Systems
 {

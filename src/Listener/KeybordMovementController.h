@@ -1,7 +1,8 @@
 #pragma once
-#include <SDL2/SDL.h>
 #include "Core/Liara_GameObject.h"
 #include "Core/Liara_SettingsManager.h"
+
+#include <SDL2/SDL.h>
 
 namespace Liara::Listener
 {
@@ -30,7 +31,8 @@ namespace Liara::Listener
             int lookDown = SDL_SCANCODE_DOWN;
         };
 
-        explicit KeybordMovementController(Core::Liara_SettingsManager& settingsManager) : m_SettingsManager(settingsManager) {}
+        explicit KeybordMovementController(Core::Liara_SettingsManager& settingsManager)
+            : m_SettingsManager(settingsManager) {}
 
         // TODO : Ajouter une couche d'abstraction
         /**
@@ -41,9 +43,9 @@ namespace Liara::Listener
          */
         void moveInSpaceXYZ(SDL_Window* window, float deltaTime, Core::Liara_GameObject& gameObject) const;
 
-        KeyMappings m_KeyMappings{};        ///< The key mappings for movement and looking
-        float m_MoveSpeed = 3.0f;           ///< The movement speed
-        float m_LookSpeed = 1.5f;           ///< The look speed
+        KeyMappings m_KeyMappings{};  ///< The key mappings for movement and looking
+        float m_MoveSpeed = 3.0f;     ///< The movement speed
+        float m_LookSpeed = 1.5f;     ///< The look speed
 
     private:
         Core::Liara_SettingsManager& m_SettingsManager;

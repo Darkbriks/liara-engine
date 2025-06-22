@@ -13,13 +13,13 @@
 
 namespace Liara::Systems
 {
-    bool ImGuiSystem::IMGUI_INITIALIZED = false;
+    bool ImGuiSystem::imguiInitialized = false;
 
     ImGuiSystem::ImGuiSystem(const Plateform::Liara_Window& window,
                              Graphics::Liara_Device& device,
                              VkRenderPass renderPass,
                              const uint32_t imageCount)
-        : lveDevice{device} {
+        : m_lveDevice{device} {
         // set up a descriptor pool stored on this instance
         const VkDescriptorPoolSize poolSizes[] = {
             {VK_DESCRIPTOR_TYPE_SAMPLER,                1000},
@@ -40,7 +40,7 @@ namespace Liara::Systems
         poolInfo.maxSets = 1000 * IM_ARRAYSIZE(poolSizes);
         poolInfo.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(poolSizes));
         poolInfo.pPoolSizes = poolSizes;
-        if (vkCreateDescriptorPool(device.GetDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+        if (vkCreateDescriptorPool(device.GetDevice(), &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to set up descriptor pool for imgui");
         }
 
@@ -68,7 +68,7 @@ namespace Liara::Systems
 
         // pipeline cache is a potential future optimization, ignoring for now
         initInfo.PipelineCache = VK_NULL_HANDLE;
-        initInfo.DescriptorPool = descriptorPool;
+        initInfo.DescriptorPool = m_descriptorPool;
         initInfo.Allocator = VK_NULL_HANDLE;
         initInfo.MinImageCount = 2;
         initInfo.ImageCount = imageCount;
@@ -79,23 +79,23 @@ namespace Liara::Systems
 
         // upload fonts, this is done by recording and submitting a one time use command buffer
         // which can be done easily bye using some existing helper functions on the lve device object
-        auto *const commandBuffer = device.BeginSingleTimeCommands();
+        auto* const commandBuffer = device.BeginSingleTimeCommands();
         ImGui_ImplVulkan_CreateFontsTexture();
         device.EndSingleTimeCommands(commandBuffer);
         // ImGui_ImplVulkan_DestroyFontUploadObjects();
 
-        IMGUI_INITIALIZED = true;
+        imguiInitialized = true;
     }
 
     ImGuiSystem::~ImGuiSystem() {
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
-        vkDestroyDescriptorPool(lveDevice.GetDevice(), descriptorPool, nullptr);
+        vkDestroyDescriptorPool(m_lveDevice.GetDevice(), m_descriptorPool, nullptr);
     }
 
     void ImGuiSystem::NewFrame() {
-        if (!IMGUI_INITIALIZED) { return; }
+        if (!imguiInitialized) { return; }
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();

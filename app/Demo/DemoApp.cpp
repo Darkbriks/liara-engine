@@ -13,11 +13,13 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/trigonometric.hpp>
 
+#include <cstddef>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "fmt/core.h"
+#include "glm/ext/matrix_float4x4.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

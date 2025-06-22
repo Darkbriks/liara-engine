@@ -98,6 +98,7 @@ CheckOptions:
 
   # === NAMING ===
   readability-identifier-naming.ClassCase: 'CamelCase'
+  readability-identifier-naming.ClassRegexp: '^(Liara_)?[A-Z][a-zA-Z0-9]*$'
   readability-identifier-naming.FunctionCase: 'CamelCase'
   readability-identifier-naming.MemberCase: 'camelBack'
   # readability-identifier-naming.ConstantCase: 'UPPER_CASE' # TODO: Find a way to separate constants from parameters

@@ -1,10 +1,10 @@
 #include "Liara_Window.h"
 
 #include "Core/Liara_SettingsManager.h"
-#include "fmt/core.h"
 
 #include <vulkan/vulkan_core.h>
 
+#include <cstdint>
 #include <nlohmann/json.hpp>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
@@ -15,6 +15,8 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+
+#include "fmt/core.h"
 
 namespace Liara::Plateform
 {

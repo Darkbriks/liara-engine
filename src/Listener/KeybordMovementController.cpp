@@ -8,8 +8,8 @@
 namespace Liara::Listener
 {
     void KeybordMovementController::moveInSpaceXYZ(SDL_Window* /*window*/,
-                                                  float deltaTime,
-                                                  Core::Liara_GameObject& gameObject) const {
+                                                   float deltaTime,
+                                                   Core::Liara_GameObject& gameObject) const {
         const Uint8* state = SDL_GetKeyboardState(nullptr);
 
         glm::vec3 rotation{0};
