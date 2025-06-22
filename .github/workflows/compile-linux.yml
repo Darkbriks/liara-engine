@@ -322,8 +322,8 @@ jobs:
 
   # Job séparé pour créer une AppImage portable (Ubuntu uniquement)
   build-appimage:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    # if: startsWith(github.ref, 'refs/tags/v')
     needs: build-linux
 
     steps:
@@ -334,7 +334,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt update
+          apt update && apt install -y
           sudo apt install -y build-essential ninja-build libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config vulkan-tools libglm-dev wget fuse
 
       - name: Setup cmake
