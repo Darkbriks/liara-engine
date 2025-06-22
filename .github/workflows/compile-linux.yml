@@ -287,9 +287,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: build-linux
     if: |
-      needs.build-linux.result == 'success' && 
-      contains(needs.build-linux.outputs.*, 'ubuntu') &&
-      contains(needs.build-linux.outputs.*, 'Release')
+      needs.build-linux.result == 'success'
 
     steps:
       - name: Checkout code (pour les métadonnées)
