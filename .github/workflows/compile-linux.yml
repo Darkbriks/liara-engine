@@ -289,6 +289,10 @@ jobs:
           cp Demo package/
           cp -r ./assets package/ 2>/dev/null || echo "No assets directory found"
           if [ -d "shaders" ]; then
+            # Supprimer les fichiers et répertoires saufs les shaders (.spv)
+            find shaders -type f ! -name '*.spv' -exec rm -f {} +
+            find shaders -type d -empty -delete
+            # Copier les shaders dans le package
             cp -r shaders package/
           fi
           cd package
