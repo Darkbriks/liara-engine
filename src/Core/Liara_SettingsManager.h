@@ -71,34 +71,34 @@ namespace Liara::Core
         template <FastSettingType T> struct Liara_FastSettingEntry
         {
             using value_type = T;
-            T m_value;
-            SettingFlags m_flags;
-            std::vector<std::unique_ptr<Liara_ISettingObserver>> m_observers;
+            T value;
+            SettingFlags flags;
+            std::vector<std::unique_ptr<Liara_ISettingObserver>> observers;
 
-            explicit Liara_FastSettingEntry(T defaultValue, const SettingFlags SETTING_FLAGS = SettingFlags::DEFAULT)
-                : m_value(defaultValue)
-                , m_flags(SETTING_FLAGS) {}
+            explicit Liara_FastSettingEntry(T defaultValue, const SettingFlags settingFlags = SettingFlags::DEFAULT)
+                : value(defaultValue)
+                , flags(settingFlags) {}
         };
 
         // Storage flexible pour les types arbitraires
         struct Liara_FlexibleSettingEntry
         {
-            std::any m_value;
-            SettingFlags m_flags;
-            size_t m_typeHash;
-            std::vector<std::unique_ptr<Liara_ISettingObserver>> m_observers;
+            std::any value;
+            SettingFlags flags;
+            size_t typeHash;
+            std::vector<std::unique_ptr<Liara_ISettingObserver>> observers;
 
             explicit Liara_FlexibleSettingEntry(std::any defaultValue,
-                                                const SettingFlags SETTING_FLAGS = SettingFlags::DEFAULT)
-                : m_value(std::move(defaultValue))
-                , m_flags(SETTING_FLAGS)
-                , m_typeHash(m_value.type().hash_code()) {}
+                                                const SettingFlags settingFlags = SettingFlags::DEFAULT)
+                : value(std::move(defaultValue))
+                , flags(settingFlags)
+                , typeHash(value.type().hash_code()) {}
             explicit Liara_FlexibleSettingEntry(std::any defaultValue,
-                                                const size_t TYPE_HASH,
-                                                const SettingFlags SETTING_FLAGS = SettingFlags::DEFAULT)
-                : m_value(std::move(defaultValue))
-                , m_flags(SETTING_FLAGS)
-                , m_typeHash(TYPE_HASH) {}
+                                                const size_t typeHash,
+                                                const SettingFlags settingFlags = SettingFlags::DEFAULT)
+                : value(std::move(defaultValue))
+                , flags(settingFlags)
+                , typeHash(typeHash) {}
         };
 
         // Container unifié
@@ -111,33 +111,33 @@ namespace Liara::Core
                          Liara_FastSettingEntry<double>,
                          // FastSettingEntry<std::string>,
                          Liara_FlexibleSettingEntry>
-                m_data;
+                data;
 
             Liara_SettingStorage()
-                : m_data(Liara_FlexibleSettingEntry(std::string(), SettingFlags::DEFAULT)) {}
+                : data(Liara_FlexibleSettingEntry(std::string(), SettingFlags::DEFAULT)) {}
 
             explicit Liara_SettingStorage(Liara_FastSettingEntry<bool> entry)
-                : m_data(std::move(entry)) {}
+                : data(std::move(entry)) {}
 
             explicit Liara_SettingStorage(Liara_FastSettingEntry<int> entry)
-                : m_data(std::move(entry)) {}
+                : data(std::move(entry)) {}
 
             explicit Liara_SettingStorage(Liara_FastSettingEntry<uint32_t> entry)
-                : m_data(std::move(entry)) {}
+                : data(std::move(entry)) {}
 
             explicit Liara_SettingStorage(Liara_FastSettingEntry<float> entry)
-                : m_data(std::move(entry)) {}
+                : data(std::move(entry)) {}
 
             explicit Liara_SettingStorage(Liara_FastSettingEntry<double> entry)
-                : m_data(std::move(entry)) {}
+                : data(std::move(entry)) {}
 
             explicit Liara_SettingStorage(Liara_FlexibleSettingEntry entry)
-                : m_data(std::move(entry)) {}
+                : data(std::move(entry)) {}
 
             Liara_SettingStorage(std::any defaultValue,
-                                 const size_t TYPE_HASH,
-                                 const SettingFlags FLAGS = SettingFlags::DEFAULT)
-                : m_data(Liara_FlexibleSettingEntry(std::move(defaultValue), TYPE_HASH, FLAGS)) {}
+                                 const size_t typeHash,
+                                 const SettingFlags flags = SettingFlags::DEFAULT)
+                : data(Liara_FlexibleSettingEntry(std::move(defaultValue), typeHash, flags)) {}
 
             template <typename T> [[nodiscard]] bool HoldsType() const;
         };
@@ -164,17 +164,17 @@ namespace Liara::Core
         template <typename T> void Subscribe(std::string_view name, std::function<void(const T&)> callback);
 
         // Helpers pour les types courants (interface simplifiée)
-        [[nodiscard]] bool GetBool(const std::string_view NAME) const { return Get<bool>(NAME); }
-        [[nodiscard]] int GetInt(const std::string_view NAME) const { return Get<int>(NAME); }
-        [[nodiscard]] uint32_t GetUInt(const std::string_view NAME) const { return Get<uint32_t>(NAME); }
-        [[nodiscard]] float GetFloat(const std::string_view NAME) const { return Get<float>(NAME); }
-        [[nodiscard]] std::string GetString(const std::string_view NAME) const { return Get<std::string>(NAME); }
+        [[nodiscard]] bool GetBool(const std::string_view name) const { return Get<bool>(name); }
+        [[nodiscard]] int GetInt(const std::string_view name) const { return Get<int>(name); }
+        [[nodiscard]] uint32_t GetUInt(const std::string_view name) const { return Get<uint32_t>(name); }
+        [[nodiscard]] float GetFloat(const std::string_view name) const { return Get<float>(name); }
+        [[nodiscard]] std::string GetString(const std::string_view name) const { return Get<std::string>(name); }
 
-        void SetBool(const std::string_view NAME, const bool VALUE) { Set(NAME, VALUE); }
-        void SetInt(const std::string_view NAME, const int VALUE) { Set(NAME, VALUE); }
-        void SetUInt(const std::string_view NAME, const uint32_t VALUE) { Set(NAME, VALUE); }
-        void SetFloat(const std::string_view NAME, const float VALUE) { Set(NAME, VALUE); }
-        void SetString(const std::string_view NAME, const std::string& value) { Set(NAME, value); }
+        void SetBool(const std::string_view name, const bool value) { Set(name, value); }
+        void SetInt(const std::string_view name, const int value) { Set(name, value); }
+        void SetUInt(const std::string_view name, const uint32_t value) { Set(name, value); }
+        void SetFloat(const std::string_view name, const float value) { Set(name, value); }
+        void SetString(const std::string_view name, const std::string& value) { Set(name, value); }
 
         // Utility pour debug/introspection
         std::vector<std::string> GetAllSettingNames() const;

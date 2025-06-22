@@ -12,18 +12,99 @@ jobs:
     container: archlinux:latest
 
     steps:
-      - name: Install Git
+      - name: Setup Git in container
         run: |
-            pacman -Sy --noconfirm git
+          pacman -Sy --noconfirm git
+          git config --global --add safe.directory /github/workspace
+          git config --global --add safe.directory '*'
 
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Git setup
+        run: |
+          pwd
+          ls -la
+          git status
+          git log --oneline -5
 
       - name: Install dependencies
         run: |
           pacman -Syu --noconfirm base-devel ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf vulkan-tools glm wget shaderc clang
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files: |
+            src/**/*.{cpp,h,hpp,tpp}
+            app/**/*.{cpp,h,hpp,tpp}
+          files_ignore: |
+            external/**
+            build/**
+            .git/**
+          separator: "\n"
+        continue-on-error: true
+
+      - name: List files to check
+        run: |
+          # Fonction pour détecter les fichiers C++ modifiés
+          get_cpp_files() {
+            find src app -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.tpp" \) 2>/dev/null | \
+              grep -v -E "(external/|build/)" || true
+          }
+          
+          # Stratégie par priorité
+          if [[ "${{ steps.changed-files.outcome }}" == "success" && "${{ steps.changed-files.outputs.any_changed }}" == "true" ]]; then
+            echo "Utilisation de tj-actions/changed-files"
+            echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' > files_to_check.txt
+          
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "Fallback PR: comparaison avec base branch"
+            # Assure-toi d'avoir la branche de base
+            git fetch origin ${{ github.base_ref }} || git fetch origin main || git fetch origin master
+          
+            if git show-ref --verify --quiet refs/remotes/origin/${{ github.base_ref }}; then
+              git diff --name-only origin/${{ github.base_ref }}...HEAD | \
+                grep -E '\.(cpp|h|hpp|tpp)$' | \
+                grep -v -E "(external/|build/)" > files_to_check.txt 2>/dev/null || touch files_to_check.txt
+            else
+              echo "Base branch non trouvée, vérification complète"
+              get_cpp_files > files_to_check.txt
+            fi
+          
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "Fallback Push: comparaison avec commit précédent"
+            # Pour les push, compare avec le commit précédent
+            if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+              # Sur main, vérification complète
+              get_cpp_files > files_to_check.txt
+            else
+              # Sur les autres branches, compare avec HEAD~1
+              git diff --name-only HEAD~1..HEAD | \
+                grep -E '\.(cpp|h|hpp|tpp)$' | \
+                grep -v -E "(external/|build/)" > files_to_check.txt 2>/dev/null || touch files_to_check.txt
+            fi
+          
+          else
+            echo "Fallback général: vérification complète"
+            get_cpp_files > files_to_check.txt
+          fi
+          
+          # Vérification du résultat
+          if [[ ! -f files_to_check.txt ]]; then
+            touch files_to_check.txt
+          fi
+          
+          echo "Fichiers à vérifier ($(wc -l < files_to_check.txt)):"
+          if [[ -s files_to_check.txt ]]; then
+            cat files_to_check.txt
+          else
+            echo "Aucun fichier C++ à vérifier"
+          fi
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
@@ -50,35 +131,6 @@ jobs:
           cmake .. \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v41
-        with:
-          files: |
-            src/**/*.{cpp,h,hpp,tpp}
-            app/**/*.{cpp,h,hpp,tpp}
-          files_ignore: |
-            external/**
-            build/**
-            .git/**
-
-      - name: List files to check
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "main" ]]; then
-            echo "PR vers main - vérification complète"
-            find src app -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.tpp" \) | \
-              grep -v -E "(external/|build/)" > files_to_check.txt
-          elif [[ "${{ steps.changed-files.outputs.any_changed }}" == "true" ]]; then
-            echo "Fichiers modifiés détectés"
-            echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' > files_to_check.txt
-          else
-            echo "Aucun fichier C++ modifié"
-            touch files_to_check.txt
-          fi
-          
-          echo "Fichiers à vérifier ($(wc -l < files_to_check.txt)):"
-          cat files_to_check.txt
 
       - name: Run clang-format check
         id: format-check

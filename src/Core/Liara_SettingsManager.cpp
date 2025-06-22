@@ -103,7 +103,7 @@ namespace Liara::Core
                     }
                     else { return SerializeFastEntry(file, name, entry); }
                 },
-                storage.m_data);
+                storage.data);
 
             if (!success) { file << "# Failed to serialize: " << name << "\n"; }
         }
@@ -145,7 +145,7 @@ namespace Liara::Core
                                                        const Liara_FlexibleSettingEntry& entry) {
         // TODO: Check why cast to ISettingSerializable fails
         // Si l'entrée est sérialisable, utiliser la méthode de sérialisation
-        if (const auto* const serializable = std::any_cast<ISettingSerializable*>(&entry.m_value)) {
+        if (const auto* const serializable = std::any_cast<ISettingSerializable*>(&entry.value)) {
             file << name << "=" << (*serializable)->serialize() << "\n";
             return true;
         }
@@ -170,13 +170,13 @@ namespace Liara::Core
                 }
                 else { return DeserializeFastEntry(entry, value); }
             },
-            it->second.m_data);
+            it->second.data);
     }
 
     bool Liara_SettingsManager::DeserializeFlexibleEntry(const Liara_FlexibleSettingEntry& entry,
                                                          const std::string& value) {
         // TODO: Check why cast to ISettingSerializable fails
-        if (const auto* serializable = std::any_cast<ISettingSerializable*>(&entry.m_value)) {
+        if (const auto* serializable = std::any_cast<ISettingSerializable*>(&entry.value)) {
             return (*serializable)->deserialize(value);
         }
         return false;
@@ -185,9 +185,9 @@ namespace Liara::Core
     bool Liara_SettingsManager::IsSerializable(const Liara_SettingStorage& storage) {
         return std::visit(
             [](const auto& entry) -> bool {
-                return static_cast<uint32_t>(entry.m_flags) & static_cast<uint32_t>(SettingFlags::SERIALIZABLE);
+                return static_cast<uint32_t>(entry.flags) & static_cast<uint32_t>(SettingFlags::SERIALIZABLE);
             },
-            storage.m_data);
+            storage.data);
     }
 
     std::string Liara_SettingsManager::Trim(const std::string& str) {
