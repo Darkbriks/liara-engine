@@ -53,24 +53,31 @@ jobs:
 
       - name: Get changed files
         id: changed-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files: |
+            src/**/*.{cpp,h,hpp,tpp}
+            app/**/*.{cpp,h,hpp,tpp}
+          files_ignore: |
+            external/**
+            build/**
+            .git/**
+
+      - name: List files to check
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "main" ]]; then
-            # MR vers main : vérifier tout le codebase
-            echo "CHECK_ALL=true" >> $GITHUB_OUTPUT
-            find src app -name "*.cpp" -o -name "*.h" -o -name "*.hpp" | \
-              grep -v -E "(external/|build/|\.git/)" > files_to_check.txt
+            echo "PR vers main - vérification complète"
+            find src app -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.tpp" \) | \
+              grep -v -E "(external/|build/)" > files_to_check.txt
+          elif [[ "${{ steps.changed-files.outputs.any_changed }}" == "true" ]]; then
+            echo "Fichiers modifiés détectés"
+            echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' > files_to_check.txt
           else
-            # Commit sur dev branch : seulement les fichiers modifiés
-            echo "CHECK_ALL=false" >> $GITHUB_OUTPUT
-            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-              git diff --name-only origin/${{ github.base_ref }}...HEAD
-            else
-              git diff --name-only HEAD~1
-            fi | grep -E "\.(cpp|h|hpp)$" | \
-              grep -v -E "(external/|build/|\.git/)" > files_to_check.txt || touch files_to_check.txt
+            echo "Aucun fichier C++ modifié"
+            touch files_to_check.txt
           fi
           
-          echo "Files to check:"
+          echo "Fichiers à vérifier ($(wc -l < files_to_check.txt)):"
           cat files_to_check.txt
 
       - name: Run clang-format check

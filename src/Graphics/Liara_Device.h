@@ -176,7 +176,7 @@ namespace Liara::Graphics
                                  VkImage& image,
                                  VkDeviceMemory& imageMemory) const;
 
-        VkPhysicalDeviceProperties device_properties{};  ///< Physical device properties
+        VkPhysicalDeviceProperties deviceProperties{};  ///< Physical device properties
 
     private:
         /**
