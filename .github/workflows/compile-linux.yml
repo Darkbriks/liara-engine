@@ -256,6 +256,21 @@ jobs:
             assets/
           retention-days: 1  # Temporaire, juste pour le job AppImage
 
+      - name: Debug artifacts before upload (Ubuntu Release only)
+        if: matrix.distro.name == 'ubuntu' && matrix.build_type == 'Release'
+        run: |
+          echo "=== Files to be uploaded for AppImage ==="
+          echo "Demo executable:"
+          ls -la build/app/Demo || echo "Demo not found!"
+          echo ""
+          echo "Shaders directory:"
+          ls -la build/shaders/ || echo "Shaders directory not found!"
+          echo ""
+          echo "Assets directory:"
+          ls -la assets/ || echo "Assets directory not found!"
+          echo ""
+          echo "Working directory: $(pwd)"
+
       - name: Upload build logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -289,6 +304,17 @@ jobs:
           name: ubuntu-release-build-${{ github.ref_name }}
           path: build-artifacts/
 
+      - name: Debug artifacts structure
+        run: |
+          echo "=== Downloaded artifacts structure ==="
+          find build-artifacts -type f -ls 2>/dev/null || echo "No files found"
+          echo ""
+          echo "=== Looking for Demo executable ==="
+          find build-artifacts -name "Demo" -type f -exec ls -la {} \; || echo "Demo executable not found"
+          echo ""
+          echo "=== All files in build-artifacts ==="
+          ls -la build-artifacts/ || echo "Directory not accessible"
+
       - name: Install AppImage dependencies
         run: |
           sudo apt update
@@ -305,19 +331,44 @@ jobs:
           mkdir -p AppDir/usr/share/pixmaps
           mkdir -p AppDir/usr/share/doc/${{ github.event.repository.name }}
           
-          # Copier l'exécutable
-          cp build-artifacts/Demo AppDir/usr/bin/
+          # Trouver et copier l'exécutable Demo
+          DEMO_PATH=$(find build-artifacts -name "Demo" -type f | head -1)
+          if [ -z "$DEMO_PATH" ]; then
+            echo "ERROR: Demo executable not found in artifacts!"
+            echo "Available files:"
+            find build-artifacts -type f
+            exit 1
+          fi
+          
+          echo "Found Demo at: $DEMO_PATH"
+          cp "$DEMO_PATH" AppDir/usr/bin/
           chmod +x AppDir/usr/bin/Demo
           
           # Copier les assets s'ils existent
           if [ -d "build-artifacts/assets" ]; then
             cp -r build-artifacts/assets AppDir/usr/share/${{ github.event.repository.name }}/
+            echo "Copied assets directory"
+          else
+            echo "No assets directory found"
           fi
           
           # Copier les shaders
-          if [ -d "build-artifacts/shaders" ] || ls build-artifacts/*.spv >/dev/null 2>&1; then
-            mkdir -p AppDir/usr/share/${{ github.event.repository.name }}/shaders
-            find build-artifacts -name "*.spv" -exec cp {} AppDir/usr/share/${{ github.event.repository.name }}/shaders/ \;
+          SHADER_DIR="AppDir/usr/share/${{ github.event.repository.name }}/shaders"
+          mkdir -p "$SHADER_DIR"
+          
+          # Chercher les fichiers .spv dans tous les sous-répertoires
+          SHADER_COUNT=0
+          while IFS= read -r -d '' shader_file; do
+            cp "$shader_file" "$SHADER_DIR/"
+            SHADER_COUNT=$((SHADER_COUNT + 1))
+          done < <(find build-artifacts -name "*.spv" -type f -print0 2>/dev/null)
+          
+          echo "Copied $SHADER_COUNT shader files"
+          
+          if [ $SHADER_COUNT -eq 0 ]; then
+            echo "Warning: No shader files found!"
+            echo "Available files in build-artifacts:"
+            find build-artifacts -type f
           fi
 
       - name: Create desktop file
