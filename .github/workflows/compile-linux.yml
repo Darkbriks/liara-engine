@@ -49,7 +49,6 @@ jobs:
       image: ${{ matrix.distro.container }}
 
     outputs:
-      # Exposer les métadonnées pour les jobs suivants
       ubuntu-release-built: ${{ matrix.distro.name == 'ubuntu' && matrix.build_type == 'Release' }}
       artifact-name: liara-engine-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-${{ github.ref_name }}
 
@@ -95,7 +94,6 @@ jobs:
 
       - name: Install Vulkan SDK and verify glslc
         run: |
-          # Check if glslc is already available from installed packages
           if command -v glslc >/dev/null 2>&1; then
             echo "glslc found: $(which glslc)"
             glslc --version
@@ -104,15 +102,13 @@ jobs:
 
           echo "glslc not found in packages, installing from Vulkan SDK..."
 
-          # Variables de configuration
           VULKAN_SDK_DIR="/opt/vulkan-sdk"
           VULKAN_SDK_PATH="${VULKAN_SDK_DIR}/${{ env.VULKAN_SDK_VERSION }}"
           VULKAN_INSTALLER="vulkansdk-linux-x86_64-${{ env.VULKAN_SDK_VERSION }}.tar.xz"
           VULKAN_URL="https://sdk.lunarg.com/sdk/download/${{ env.VULKAN_SDK_VERSION }}/linux/${VULKAN_INSTALLER}"
 
-          # Vérifier le cache
           if [ "${{ steps.vulkan-cache.outputs.cache-hit }}" = "true" ] && [ -d "${VULKAN_SDK_PATH}" ] && [ -x "${VULKAN_SDK_PATH}/x86_64/bin/glslc" ]; then
-            echo "✓ Vulkan SDK restored from cache"
+            echo "Vulkan SDK restored from cache"
             export VULKAN_SDK="${VULKAN_SDK_PATH}/x86_64"
             export PATH="${VULKAN_SDK}/bin:${PATH}"
             export LD_LIBRARY_PATH="${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}"
@@ -127,7 +123,7 @@ jobs:
             exit 0
           fi
 
-          # Installation du SDK
+          # Installing Vulkan SDK
           sudo mkdir -p "${VULKAN_SDK_DIR}"
           TEMP_DIR="/tmp/vulkan-install"
           mkdir -p "${TEMP_DIR}"
@@ -150,7 +146,7 @@ jobs:
           sudo chown -R root:root "${VULKAN_SDK_PATH}"
           sudo chmod -R 755 "${VULKAN_SDK_PATH}"
 
-          # Configuration des variables d'environnement
+          # Set environment variables
           export VULKAN_SDK="${VULKAN_SDK_PATH}/x86_64"
           export PATH="${VULKAN_SDK}/bin:${PATH}"
           export LD_LIBRARY_PATH="${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}"
@@ -161,14 +157,14 @@ jobs:
           echo "LD_LIBRARY_PATH=${VULKAN_SDK}/lib:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
           echo "VK_LAYER_PATH=${VULKAN_SDK}/etc/vulkan/explicit_layer.d" >> $GITHUB_ENV
 
-          # Vérification finale
+          # Verify glslc
           if [ ! -x "${VULKAN_SDK}/bin/glslc" ]; then
             echo "ERROR: glslc not found or not executable"
             exit 1
           fi
 
           glslc --version
-          echo "✓ Vulkan SDK installation successful!"
+          echo "Vulkan SDK installation successful!"
 
       - name: Cache CMake build dependencies
         uses: actions/cache@v4
@@ -212,32 +208,28 @@ jobs:
           fi
 
       - name: Prepare build artifacts
+        if: matrix.build_type == 'Release' && startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main')
         run: |
           cd build/app
           mkdir -p package
           cp Demo package/
           
-          # Copier les assets s'ils existent
           if [ -d "../../assets" ]; then
             cp -r ../../assets package/
           fi
           
-          # Copier les shaders compilés
           if [ -d "../shaders" ]; then
-            # Nettoyer et copier seulement les .spv
             find ../shaders -name "*.spv" -exec cp {} package/ \; 2>/dev/null || true
-            # Créer un dossier shaders dans le package si des fichiers ont été copiés
             if ls package/*.spv >/dev/null 2>&1; then
               mkdir -p package/shaders
               mv package/*.spv package/shaders/
             fi
           fi
           
-          # Créer l'archive portable
           tar -czf ../../${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-x86_64.tar.gz -C package .
 
-      - name: Upload portable archive (Release builds)
-        if: matrix.build_type == 'Release'
+      - name: Upload portable archive
+        if: matrix.build_type == 'Release' && startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-${{ github.ref_name }}
@@ -246,7 +238,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Ubuntu Release build artifacts for AppImage
-        if: matrix.distro.name == 'ubuntu' && matrix.build_type == 'Release'
+        if: matrix.distro.name == 'ubuntu' && matrix.build_type == 'Release' && startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: ubuntu-release-build-${{ github.ref_name }}
@@ -254,22 +246,7 @@ jobs:
             build/app/Demo
             build/shaders/*.spv
             assets/
-          retention-days: 1  # Temporaire, juste pour le job AppImage
-
-      - name: Debug artifacts before upload (Ubuntu Release only)
-        if: matrix.distro.name == 'ubuntu' && matrix.build_type == 'Release'
-        run: |
-          echo "=== Files to be uploaded for AppImage ==="
-          echo "Demo executable:"
-          ls -la build/app/Demo || echo "Demo not found!"
-          echo ""
-          echo "Shaders directory:"
-          ls -la build/shaders/ || echo "Shaders directory not found!"
-          echo ""
-          echo "Assets directory:"
-          ls -la assets/ || echo "Assets directory not found!"
-          echo ""
-          echo "Working directory: $(pwd)"
+          retention-days: 1
 
       - name: Upload build logs on failure
         if: failure()
@@ -282,15 +259,14 @@ jobs:
             build/**/*.log
           retention-days: 7
 
-  # Job séparé optimisé pour créer l'AppImage
+  # Job séparé pour créer l'AppImage
   build-appimage:
     runs-on: ubuntu-22.04
     needs: build-linux
-    if: |
-      needs.build-linux.result == 'success'
+    if: needs.build-linux.result == 'success' && startsWith(github.ref, 'refs/tags/v')
 
     steps:
-      - name: Checkout code (pour les métadonnées)
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
@@ -303,17 +279,6 @@ jobs:
         with:
           name: ubuntu-release-build-${{ github.ref_name }}
           path: build-artifacts/
-
-      - name: Debug artifacts structure
-        run: |
-          echo "=== Downloaded artifacts structure ==="
-          find build-artifacts -type f -ls 2>/dev/null || echo "No files found"
-          echo ""
-          echo "=== Looking for Demo executable ==="
-          find build-artifacts -name "Demo" -type f -exec ls -la {} \; || echo "Demo executable not found"
-          echo ""
-          echo "=== All files in build-artifacts ==="
-          ls -la build-artifacts/ || echo "Directory not accessible"
 
       - name: Install AppImage dependencies
         run: |
@@ -348,23 +313,19 @@ jobs:
           cp "$DEMO_PATH" AppDir/usr/bin/
           chmod +x AppDir/usr/bin/Demo
           
-          # Vérifier que l'exécutable fonctionne
           echo "Testing Demo executable..."
           ldd AppDir/usr/bin/Demo || echo "Could not analyze dependencies"
           
-          # Copier les assets s'ils existent
           if [ -d "build-artifacts/assets" ]; then
-            cp -r build-artifacts/assets AppDir/usr/share/${{ github.event.repository.name }}/
+            cp -r build-artifacts/assets AppDir/usr/share/${{ github.event.repository.name }}/assets/
             echo "Copied assets directory"
           else
             echo "No assets directory found"
           fi
           
-          # Copier les shaders
           SHADER_DIR="AppDir/usr/share/${{ github.event.repository.name }}/shaders"
           mkdir -p "$SHADER_DIR"
           
-          # Chercher les fichiers .spv dans build-artifacts/build/shaders/
           if [ -d "build-artifacts/build/shaders" ]; then
             find build-artifacts/build/shaders -name "*.spv" -type f -exec cp {} "$SHADER_DIR/" \;
             SHADER_COUNT=$(find build-artifacts/build/shaders -name "*.spv" -type f | wc -l)
@@ -388,12 +349,11 @@ jobs:
           StartupNotify=true
           EOF
           
-          # Valider le fichier desktop
           desktop-file-validate AppDir/usr/share/applications/${{ github.event.repository.name }}.desktop
 
       - name: Create application icon
         run: |
-          # Créer une icône temporaire (à remplacer par une vraie icône plus tard)
+          # Create a temporary image for the icon (use a real image later)
           convert -size 256x256 \
             -background 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)' \
             -fill white \
@@ -403,7 +363,6 @@ jobs:
             label:"LIARA\nENGINE" \
             AppDir/usr/share/pixmaps/${{ github.event.repository.name }}.png
           
-          # Créer les différentes tailles d'icône
           for size in 16 32 48 64 128 256; do
             mkdir -p AppDir/usr/share/icons/hicolor/${size}x${size}/apps
             convert AppDir/usr/share/pixmaps/${{ github.event.repository.name }}.png \
@@ -413,12 +372,10 @@ jobs:
 
       - name: Add documentation
         run: |
-          # Copier la documentation de base
           if [ -f "README.md" ]; then
             cp README.md AppDir/usr/share/doc/${{ github.event.repository.name }}/
           fi
           
-          # Créer un fichier d'info sur l'AppImage
           cat > AppDir/usr/share/doc/${{ github.event.repository.name }}/AppImage-Info.txt << EOF
           Liara Engine Demo - AppImage Package
           
@@ -442,18 +399,15 @@ jobs:
 
       - name: Download AppImage tools
         run: |
-          # Télécharger linuxdeploy et appimagetool
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage appimagetool-x86_64.AppImage
 
       - name: Build AppImage
         run: |
-          # Vérifier les dépendances disponibles dans le système
           echo "=== System libraries check ==="
           ldconfig -p | grep -E "(SDL2|vulkan|fmt)" || echo "Some libraries may be missing"
           
-          # Utiliser linuxdeploy pour résoudre les dépendances
           echo "=== Running linuxdeploy ==="
           ./linuxdeploy-x86_64.AppImage \
             --appdir AppDir \
@@ -462,28 +416,23 @@ jobs:
             --executable AppDir/usr/bin/Demo \
             --verbosity=2
           
-          # En cas d'échec, essayer une approche alternative
           if [ $? -ne 0 ]; then
             echo "=== linuxdeploy failed, trying alternative approach ==="
           
-            # Copier manuellement les bibliothèques essentielles
             mkdir -p AppDir/usr/lib
           
-            # Trouver et copier SDL2
             SDL2_LIB=$(ldconfig -p | grep "libSDL2-2.0.so.0" | awk '{print $NF}' | head -1)
             if [ -n "$SDL2_LIB" ] && [ -f "$SDL2_LIB" ]; then
               cp "$SDL2_LIB" AppDir/usr/lib/
               echo "Copied SDL2: $SDL2_LIB"
             fi
           
-            # Copier fmt si nécessaire
             FMT_LIB=$(ldconfig -p | grep "libfmt.so" | awk '{print $NF}' | head -1)
             if [ -n "$FMT_LIB" ] && [ -f "$FMT_LIB" ]; then
               cp "$FMT_LIB" AppDir/usr/lib/
               echo "Copied fmt: $FMT_LIB"
             fi
           
-            # Relancer linuxdeploy
             ./linuxdeploy-x86_64.AppImage \
               --appdir AppDir \
               --desktop-file AppDir/usr/share/applications/${{ github.event.repository.name }}.desktop \
@@ -491,22 +440,19 @@ jobs:
               --verbosity=2
           fi
           
-          # Créer l'AppImage finale
           echo "=== Creating AppImage ==="
           ./appimagetool-x86_64.AppImage AppDir \
             ${{ github.event.repository.name }}-${{ github.ref_name }}-x86_64.AppImage
 
       - name: Test AppImage
         run: |
-          # Vérifier que l'AppImage a été créée
           if [ -f "${{ github.event.repository.name }}-${{ github.ref_name }}-x86_64.AppImage" ]; then
-            echo "✓ AppImage created successfully"
+            echo "AppImage created successfully"
             file ${{ github.event.repository.name }}-${{ github.ref_name }}-x86_64.AppImage
             ls -lh ${{ github.event.repository.name }}-${{ github.ref_name }}-x86_64.AppImage
           
-            # Test basique (vérifier qu'elle est exécutable)
             chmod +x ${{ github.event.repository.name }}-${{ github.ref_name }}-x86_64.AppImage
-            echo "✓ AppImage is executable"
+            echo "AppImage is executable"
           else
             echo "ERROR: AppImage not found!"
             ls -la
@@ -525,7 +471,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // Supprimer l'artefact temporaire Ubuntu
             try {
               const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
                 owner: context.repo.owner,

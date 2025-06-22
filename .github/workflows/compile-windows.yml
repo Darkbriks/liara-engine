@@ -120,18 +120,15 @@ jobs:
           )
 
       - name: Upload artifacts (Release builds on version tags)
-        # if: matrix.build_type == 'Release' && startsWith(github.ref, 'refs/tags/v')
-        if: matrix.build_type == 'Release'
+        if: matrix.build_type == 'Release' && startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: liara-engine-windows-${{ matrix.build_type }}-${{ github.ref_name }}
-          # path: |
-          #  build/${{ matrix.build_type }}/app/Demo.exe
-          #  build/${{ matrix.build_type }}/*.dll
-          #  build/shaders/*.spv
-          #  assets/
-          # For testing purposes, upload the entire build directory
-          path: build/app/${{ matrix.build_type }}
+          path: |
+            build/${{ matrix.build_type }}/Demo.exe
+            build/${{ matrix.build_type }}/*.dll
+            build/${{ matrix.build_type }}/*.spv
+            build/${{ matrix.build_type }}/assets
           retention-days: 30
 
       - name: Upload build logs on failure
