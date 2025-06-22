@@ -317,6 +317,7 @@ jobs:
           ldd AppDir/usr/bin/Demo || echo "Could not analyze dependencies"
           
           if [ -d "build-artifacts/assets" ]; then
+            mkdir -p AppDir/usr/share/${{ github.event.repository.name }}/assets
             cp -r build-artifacts/assets AppDir/usr/share/${{ github.event.repository.name }}/assets/
             echo "Copied assets directory"
           else
