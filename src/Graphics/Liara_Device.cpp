@@ -136,8 +136,8 @@ namespace Liara::Graphics
 
         if (m_PhysicalDevice == VK_NULL_HANDLE) { throw std::runtime_error("failed to find a suitable GPU!"); }
 
-        vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
-        fmt::print("physical device: {}\n", properties.deviceName);
+        vkGetPhysicalDeviceProperties(m_PhysicalDevice, &device_properties);
+        fmt::print("physical device: {}\n", device_properties.deviceName);
     }
 
     void Liara_Device::CreateLogicalDevice() {
