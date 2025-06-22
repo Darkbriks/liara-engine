@@ -131,11 +131,11 @@ namespace Liara::Graphics
 
     std::vector<VkVertexInputAttributeDescription> Liara_Model::Vertex::GetAttributeDescriptions() {
         return {
-            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)        },
-            {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)           },
-            {2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)          },
-            {3, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(Vertex, uv)              },
-            {4, 0, VK_FORMAT_R32_UINT,         offsetof(Vertex, specularExponent)}
+            {.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, position)        },
+            {.location = 1, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, color)           },
+            {.location = 2, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, normal)          },
+            {.location = 3, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT,    .offset = offsetof(Vertex, uv)              },
+            {.location = 4, .binding = 0, .format = VK_FORMAT_R32_UINT,         .offset = offsetof(Vertex, specularExponent)}
         };
     }
 
@@ -143,7 +143,8 @@ namespace Liara::Graphics
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
-        std::string warn, err;
+        std::string warn;
+        std::string err;
 
         if (!LoadObj(&attrib, &shapes, &materials, &warn, &err, (std::string(ENGINE_DIR) + filename).c_str())) {
             throw std::runtime_error(warn + err);
@@ -155,34 +156,34 @@ namespace Liara::Graphics
         std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
         for (const auto& shape : shapes) {
-            for (const auto& index : shape.mesh.indices) {
+            for (const auto& [vertex_index, normal_index, texcoord_index] : shape.mesh.indices) {
                 Vertex vertex{};
 
-                if (index.vertex_index >= 0) {
-                    vertex.position = {attrib.vertices[3 * index.vertex_index + 0],
-                                       attrib.vertices[3 * index.vertex_index + 1],
-                                       attrib.vertices[3 * index.vertex_index + 2]};
+                if (vertex_index >= 0) {
+                    vertex.position = {attrib.vertices[3 * vertex_index + 0],
+                                       attrib.vertices[3 * vertex_index + 1],
+                                       attrib.vertices[3 * vertex_index + 2]};
 
-                    vertex.color = {attrib.colors[3 * index.vertex_index + 0],
-                                    attrib.colors[3 * index.vertex_index + 1],
-                                    attrib.colors[3 * index.vertex_index + 2]};
+                    vertex.color = {attrib.colors[3 * vertex_index + 0],
+                                    attrib.colors[3 * vertex_index + 1],
+                                    attrib.colors[3 * vertex_index + 2]};
 
                     vertex.specularExponent = specularExponent;
                 }
 
-                if (index.normal_index >= 0) {
-                    vertex.normal = {attrib.normals[3 * index.normal_index + 0],
-                                     attrib.normals[3 * index.normal_index + 1],
-                                     attrib.normals[3 * index.normal_index + 2]};
+                if (normal_index >= 0) {
+                    vertex.normal = {attrib.normals[3 * normal_index + 0],
+                                     attrib.normals[3 * normal_index + 1],
+                                     attrib.normals[3 * normal_index + 2]};
                 }
 
-                if (index.texcoord_index >= 0) {
+                if (texcoord_index >= 0) {
                     // Flip the y coordinate to match with Vulkan's texture coordinate system
-                    vertex.uv = {attrib.texcoords[2 * index.texcoord_index + 0],
-                                 1.0f - attrib.texcoords[2 * index.texcoord_index + 1]};
+                    vertex.uv = {attrib.texcoords[2 * texcoord_index + 0],
+                                 1.0f - attrib.texcoords[2 * texcoord_index + 1]};
                 }
 
-                if (uniqueVertices.count(vertex) == 0) {
+                if (!uniqueVertices.contains(vertex)) {
                     uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
                     vertices.push_back(vertex);
                 }

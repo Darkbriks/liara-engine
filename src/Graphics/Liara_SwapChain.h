@@ -1,22 +1,25 @@
 #pragma once
 
-#include "Liara_Device.h"
-
 #include <vulkan/vulkan.h>
-#include <vector>
+
 #include <memory>
+#include <vector>
+
+#include "Liara_Device.h"
 
 namespace Liara::Graphics
 {
     class Liara_SwapChain
     {
     public:
-        Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent, const Core::Liara_SettingsManager &settings);
-        Liara_SwapChain(Liara_Device &deviceRef, VkExtent2D windowExtent, const std::shared_ptr<Liara_SwapChain>& oldSwapChain);
+        Liara_SwapChain(Liara_Device& deviceRef, VkExtent2D windowExtent, const Core::Liara_SettingsManager& settings);
+        Liara_SwapChain(Liara_Device& deviceRef,
+                        VkExtent2D windowExtent,
+                        const std::shared_ptr<Liara_SwapChain>& oldSwapChain);
         ~Liara_SwapChain();
 
-        Liara_SwapChain(const Liara_SwapChain &) = delete;
-        Liara_SwapChain &operator=(const Liara_SwapChain &) = delete;
+        Liara_SwapChain(const Liara_SwapChain&) = delete;
+        Liara_SwapChain& operator=(const Liara_SwapChain&) = delete;
 
         [[nodiscard]] VkFramebuffer GetFrameBuffer(const int index) const { return m_SwapChainFramebuffers[index]; }
         [[nodiscard]] VkRenderPass GetRenderPass() const { return m_RenderPass; }
@@ -27,15 +30,17 @@ namespace Liara::Graphics
         [[nodiscard]] uint32_t Width() const { return m_SwapChainExtent.width; }
         [[nodiscard]] uint32_t Height() const { return m_SwapChainExtent.height; }
 
-        [[nodiscard]] float ExtentAspectRatio() const { return static_cast<float>(m_SwapChainExtent.width) / static_cast<float>(m_SwapChainExtent.height); }
+        [[nodiscard]] float ExtentAspectRatio() const {
+            return static_cast<float>(m_SwapChainExtent.width) / static_cast<float>(m_SwapChainExtent.height);
+        }
         [[nodiscard]] VkFormat FindDepthFormat() const;
 
-        VkResult AcquireNextImage(uint32_t *imageIndex) const;
-        VkResult SubmitCommandBuffers(const VkCommandBuffer *buffers, const uint32_t *imageIndex);
+        VkResult AcquireNextImage(uint32_t* imageIndex) const;
+        VkResult SubmitCommandBuffers(const VkCommandBuffer* buffers, const uint32_t* imageIndex);
 
-        [[nodiscard]] bool CompareSwapFormat(const Liara_SwapChain& swap_chain) const
-        {
-            return swap_chain.m_SwapChainDepthFormat == m_SwapChainDepthFormat && swap_chain.m_SwapChainImageFormat == m_SwapChainImageFormat;
+        [[nodiscard]] bool CompareSwapFormat(const Liara_SwapChain& swapChain) const {
+            return swapChain.m_SwapChainDepthFormat == m_SwapChainDepthFormat
+                   && swapChain.m_SwapChainImageFormat == m_SwapChainImageFormat;
         }
 
     private:
@@ -48,11 +53,12 @@ namespace Liara::Graphics
         void CreateSyncObjects();
 
         // Helper functions
-        static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-        [[nodiscard]] VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes) const;
-        [[nodiscard]] VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) const;
+        static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+        [[nodiscard]] VkPresentModeKHR
+        ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) const;
+        [[nodiscard]] VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
-        const Core::Liara_SettingsManager &m_SettingsManager;
+        const Core::Liara_SettingsManager& m_SettingsManager;
 
         VkFormat m_SwapChainImageFormat{};
         VkFormat m_SwapChainDepthFormat{};
@@ -67,7 +73,7 @@ namespace Liara::Graphics
         std::vector<VkImage> m_SwapChainImages;
         std::vector<VkImageView> m_SwapChainImageViews;
 
-        Liara_Device &m_Device;
+        Liara_Device& m_Device;
         VkExtent2D m_WindowExtent;
 
         VkSwapchainKHR m_SwapChain{};

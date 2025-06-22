@@ -19,7 +19,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pacman -Syu --noconfirm base-devel ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf vulkan-tools glm wget shaderc
+          pacman -Syu --noconfirm base-devel ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf vulkan-tools glm wget shaderc clang
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
@@ -38,12 +38,6 @@ jobs:
           restore-keys: |
             cmake-deps-archlinux-Release-
             cmake-deps-archlinux-
-
-      - name: Set up Clang
-        uses: egor-tensin/setup-clang@v1
-        with:
-          version: latest
-          platform: x64
 
       - name: Configure CMake
         run: |

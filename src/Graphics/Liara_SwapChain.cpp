@@ -37,7 +37,7 @@ namespace Liara::Graphics
             vkDestroySemaphore(m_Device.GetDevice(), m_RenderFinishedSemaphores[i], nullptr);
         }
 
-        for (const auto imageView : m_SwapChainImageViews) {
+        for (auto* const imageView : m_SwapChainImageViews) {
             vkDestroyImageView(m_Device.GetDevice(), imageView, nullptr);
         }
         m_SwapChainImageViews.clear();
@@ -53,7 +53,7 @@ namespace Liara::Graphics
             vkFreeMemory(m_Device.GetDevice(), m_DepthImageMemorys[i], nullptr);
         }
 
-        for (const auto framebuffer : m_SwapChainFramebuffers) {
+        for (auto* const framebuffer : m_SwapChainFramebuffers) {
             vkDestroyFramebuffer(m_Device.GetDevice(), framebuffer, nullptr);
         }
 
@@ -415,14 +415,12 @@ namespace Liara::Graphics
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
             return capabilities.currentExtent;
         }
-        else {
-            VkExtent2D actualExtent = m_WindowExtent;
-            actualExtent.width = std::max(capabilities.minImageExtent.width,
-                                          std::min(capabilities.maxImageExtent.width, actualExtent.width));
-            actualExtent.height = std::max(capabilities.minImageExtent.height,
-                                           std::min(capabilities.maxImageExtent.height, actualExtent.height));
-            return actualExtent;
-        }
+        VkExtent2D actualExtent = m_WindowExtent;
+        actualExtent.width = std::max(capabilities.minImageExtent.width,
+                                      std::min(capabilities.maxImageExtent.width, actualExtent.width));
+        actualExtent.height = std::max(capabilities.minImageExtent.height,
+                                       std::min(capabilities.maxImageExtent.height, actualExtent.height));
+        return actualExtent;
     }
 
     VkFormat Liara_SwapChain::FindDepthFormat() const {

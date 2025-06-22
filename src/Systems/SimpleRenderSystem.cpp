@@ -88,8 +88,8 @@ namespace Liara::Systems
 
         Graphics::PipelineConfigInfo pipelineConfig{};
         Graphics::Liara_Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
-        pipelineConfig.m_RenderPass = renderPass;
-        pipelineConfig.m_PipelineLayout = m_PipelineLayout;
+        pipelineConfig.renderPass = renderPass;
+        pipelineConfig.pipelineLayout = m_PipelineLayout;
         m_Pipeline = std::make_unique<Graphics::Liara_Pipeline>(m_Device,
                                                                 "shaders/SimpleShader.vert.spv",
                                                                 "shaders/SimpleShader.frag.spv",

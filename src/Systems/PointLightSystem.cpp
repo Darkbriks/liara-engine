@@ -115,10 +115,10 @@ namespace Liara::Systems
 
         Graphics::PipelineConfigInfo pipelineConfig{};
         Graphics::Liara_Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
-        pipelineConfig.m_BindingDescriptions.clear();
-        pipelineConfig.m_AttributeDescriptions.clear();
-        pipelineConfig.m_RenderPass = renderPass;
-        pipelineConfig.m_PipelineLayout = m_PipelineLayout;
+        pipelineConfig.bindingDescriptions.clear();
+        pipelineConfig.attributeDescriptions.clear();
+        pipelineConfig.renderPass = renderPass;
+        pipelineConfig.pipelineLayout = m_PipelineLayout;
         m_Pipeline = std::make_unique<Graphics::Liara_Pipeline>(
             m_Device, "shaders/PointLight.vert.spv", "shaders/PointLight.frag.spv", pipelineConfig, m_SettingsManager);
     }
