@@ -36,7 +36,7 @@ DemoApp::DemoApp(const Liara::Core::ApplicationInfo& appInfo)
 }
 
 void DemoApp::ProcessInput(const float frameTime) {
-    m_Controller.moveInPlaneXZ(m_Window.GetWindow(), frameTime, *m_Player);
+    m_Controller.moveInSpaceXYZ(m_Window.GetWindow(), frameTime, *m_Player);
     m_Camera.SetViewYXZ(m_Player->transform.position, m_Player->transform.rotation);
 }
 

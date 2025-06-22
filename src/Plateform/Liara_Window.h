@@ -15,7 +15,7 @@
 
 namespace Liara::Plateform
 {
-    class WindowSettings : public Core::ISettingSerializable {
+    class WindowSettings final : public Core::ISettingSerializable {
     public:
         std::string_view name = "window.default";
         uint16_t width = 1280, height = 720;
@@ -59,7 +59,7 @@ namespace Liara::Plateform
          * @brief Constructor, initializes id and calls InitWindow.
          * @param settingsManager Reference to the settings manager to use for window settings.
          */
-        Liara_Window(Core::Liara_SettingsManager& settingsManager);
+        explicit Liara_Window(Core::Liara_SettingsManager& settingsManager);
 
         /**
          * @brief Destructor, destroys the window and quits SDL.
@@ -69,7 +69,7 @@ namespace Liara::Plateform
         Liara_Window(const Liara_Window&) = delete;
         Liara_Window& operator=(const Liara_Window&) = delete;
 
-        static Liara_Window* GetWindow(const uint8_t id) { return g_Windows[id]; }  ///< Returns the window with the given ID
+        static Liara_Window* GetWindow(const uint8_t id) { return windows[id]; }  ///< Returns the window with the given ID
 
         [[nodiscard]] bool ShouldClose() const { return m_quit_requested; }     ///< Whether the window should close
         [[nodiscard]] VkExtent2D GetExtent() const;                             ///< Returns the window extent
@@ -93,8 +93,8 @@ namespace Liara::Plateform
 
         Core::Liara_SettingsManager& m_SettingsManager;
 
-        static uint8_t g_WindowCount;   ///< The number of windows created
-        static std::unordered_map<uint8_t, Liara_Window*> g_Windows;  ///< The map of windows
+        static uint8_t windowCount;   ///< The number of windows created
+        static std::unordered_map<uint8_t, Liara_Window*> windows;  ///< The map of windows
 
         SDL_Window* m_Window{};         ///< The SDL window
         const uint8_t m_ID;             ///< The unique ID of the window, for a hypothetical multiple windows support

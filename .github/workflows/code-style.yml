@@ -10,27 +10,62 @@ jobs:
   code-style:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [ Release ]
+        distro:
+          - name: archlinux
+          - version: "latest"
+          - container: archlinux:latest
+          - pkg_manager: pacman
+          - packages: "base-devel ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf vulkan-tools glm wget shaderc"
+          - update_cmd: "pacman -Syu --noconfirm"
+
+    container:
+      image: ${{ matrix.distro.container }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install dependencies for compile_commands.json
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libvulkan-dev \
-            libsdl2-dev \
-            libfmt-dev \
-            libglm-dev \
-            pkg-config
+          ${{ matrix.distro.update_cmd }} ${{ matrix.distro.packages }}
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '${{ env.CMAKE_VERSION }}'
+
+      - name: Verify CMake version
+        run: cmake --version
+
+      - name: Cache CMake build dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps
+          key: cmake-deps-${{ matrix.distro.name }}-${{ matrix.build_type }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            cmake-deps-${{ matrix.distro.name }}-${{ matrix.build_type }}-
+            cmake-deps-${{ matrix.distro.name }}-
 
       - name: Set up Clang
         uses: egor-tensin/setup-clang@v1
         with:
           version: latest
           platform: x64
+
+      - name: Configure CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
       - name: Get changed files
         id: changed-files

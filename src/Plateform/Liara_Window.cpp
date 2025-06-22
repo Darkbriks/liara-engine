@@ -18,8 +18,8 @@
 
 namespace Liara::Plateform
 {
-    uint8_t Liara_Window::g_WindowCount = 0;
-    std::unordered_map<uint8_t, Liara_Window*> Liara_Window::g_Windows;
+    uint8_t Liara_Window::windowCount = 0;
+    std::unordered_map<uint8_t, Liara_Window*> Liara_Window::windows;
 
     std::string WindowSettings::serialize() const {
         fmt::print("Serializing window settings: name={}, width={}, height={}, xPos={}, yPos={}, fullscreen={}, "
@@ -71,8 +71,8 @@ namespace Liara::Plateform
 
     Liara_Window::Liara_Window(Core::Liara_SettingsManager& settingsManager)
         : m_SettingsManager(settingsManager)
-        , m_ID(g_WindowCount++) {
-        g_Windows[m_ID] = this;
+        , m_ID(windowCount++) {
+        windows[m_ID] = this;
         WindowSettings settings;
         settings.name = std::string_view("Liara_Window " + std::to_string(m_ID));
         m_SettingsManager.RegisterSetting(
@@ -81,7 +81,7 @@ namespace Liara::Plateform
     }
 
     Liara_Window::~Liara_Window() {
-        g_Windows.erase(m_ID);
+        windows.erase(m_ID);
         SDL_DestroyWindow(m_Window);
         SDL_Quit();
     }

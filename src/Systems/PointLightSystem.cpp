@@ -4,7 +4,6 @@
 #include "Core/FrameInfo.h"
 #include "Core/Liara_GameObject.h"
 #include "Graphics/Liara_Pipeline.h"
-#include "Graphics/SpecConstant/SpecializationConstant.h"
 #include "Graphics/Ubo/GlobalUbo.h"
 
 #define GLM_FORCE_RADIANS

@@ -18,18 +18,18 @@ namespace Liara::Systems
 
         static void NewFrame();
 
-        void Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) override;
-        void Render(const Core::FrameInfo &frame_info) const override;
+        void Update(const Core::FrameInfo& frameInfo, Graphics::Ubo::GlobalUbo& ubo) override;
+        void Render(const Core::FrameInfo &frameInfo) const override;
 
         void AddElement(std::unique_ptr<Core::ImGuiElement> element) { m_Elements.push_back(std::move(element)); }
         void AddDemoElement() { m_Elements.push_back(std::make_unique<Core::ImGuiElements::Demo>()); }
         void AddExampleElement() { m_Elements.push_back(std::make_unique<Core::ImGuiElements::Example>()); }
 
     private:
-        static bool IMGUI_INITIALIZED;
+        static bool imguiInitialized;
 
-        Graphics::Liara_Device& lveDevice;
-        VkDescriptorPool descriptorPool{};
+        Graphics::Liara_Device& m_lveDevice;
+        VkDescriptorPool m_descriptorPool{};
 
         std::vector<std::unique_ptr<Core::ImGuiElement>> m_Elements;
     };

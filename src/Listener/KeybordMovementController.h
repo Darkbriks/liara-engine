@@ -39,7 +39,7 @@ namespace Liara::Listener
          * @param deltaTime The time since the last frame.
          * @param gameObject The game object to move.
          */
-        void moveInPlaneXZ(SDL_Window* window, float deltaTime, Core::Liara_GameObject& gameObject) const;
+        void moveInSpaceXYZ(SDL_Window* window, float deltaTime, Core::Liara_GameObject& gameObject) const;
 
         KeyMappings m_KeyMappings{};        ///< The key mappings for movement and looking
         float m_MoveSpeed = 3.0f;           ///< The movement speed

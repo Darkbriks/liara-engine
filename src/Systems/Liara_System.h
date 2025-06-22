@@ -13,7 +13,7 @@ namespace Liara::Systems
         Liara_System(const Liara_System&) = delete;
         Liara_System& operator=(const Liara_System&) = delete;
 
-        virtual void Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) = 0;
-        virtual void Render(const Core::FrameInfo& frame_info) const = 0;
+        virtual void Update(const Core::FrameInfo& frameInfo, Graphics::Ubo::GlobalUbo& ubo) = 0;
+        virtual void Render(const Core::FrameInfo& frameInfo) const = 0;
     };
 }

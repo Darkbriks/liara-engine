@@ -109,4 +109,6 @@ CheckOptions:
   readability-identifier-naming.VariableCase: 'camelBack'
   readability-identifier-naming.PrivateMemberPrefix: 'm_'
   readability-identifier-naming.ProtectedMemberPrefix: 'm_'
-  readability-identifier-naming.MinIdentifierLength: 2
+  readability-identifier-length.MinimumParameterNameLength: 2
+  readability-identifier-length.MinimumVariableNameLength: 2
+  readability-identifier-length.MinimumLoopCounterNameLength: 2

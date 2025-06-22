@@ -10,7 +10,6 @@
 #pragma once
 
 #include "../GraphicsConstants.h"
-#include <glm/glm.hpp>
 
 namespace Liara::Graphics::Ubo
 {
@@ -43,7 +42,7 @@ namespace Liara::Graphics::Ubo
         PointLight pointLights[Constants::MAX_LIGHTS];           ///< The point lights in the scene
         int numLights{0};                                                ///< The number of point lights in the scene
 
-        int32_t _padding[3]{0, 0, 0};
+        int32_t padding[3]{0, 0, 0};
     };
 
 #if defined(_MSC_VER)

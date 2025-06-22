@@ -17,11 +17,11 @@ namespace Liara::Systems
 
     ImGuiSystem::ImGuiSystem(const Plateform::Liara_Window& window,
                              Graphics::Liara_Device& device,
-                             const VkRenderPass renderPass,
+                             VkRenderPass renderPass,
                              const uint32_t imageCount)
         : lveDevice{device} {
         // set up a descriptor pool stored on this instance
-        const VkDescriptorPoolSize pool_sizes[] = {
+        const VkDescriptorPoolSize poolSizes[] = {
             {VK_DESCRIPTOR_TYPE_SAMPLER,                1000},
             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
             {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          1000},
@@ -34,13 +34,13 @@ namespace Liara::Systems
             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
             {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       1000}
         };
-        VkDescriptorPoolCreateInfo pool_info = {};
-        pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
-        pool_info.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(pool_sizes));
-        pool_info.pPoolSizes = pool_sizes;
-        if (vkCreateDescriptorPool(device.GetDevice(), &pool_info, nullptr, &descriptorPool) != VK_SUCCESS) {
+        VkDescriptorPoolCreateInfo poolInfo = {};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        poolInfo.maxSets = 1000 * IM_ARRAYSIZE(poolSizes);
+        poolInfo.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(poolSizes));
+        poolInfo.pPoolSizes = poolSizes;
+        if (vkCreateDescriptorPool(device.GetDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to set up descriptor pool for imgui");
         }
 
@@ -59,27 +59,27 @@ namespace Liara::Systems
         // Setup Platform/Renderer backends
         // Initialize imgui for vulkan
         ImGui_ImplSDL2_InitForVulkan(window.GetWindow());
-        ImGui_ImplVulkan_InitInfo init_info = {};
-        init_info.Instance = device.GetInstance();
-        init_info.PhysicalDevice = device.GetPhysicalDevice();
-        init_info.Device = device.GetDevice();
-        init_info.QueueFamily = device.GetGraphicsQueueFamily();
-        init_info.Queue = device.GetGraphicsQueue();
+        ImGui_ImplVulkan_InitInfo initInfo = {};
+        initInfo.Instance = device.GetInstance();
+        initInfo.PhysicalDevice = device.GetPhysicalDevice();
+        initInfo.Device = device.GetDevice();
+        initInfo.QueueFamily = device.GetGraphicsQueueFamily();
+        initInfo.Queue = device.GetGraphicsQueue();
 
         // pipeline cache is a potential future optimization, ignoring for now
-        init_info.PipelineCache = VK_NULL_HANDLE;
-        init_info.DescriptorPool = descriptorPool;
-        init_info.Allocator = VK_NULL_HANDLE;
-        init_info.MinImageCount = 2;
-        init_info.ImageCount = imageCount;
-        init_info.CheckVkResultFn = Core::CheckVkResult;
-        init_info.RenderPass = renderPass;
+        initInfo.PipelineCache = VK_NULL_HANDLE;
+        initInfo.DescriptorPool = descriptorPool;
+        initInfo.Allocator = VK_NULL_HANDLE;
+        initInfo.MinImageCount = 2;
+        initInfo.ImageCount = imageCount;
+        initInfo.CheckVkResultFn = Core::CheckVkResult;
+        initInfo.RenderPass = renderPass;
 
-        ImGui_ImplVulkan_Init(&init_info);
+        ImGui_ImplVulkan_Init(&initInfo);
 
         // upload fonts, this is done by recording and submitting a one time use command buffer
         // which can be done easily bye using some existing helper functions on the lve device object
-        const auto commandBuffer = device.BeginSingleTimeCommands();
+        auto *const commandBuffer = device.BeginSingleTimeCommands();
         ImGui_ImplVulkan_CreateFontsTexture();
         device.EndSingleTimeCommands(commandBuffer);
         // ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -101,14 +101,14 @@ namespace Liara::Systems
         ImGui::NewFrame();
     }
 
-    void ImGuiSystem::Update(const Core::FrameInfo& frame_info, Graphics::Ubo::GlobalUbo& ubo) {
+    void ImGuiSystem::Update(const Core::FrameInfo& frameInfo, Graphics::Ubo::GlobalUbo& ubo) {
         SDL_PumpEvents();
-        for (const auto& element : m_Elements) { element->Draw(frame_info, ubo); }
+        for (const auto& element : m_Elements) { element->Draw(frameInfo, ubo); }
     }
 
-    void ImGuiSystem::Render(const Core::FrameInfo& frame_info) const {
+    void ImGuiSystem::Render(const Core::FrameInfo& frameInfo) const {
         ImGui::Render();
         ImDrawData* drawdata = ImGui::GetDrawData();
-        ImGui_ImplVulkan_RenderDrawData(drawdata, frame_info.commandBuffer);
+        ImGui_ImplVulkan_RenderDrawData(drawdata, frameInfo.commandBuffer);
     }
 }
