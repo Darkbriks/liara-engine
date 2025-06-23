@@ -59,17 +59,18 @@ function(liara_embed_shaders shader_files target_name)
     set(HEADER_CONTENT "${HEADER_CONTENT}namespace Liara::EmbeddedShaders {\n")
 
     foreach(SHADER_FILE ${shader_files})
-        get_filename_component(SHADER_NAME ${SHADER_FILE} NAME_WE)
-        string(MAKE_C_IDENTIFIER ${SHADER_NAME} SHADER_VAR)
+        get_filename_component(SHADER_NAME ${SHADER_FILE} NAME)
+        string(REGEX REPLACE "\\.(vert|frag|comp)$" "" SHADER_NAME_NO_EXT ${SHADER_NAME})
+        string(MAKE_C_IDENTIFIER ${SHADER_NAME_NO_EXT} SHADER_VAR)
 
         file(READ ${SHADER_FILE} SHADER_CONTENT HEX)
         string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," SHADER_ARRAY ${SHADER_CONTENT})
         string(REGEX REPLACE ",$" "" SHADER_ARRAY ${SHADER_ARRAY})
 
-        set(EMBED_CONTENT "${EMBED_CONTENT}static const uint8_t ${SHADER_VAR}_data[] = {${SHADER_ARRAY}};\n")
-        set(EMBED_CONTENT "${EMBED_CONTENT}const std::span<const uint8_t> ${SHADER_VAR}{${SHADER_VAR}_data, sizeof(${SHADER_VAR}_data)};\n\n")
+        set(EMBED_CONTENT "${EMBED_CONTENT}static const uint8_t ${SHADER_VAR}_data[] = {${SHADER_ARRAY}}\;\n")
+        set(EMBED_CONTENT "${EMBED_CONTENT}const std::span<const uint8_t> ${SHADER_VAR}{${SHADER_VAR}_data, sizeof(${SHADER_VAR}_data)}\;\n\n")
 
-        set(HEADER_CONTENT "${HEADER_CONTENT}    extern const std::span<const uint8_t> ${SHADER_VAR};\n")
+        set(HEADER_CONTENT "${HEADER_CONTENT}    extern const std::span<const uint8_t> ${SHADER_VAR}\;\n")
     endforeach()
 
     set(HEADER_CONTENT "${HEADER_CONTENT}}\n")
