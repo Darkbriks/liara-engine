@@ -51,7 +51,11 @@ namespace Liara::Graphics
          * @brief Optmized version that returns a span instead of a vector,
          * to avoid unnecessary copies.
          */
+#ifdef LIARA_EMBED_SHADERS
         [[nodiscard]] static SpanResult LoadShaderSpan(std::string_view shaderName);
+#else
+        [[nodiscard]] static SpanResult LoadShaderSpan(std::string_view);
+#endif
 
     private:
 #ifdef LIARA_EMBED_SHADERS

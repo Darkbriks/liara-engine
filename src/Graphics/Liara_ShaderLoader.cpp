@@ -21,10 +21,11 @@ namespace Liara::Graphics
         return LoadShaderFromFile(shaderPath);
     }
 
-    ShaderLoader::SpanResult ShaderLoader::LoadShaderSpan(const std::string_view shaderName) {
 #ifdef LIARA_EMBED_SHADERS
+    ShaderLoader::SpanResult ShaderLoader::LoadShaderSpan(const std::string_view shaderName) {
         return LoadEmbeddedShader(shaderName);
 #else
+    ShaderLoader::SpanResult ShaderLoader::LoadShaderSpan(const std::string_view) {
         return Core::Err<ShaderLoadError, ShaderSpan>(ShaderLoadError::EmbeddedNotAvailable);
 #endif
     }
