@@ -36,8 +36,8 @@ configure_file(
 )
 
 add_subdirectory(external)
-add_subdirectory(src)
 add_subdirectory(shaders)
+add_subdirectory(src)
 
 if(LIARA_BUILD_APPS)
     add_subdirectory(app)

@@ -25,6 +25,5 @@ add_custom_target(LiaraShadersFiles
 add_dependencies(LiaraShaders LiaraShadersFiles)
 
 if(LIARA_EMBED_SHADERS)
-    liara_embed_shaders("${COMPILED_SHADERS}" LiaraShadersEmbedded)
-    add_dependencies(LiaraShadersEmbedded LiaraShadersFiles)
+    liara_embed_shaders("${COMPILED_SHADERS}")
 endif()

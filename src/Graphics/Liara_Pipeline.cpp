@@ -5,8 +5,6 @@
 #include <vulkan/vulkan_core.h>
 
 #include <cassert>
-#include <cstddef>
-#include <cstdint>
 #include <fstream>
 #include <ios>
 #include <stdexcept>
@@ -14,6 +12,7 @@
 #include <vector>
 
 #include "Liara_Model.h"
+#include "Liara_ShaderLoader.h"
 #include "SpecConstant/SpecializationConstant.h"
 
 #ifndef ENGINE_DIR
@@ -148,8 +147,30 @@ namespace Liara::Graphics
         assert(configInfo.renderPass != VK_NULL_HANDLE
                && "Cannot create graphics pipeline:: no renderPass provided in configInfo");
 
-        const auto vertCode = ReadFile(vertFilepath);
-        const auto fragCode = ReadFile(fragFilepath);
+#ifdef LIARA_EMBED_SHADERS
+        auto vertResult = ShaderLoader::LoadShaderSpan(std::filesystem::path(vertFilepath).filename().string());
+        auto fragResult = ShaderLoader::LoadShaderSpan(std::filesystem::path(fragFilepath).filename().string());
+
+        if (!vertResult) { throw std::runtime_error("Failed to load vertex shader: " + ToString(vertResult.Error())); }
+        if (!fragResult) {
+            throw std::runtime_error("Failed to load fragment shader: " + ToString(fragResult.Error()));
+        }
+
+        const auto vertCode = ConvertToCharVector(std::vector(vertResult->begin(), vertResult->end()));
+        const auto fragCode = ConvertToCharVector(std::vector(fragResult->begin(), fragResult->end()));
+#else
+        auto vertResult = ShaderLoader::LoadShader(std::filesystem::path(vertFilepath).filename().string());
+        auto fragResult = ShaderLoader::LoadShader(std::filesystem::path(fragFilepath).filename().string());
+
+        if (!vertResult) { throw std::runtime_error("Failed to load vertex shader: " + ToString(vertResult.Error())); }
+        if (!fragResult) {
+            throw std::runtime_error("Failed to load fragment shader: " + ToString(fragResult.Error()));
+        }
+
+        const auto vertCode = ConvertToCharVector(vertResult.Value());
+        const auto fragCode = ConvertToCharVector(fragResult.Value());
+#endif
+
 
         CreateShaderModule(vertCode, &m_VertShaderModule);
         CreateShaderModule(fragCode, &m_FragShaderModule);

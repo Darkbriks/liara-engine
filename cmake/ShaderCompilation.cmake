@@ -50,35 +50,26 @@ function(liara_compile_shader shader_source output_dir compiled_shader_var)
     set(${compiled_shader_var} ${COMPILED_SHADER} PARENT_SCOPE)
 endfunction()
 
-function(liara_embed_shaders shader_files target_name)
+function(liara_embed_shaders shader_files)
     set(EMBED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/embedded_shaders.cpp")
     set(EMBED_HEADER "${CMAKE_CURRENT_BINARY_DIR}/embedded_shaders.h")
 
-    set(EMBED_CONTENT "#include \"embedded_shaders.h\"\n")
-    set(HEADER_CONTENT "#pragma once\n#include <cstdint>\n#include <span>\n#include <string_view>\n\n")
-    set(HEADER_CONTENT "${HEADER_CONTENT}namespace Liara::EmbeddedShaders {\n")
+    set(HEADER_CONTENT "#pragma once\n#include <cstdint>\n#include <span>\n\n")
+    set(HEADER_CONTENT "${HEADER_CONTENT}namespace Liara::EmbeddedShaders {\n\n")
 
     foreach(SHADER_FILE ${shader_files})
         get_filename_component(SHADER_NAME ${SHADER_FILE} NAME)
-        string(REGEX REPLACE "\\.(vert|frag|comp)$" "" SHADER_NAME_NO_EXT ${SHADER_NAME})
-        string(MAKE_C_IDENTIFIER ${SHADER_NAME_NO_EXT} SHADER_VAR)
+        string(REPLACE "." "_" SHADER_VAR ${SHADER_NAME})
 
         file(READ ${SHADER_FILE} SHADER_CONTENT HEX)
         string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," SHADER_ARRAY ${SHADER_CONTENT})
         string(REGEX REPLACE ",$" "" SHADER_ARRAY ${SHADER_ARRAY})
 
-        set(EMBED_CONTENT "${EMBED_CONTENT}static const uint8_t ${SHADER_VAR}_data[] = {${SHADER_ARRAY}}\;\n")
-        set(EMBED_CONTENT "${EMBED_CONTENT}const std::span<const uint8_t> ${SHADER_VAR}{${SHADER_VAR}_data, sizeof(${SHADER_VAR}_data)}\;\n\n")
-
-        set(HEADER_CONTENT "${HEADER_CONTENT}    extern const std::span<const uint8_t> ${SHADER_VAR}\;\n")
+        set(HEADER_CONTENT "${HEADER_CONTENT}    inline const uint8_t ${SHADER_VAR}_data[] = {${SHADER_ARRAY}}\;\n")
+        set(HEADER_CONTENT "${HEADER_CONTENT}    inline const std::span<const uint8_t> ${SHADER_VAR}{${SHADER_VAR}_data, sizeof(${SHADER_VAR}_data)}\;\n\n")
     endforeach()
 
     set(HEADER_CONTENT "${HEADER_CONTENT}}\n")
 
     file(WRITE ${EMBED_HEADER} ${HEADER_CONTENT})
-    file(WRITE ${EMBED_SOURCE} ${EMBED_CONTENT})
-
-    add_library(${target_name} STATIC ${EMBED_SOURCE})
-    target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-    liara_set_compiler_settings(${target_name})
 endfunction()
