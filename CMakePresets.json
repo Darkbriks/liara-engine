@@ -107,8 +107,7 @@
     {
       "name": "windows-debug",
       "configurePreset": "windows-debug",
-      "jobs": 0,
-      "targets": ["FirstApp", "LiaraShaders"]
+      "jobs": 0
     },
     {
       "name": "windows-release",
@@ -125,12 +124,6 @@
       "name": "linux-release",
       "configurePreset": "linux-release",
       "jobs": 0
-    },
-    {
-      "name": "dev",
-      "configurePreset": "dev",
-      "jobs": 0,
-      "targets": ["FirstApp"]
     }
   ],
   "testPresets": [
