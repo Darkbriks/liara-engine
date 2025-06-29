@@ -98,7 +98,7 @@ jobs:
           cd build
           cd ${{ matrix.build_preset }}
           dir app /b
-          if exist "app\Demo.exe" (
+          if exist "app\Release\Demo.exe" (
             echo "Demo.exe found successfully"
           ) else (
             echo "ERROR: Demo.exe not found!"
@@ -112,9 +112,9 @@ jobs:
         with:
           name: liara-engine-windows-${{ matrix.build_preset }}-${{ github.ref_name }}
           path: |
-            build/${{ matrix.build_preset }}/app/Demo.exe
-            build/${{ matrix.build_preset }}/app/*.dll
-            build/${{ matrix.build_preset }}/app/assets/**
+            build/${{ matrix.build_preset }}/Release/app/Demo.exe
+            build/${{ matrix.build_preset }}/Release/app/*.dll
+            build/${{ matrix.build_preset }}/Release/app/assets/**
           retention-days: 30
 
       - name: Upload build logs on failure
