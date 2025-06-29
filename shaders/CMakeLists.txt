@@ -22,8 +22,21 @@ add_custom_target(LiaraShadersFiles
         DEPENDS ${COMPILED_SHADERS}
         COMMENT "Shader compilation complete"
 )
+
 add_dependencies(LiaraShaders LiaraShadersFiles)
 
 if(LIARA_EMBED_SHADERS)
-    liara_embed_shaders("${COMPILED_SHADERS}")
+    liara_create_embed_target("${COMPILED_SHADERS}" LiaraShadersEmbedding)
+
+    add_dependencies(LiaraShaders LiaraShadersEmbedding)
+    add_dependencies(LiaraShadersEmbedding LiaraShadersFiles)
+
+    get_target_property(EMBED_HEADER_PATH LiaraShadersEmbedding EMBED_HEADER_PATH)
+    get_target_property(EMBED_SOURCE_PATH LiaraShadersEmbedding EMBED_SOURCE_PATH)
+
+    set(LIARA_EMBEDDED_SHADER_HEADER "${EMBED_HEADER_PATH}" CACHE INTERNAL "Path to embedded shader header")
+    set(LIARA_EMBEDDED_SHADER_SOURCE "${EMBED_SOURCE_PATH}" CACHE INTERNAL "Path to embedded shader source")
+
+else()
+    message(STATUS "Shader embedding disabled")
 endif()

@@ -50,26 +50,36 @@ function(liara_compile_shader shader_source output_dir compiled_shader_var)
     set(${compiled_shader_var} ${COMPILED_SHADER} PARENT_SCOPE)
 endfunction()
 
-function(liara_embed_shaders shader_files)
+function(liara_create_embed_target shader_files target_name)
     set(EMBED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/embedded_shaders.cpp")
     set(EMBED_HEADER "${CMAKE_CURRENT_BINARY_DIR}/embedded_shaders.h")
 
-    set(HEADER_CONTENT "#pragma once\n#include <cstdint>\n#include <span>\n\n")
-    set(HEADER_CONTENT "${HEADER_CONTENT}namespace Liara::EmbeddedShaders {\n\n")
+    get_filename_component(EMBED_SOURCE "${EMBED_SOURCE}" ABSOLUTE)
+    get_filename_component(EMBED_HEADER "${EMBED_HEADER}" ABSOLUTE)
 
-    foreach(SHADER_FILE ${shader_files})
-        get_filename_component(SHADER_NAME ${SHADER_FILE} NAME)
-        string(REPLACE "." "_" SHADER_VAR ${SHADER_NAME})
+    add_custom_command(
+            OUTPUT "${EMBED_HEADER}" "${EMBED_SOURCE}"
+            COMMAND ${CMAKE_COMMAND}
+            "-DSHADER_FILES=${shader_files}"
+            "-DEMBED_HEADER=${EMBED_HEADER}"
+            "-DEMBED_SOURCE=${EMBED_SOURCE}"
+            -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/EmbedShaders.cmake"
+            DEPENDS ${shader_files}
+            COMMENT "Embedding shaders into C++ code"
+            VERBATIM
+    )
 
-        file(READ ${SHADER_FILE} SHADER_CONTENT HEX)
-        string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," SHADER_ARRAY ${SHADER_CONTENT})
-        string(REGEX REPLACE ",$" "" SHADER_ARRAY ${SHADER_ARRAY})
+    add_custom_target(${target_name}
+            DEPENDS "${EMBED_HEADER}" "${EMBED_SOURCE}"
+            COMMENT "Shader embedding complete"
+    )
 
-        set(HEADER_CONTENT "${HEADER_CONTENT}    inline const uint8_t ${SHADER_VAR}_data[] = {${SHADER_ARRAY}}\;\n")
-        set(HEADER_CONTENT "${HEADER_CONTENT}    inline const std::span<const uint8_t> ${SHADER_VAR}{${SHADER_VAR}_data, sizeof(${SHADER_VAR}_data)}\;\n\n")
-    endforeach()
+    set_target_properties(${target_name} PROPERTIES
+            EMBED_HEADER_PATH "${EMBED_HEADER}"
+            EMBED_SOURCE_PATH "${EMBED_SOURCE}"
+    )
 
-    set(HEADER_CONTENT "${HEADER_CONTENT}}\n")
-
-    file(WRITE ${EMBED_HEADER} ${HEADER_CONTENT})
+    message(STATUS "Embed target '${target_name}' configured:")
+    message(STATUS "  Header: ${EMBED_HEADER}")
+    message(STATUS "  Source: ${EMBED_SOURCE}")
 endfunction()

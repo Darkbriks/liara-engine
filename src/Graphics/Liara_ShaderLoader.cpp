@@ -24,11 +24,12 @@ namespace Liara::Graphics
 #ifdef LIARA_EMBED_SHADERS
     ShaderLoader::SpanResult ShaderLoader::LoadShaderSpan(const std::string_view shaderName) {
         return LoadEmbeddedShader(shaderName);
+    }
 #else
     ShaderLoader::SpanResult ShaderLoader::LoadShaderSpan(const std::string_view) {
         return Core::Err<ShaderLoadError, ShaderSpan>(ShaderLoadError::EmbeddedNotAvailable);
-#endif
     }
+#endif
 
 #ifdef LIARA_EMBED_SHADERS
     ShaderLoader::SpanResult ShaderLoader::LoadEmbeddedShader(const std::string_view shaderName) {
@@ -36,24 +37,24 @@ namespace Liara::Graphics
 
         // TODO: Generate this list automatically from embedded shaders
         if (identifier == "SimpleShader_vert_spv") {
-            const auto& data = EmbeddedShaders::SimpleShader_vert_spv;
             return Core::Ok<ShaderSpan, ShaderLoadError>(
-                ShaderSpan(reinterpret_cast<const uint32_t*>(data.data()), data.size() / sizeof(uint32_t)));
+                ShaderSpan(reinterpret_cast<const uint32_t*>(EmbeddedShaders::SimpleShader_vert_spv_data),
+                           EmbeddedShaders::SimpleShader_vert_spv_size / sizeof(uint32_t)));
         }
         if (identifier == "SimpleShader_frag_spv") {
-            const auto& data = EmbeddedShaders::SimpleShader_frag_spv;
             return Core::Ok<ShaderSpan, ShaderLoadError>(
-                ShaderSpan(reinterpret_cast<const uint32_t*>(data.data()), data.size() / sizeof(uint32_t)));
+                ShaderSpan(reinterpret_cast<const uint32_t*>(EmbeddedShaders::SimpleShader_frag_spv_data),
+                           EmbeddedShaders::SimpleShader_frag_spv_size / sizeof(uint32_t)));
         }
         if (identifier == "PointLight_vert_spv") {
-            const auto& data = EmbeddedShaders::PointLight_vert_spv;
             return Core::Ok<ShaderSpan, ShaderLoadError>(
-                ShaderSpan(reinterpret_cast<const uint32_t*>(data.data()), data.size() / sizeof(uint32_t)));
+                ShaderSpan(reinterpret_cast<const uint32_t*>(EmbeddedShaders::PointLight_vert_spv_data),
+                           EmbeddedShaders::PointLight_vert_spv_size / sizeof(uint32_t)));
         }
         if (identifier == "PointLight_frag_spv") {
-            const auto& data = EmbeddedShaders::PointLight_frag_spv;
             return Core::Ok<ShaderSpan, ShaderLoadError>(
-                ShaderSpan(reinterpret_cast<const uint32_t*>(data.data()), data.size() / sizeof(uint32_t)));
+                ShaderSpan(reinterpret_cast<const uint32_t*>(EmbeddedShaders::PointLight_frag_spv_data),
+                           EmbeddedShaders::PointLight_frag_spv_size / sizeof(uint32_t)));
         }
 
         return Core::Err<ShaderLoadError, ShaderSpan>(ShaderLoadError::FileNotFound);

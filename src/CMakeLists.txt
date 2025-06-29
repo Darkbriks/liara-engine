@@ -89,3 +89,22 @@ elseif(UNIX)
 endif()
 
 target_compile_definitions(LiaraEngine PRIVATE $<$<BOOL:${LIARA_EMBED_SHADERS}>:LIARA_EMBED_SHADERS>)
+
+if(LIARA_EMBED_SHADERS)
+    if(LIARA_EMBEDDED_SHADER_HEADER AND LIARA_EMBEDDED_SHADER_SOURCE)
+        target_sources(LiaraEngine PRIVATE
+                ${LIARA_EMBEDDED_SHADER_SOURCE}
+        )
+
+        get_filename_component(EMBED_INCLUDE_DIR "${LIARA_EMBEDDED_SHADER_HEADER}" DIRECTORY)
+        target_include_directories(LiaraEngine PRIVATE
+                ${EMBED_INCLUDE_DIR}
+        )
+
+        add_dependencies(LiaraEngine LiaraShaders)
+
+        message(STATUS "LiaraEngine: Embedded shaders integration complete")
+    else()
+        message(WARNING "LiaraEngine: Embedded shader paths not found")
+    endif()
+endif()
