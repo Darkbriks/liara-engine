@@ -95,10 +95,20 @@ jobs:
       - name: Test executable
         shell: cmd
         run: |
+          set "target_dir="
+          if "${{ matrix.build_preset }}"=="windows-release" (
+            set "target_dir=Release"
+          ) else if "${{ matrix.build_preset }}"=="windows-debug" (
+            set "target_dir=Debug"
+          ) else (
+            echo "ERROR: Unknown build preset!"
+            exit /b 1
+          )
+          
           cd build
           cd ${{ matrix.build_preset }}
-          dir app /b
-          if exist "app\Release\Demo.exe" (
+          dir app\%target_dir% /b
+          if exist "app\%target_dir%\Demo.exe" (
             echo "Demo.exe found successfully"
           ) else (
             echo "ERROR: Demo.exe not found!"
