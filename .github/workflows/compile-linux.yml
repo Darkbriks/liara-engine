@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: [Debug, Release]
+        build_preset: [linux-debug, linux-release]
         distro:
           - name: ubuntu
             version: "22.04"
@@ -49,8 +49,8 @@ jobs:
       image: ${{ matrix.distro.container }}
 
     outputs:
-      ubuntu-release-built: ${{ matrix.distro.name == 'ubuntu' && matrix.build_type == 'Release' }}
-      artifact-name: liara-engine-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-${{ github.ref_name }}
+      ubuntu-release-built: ${{ matrix.distro.name == 'ubuntu' && matrix.build_preset == 'linux-release' }}
+      artifact-name: liara-engine-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_preset }}-${{ github.ref_name }}
 
     steps:
       - name: Install Git
@@ -171,32 +171,22 @@ jobs:
         with:
           path: |
             build/_deps
-          key: cmake-deps-${{ matrix.distro.name }}-${{ matrix.build_type }}-${{ hashFiles('CMakeLists.txt') }}
+          key: cmake-deps-${{ matrix.distro.name }}-${{ matrix.build_preset }}-${{ hashFiles('CMakeLists.txt') }}
           restore-keys: |
-            cmake-deps-${{ matrix.distro.name }}-${{ matrix.build_type }}-
+            cmake-deps-${{ matrix.distro.name }}-${{ matrix.build_preset }}-
             cmake-deps-${{ matrix.distro.name }}-
 
       - name: Configure CMake
         run: |
-          mkdir -p build
-          cd build
-          cmake .. \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          cmake --preset=${{ matrix.build_preset }}
 
       - name: Build project
         run: |
-          cd build
-          ninja -j$(nproc)
-
-      - name: Build shaders
-        run: |
-          cd build
-          ninja LiaraShaders
+          cmake --build --preset=${{ matrix.build_preset }}
 
       - name: Test executable
         run: |
-          cd build/app
+          cd build/${{ matrix.build_preset }}/app
           if [ -f "Demo" ]; then
             echo "Demo executable found successfully"
             file Demo
@@ -208,55 +198,56 @@ jobs:
           fi
 
       - name: Prepare build artifacts
-        if: matrix.build_type == 'Release' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
+        if: matrix.build_preset == 'linux-release' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
         run: |
-          cd build/app
+          cd build/${{ matrix.build_preset }}/app
           mkdir -p package
           cp Demo package/
           
-          if [ -d "../../assets" ]; then
-            cp -r ../../assets package/
+          if [ -d "assets" ]; then
+            cp -r assets package/
+          else
+            echo "No assets directory found, skipping copy"
           fi
           
-          if [ -d "../shaders" ]; then
-            find ../shaders -name "*.spv" -exec cp {} package/ \; 2>/dev/null || true
+          if [ -d "shaders" ]; then
+            find shaders -name "*.spv" -exec cp {} package/ \; 2>/dev/null || true
             if ls package/*.spv >/dev/null 2>&1; then
               mkdir -p package/shaders
               mv package/*.spv package/shaders/
             fi
           fi
           
-          tar -czf ../../${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-x86_64.tar.gz -C package .
+          tar -czf ../../${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_preset }}-x86_64.tar.gz -C package .
 
       - name: Upload portable archive
-        if: matrix.build_type == 'Release' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
+        if: matrix.build_preset == 'linux-release' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-${{ github.ref_name }}
+          name: ${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_preset }}-${{ github.ref_name }}
           path: |
-            ${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-x86_64.tar.gz
+            ${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_preset }}-x86_64.tar.gz
           retention-days: 30
 
       - name: Upload Ubuntu Release build artifacts for AppImage
-        if: matrix.distro.name == 'ubuntu' && matrix.build_type == 'Release' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
+        if: matrix.distro.name == 'ubuntu' && matrix.build_preset == 'linux-release' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
         uses: actions/upload-artifact@v4
         with:
           name: ubuntu-release-build-${{ github.ref_name }}
           path: |
-            build/app/Demo
-            build/shaders/*.spv
-            assets/
+            build/${{ matrix.build_preset }}/app/Demo
+            build/${{ matrix.build_preset }}/app/assets
           retention-days: 1
 
       - name: Upload build logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: build-logs-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_type }}-${{ github.run_number }}
+          name: build-logs-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_preset }}-${{ github.run_number }}
           path: |
-            build/CMakeFiles/CMakeOutput.log
-            build/CMakeFiles/CMakeError.log
-            build/**/*.log
+            build/${{ matrix.build_preset }}/CMakeCache.txt
+            build/${{ matrix.build_preset }}/CMakeFiles/CMakeError.log
+            build/${{ matrix.build_preset }}/CMakeFiles/CMakeOutput.log
           retention-days: 7
 
   # Job séparé pour créer l'AppImage
@@ -301,7 +292,7 @@ jobs:
           mkdir -p AppDir/usr/share/pixmaps
           mkdir -p AppDir/usr/share/doc/${{ github.event.repository.name }}
           
-          DEMO_PATH="build-artifacts/build/app/Demo"
+          DEMO_PATH="build-artifacts/build/${{ matrix.build_preset }}/app/Demo"
           if [ ! -f "$DEMO_PATH" ]; then
             echo "ERROR: Demo executable not found at expected path: $DEMO_PATH"
             echo "Available files:"
@@ -316,23 +307,12 @@ jobs:
           echo "Testing Demo executable..."
           ldd AppDir/usr/bin/Demo || echo "Could not analyze dependencies"
           
-          if [ -d "build-artifacts/assets" ]; then
+          if [ -d "build-artifacts/build/${{ matrix.build_preset }}/app/assets" ]; then
             mkdir -p AppDir/usr/share/${{ github.event.repository.name }}/assets
-            cp -r build-artifacts/assets AppDir/usr/share/${{ github.event.repository.name }}/assets/
+            cp -r build-artifacts/build/${{ matrix.build_preset }}/app/assets AppDir/usr/share/${{ github.event.repository.name }}/assets/
             echo "Copied assets directory"
           else
-            echo "No assets directory found"
-          fi
-          
-          SHADER_DIR="AppDir/usr/share/${{ github.event.repository.name }}/shaders"
-          mkdir -p "$SHADER_DIR"
-          
-          if [ -d "build-artifacts/build/shaders" ]; then
-            find build-artifacts/build/shaders -name "*.spv" -type f -exec cp {} "$SHADER_DIR/" \;
-            SHADER_COUNT=$(find build-artifacts/build/shaders -name "*.spv" -type f | wc -l)
-            echo "Copied $SHADER_COUNT shader files"
-          else
-            echo "Warning: No shaders directory found at build-artifacts/build/shaders"
+            echo "Error: No assets directory found at build-artifacts/build/${{ matrix.build_preset }}/app/assets"
           fi
 
       - name: Create desktop file
