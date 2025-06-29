@@ -97,11 +97,12 @@ jobs:
         run: |
           cd build
           cd ${{ matrix.build_preset }}
-          cd app
-          if exist "Demo.exe" (
+          dir app /b
+          if exist "app\Demo.exe" (
             echo "Demo.exe found successfully"
           ) else (
             echo "ERROR: Demo.exe not found!"
+            dir app /s
             exit /b 1
           )
 
