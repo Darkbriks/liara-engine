@@ -1,6 +1,7 @@
 #include "Liara_App.h"
 
 #include "Core/ApplicationInfo.h"
+#include "Core/Liara_SignalHandler.h"
 #include "Graphics/Descriptors/Liara_Descriptor.h"
 #include "Graphics/GraphicsConstants.h"
 #include "Graphics/Liara_Buffer.h"
@@ -13,7 +14,6 @@
 
 #include <vulkan/vulkan_core.h>
 
-#include <cstddef>
 #include <memory>
 #include <SDL2/SDL_events.h>
 #include <stdexcept>
@@ -23,8 +23,6 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-
-#include "Graphics/SpecConstant/SpecializationConstant.h"
 
 #include <backends/imgui_impl_sdl2.h>
 #include <chrono>
@@ -62,7 +60,7 @@ namespace Liara::Core
 
         auto currentTime = std::chrono::high_resolution_clock::now();
 
-        while (!m_Window.ShouldClose()) {
+        while (!m_Window.ShouldClose() && !Liara_SignalHandler::ShouldExit()) {
             frameStats.Reset();
             auto newTime = std::chrono::high_resolution_clock::now();
             const float frameTime = std::chrono::duration<float>(newTime - currentTime).count();
@@ -99,11 +97,18 @@ namespace Liara::Core
     }
 
     void Liara_App::Init() {
+        InitSignalHandling();
         InitUboBuffers();
         InitDescriptorSets();
         InitSystems();
         InitCamera();
         LateInit();
+    }
+
+    void Liara_App::InitSignalHandling() {
+        if (!Liara_SignalHandler::Initialize([this]() {})) {
+            fmt::print(stderr, "Warning: Failed to initialize signal handling\n");
+        }
     }
 
     void Liara_App::InitUboBuffers() {
@@ -149,7 +154,10 @@ namespace Liara::Core
         m_Camera.SetPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 100.0f);
     }
 
-    void Liara_App::Close() { vkDeviceWaitIdle(m_Device.GetDevice()); }
+    void Liara_App::Close() {
+        Liara_SignalHandler::Cleanup();
+        vkDeviceWaitIdle(m_Device.GetDevice());
+    }
 
     void Liara_App::MasterProcessInput(const float frameTime) {
         SDL_Event event;

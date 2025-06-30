@@ -6,6 +6,7 @@ target_sources(LiaraEngine
         Core/Liara_App.cpp
         Core/Liara_Camera.cpp
         Core/Liara_SettingsManager.cpp
+        Core/Liara_SignalHandler.cpp
         Core/Liara_Utils.h
 
         Graphics/Liara_Device.cpp
