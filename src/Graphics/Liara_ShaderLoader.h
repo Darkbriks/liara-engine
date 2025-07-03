@@ -57,6 +57,27 @@ namespace Liara::Graphics
         [[nodiscard]] static SpanResult LoadShaderSpan(std::string_view);
 #endif
 
+        /**
+         * @brief Check if a shader is available in embedded resources
+         * @param shaderName Name of the shader (e.g., "SimpleShader.vert.spv")
+         * @return true if shader is embedded, false otherwise
+         */
+#ifdef LIARA_EMBED_SHADERS
+        [[nodiscard]] static bool HasEmbeddedShader(std::string_view shaderName) noexcept;
+#else
+        [[nodiscard]] static constexpr bool HasEmbeddedShader(std::string_view) noexcept { return false; }
+#endif
+
+        /**
+         * @brief Get the number of embedded shaders
+         * @return Number of available embedded shaders
+         */
+#ifdef LIARA_EMBED_SHADERS
+        [[nodiscard]] static constexpr size_t GetEmbeddedShaderCount() noexcept;
+#else
+        [[nodiscard]] static constexpr size_t GetEmbeddedShaderCount() noexcept { return 0; }
+#endif
+
     private:
 #ifdef LIARA_EMBED_SHADERS
         [[nodiscard]] static SpanResult LoadEmbeddedShader(std::string_view shaderName);
