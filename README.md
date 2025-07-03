@@ -60,18 +60,27 @@ git clone --recursive https://github.com/Darkbriks/liara-engine.git
 cd liara-engine
 
 # Configure and build
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-cmake --build . --parallel
+cmake --preset=linux-release # You can also use linux-debug for debug build
+cmake --build --preset=linux-release
 
 # Run demo
-cd app/ # It's important to run the demo from the app directory to ensure correct resource paths
+cd build/linux-release/app/ # It's important to run the demo from the app directory to ensure correct resource paths
 ./Demo
 ```
 
 Windows :
 ```bash
-# TODO: Add Windows build instructions
+# Clone with submodules
+git clone --recursive https://github.com/Darkbriks/liara-engine.git
+cd liara-engine
+
+# Configure and build
+cmake --preset=windows-release # You can also use windows-debug for debug build
+cmake --build --preset=windows-release
+
+# Run demo
+cd build/windows-release/app/Release/ # It's important to run the demo from the app directory to ensure correct resource paths
+Demo.exe
 ```
 
 These commands will compile the engine and run the demo application. The demo showcases some capabilities of the engine.
@@ -246,6 +255,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-<div align="center">
+<div style="text-align: center; margin-top: 20px;">
 <h1>Built with ❤️, epic soundtracks 🎵 and purr-fessional supervision 🐱</h1>
 </div>
