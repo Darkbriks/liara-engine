@@ -13,13 +13,11 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/trigonometric.hpp>
 
-#include <cstddef>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "fmt/core.h"
-#include "glm/ext/matrix_float4x4.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -58,7 +56,7 @@ void DemoApp::InitSystems() {
 
 void DemoApp::LoadGameObjects() {
     const std::shared_ptr model =
-        Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/viking_room.obj", 1);
+        Liara::Graphics::Liara_Model::CreateFromFile(m_Device, "assets/models/viking_room.obj", 1);
     auto vikingRoom = Liara::Core::Liara_GameObject::CreateGameObject();
     vikingRoom.model = model;
     vikingRoom.transform.position = {0.F, .75F, 0.F};

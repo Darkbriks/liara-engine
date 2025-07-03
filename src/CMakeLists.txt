@@ -16,6 +16,7 @@ target_sources(LiaraEngine
         Graphics/Liara_Texture.cpp
         Graphics/Liara_ShaderLoader.cpp
         Graphics/Liara_SwapChain.cpp
+        Graphics/PrimitiveGenerator.cpp
 
         Graphics/Descriptors/Liara_Descriptor.cpp
 
