@@ -78,6 +78,12 @@ namespace Liara::Graphics
         return CreateFromData(device, meshData.GetVertices(), meshData.GetIndices());
     }
 
+    std::unique_ptr<Liara_Model>
+    Liara_Model::Primitives::CreateCylinder(Liara_Device& device, const float height, const uint32_t segments) {
+        const auto meshData = PrimitiveGenerator::GenerateCylinder(height, segments);
+        return CreateFromData(device, meshData.GetVertices(), meshData.GetIndices());
+    }
+
     // === CONSTRUCTOR ===
 
     Liara_Model::Liara_Model(Liara_Device& device,

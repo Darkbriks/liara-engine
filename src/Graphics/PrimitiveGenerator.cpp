@@ -187,4 +187,106 @@ namespace Liara::Graphics::PrimitiveGenerator
             .indices = {0, 1, 2, 2, 3, 0}
         };
     }
+
+    MeshData GenerateCylinder(const float height, uint32_t segments) {
+        segments = std::clamp(segments, 3u, 128u);
+        const float halfHeight = height * 0.5f;
+
+        MeshData meshData;
+
+        const size_t vertexCount = (segments * 4) + 2;  // sides(2*segments) + caps(2*segments) + centers(2)
+        const size_t indexCount = segments * 12;        // sides(6*segments) + caps(6*segments)
+
+        meshData.vertices.reserve(vertexCount);
+        meshData.indices.reserve(indexCount);
+
+        for (uint32_t i = 0; i <= segments; ++i) {
+            const float angle = 2.0f * glm::pi<float>() * static_cast<float>(i) / static_cast<float>(segments);
+            const float x = std::cos(angle);
+            const float z = std::sin(angle);
+            const float u = static_cast<float>(i) / static_cast<float>(segments);
+
+            meshData.vertices.push_back({
+                .position = {x, -halfHeight, z},
+                .color = {0.7f, 0.5f, 0.3f},
+                .normal = {x, 0.0f, z},
+                .uv = {u, 0.0f},
+                .specularExponent = 16
+            });
+
+            meshData.vertices.push_back({
+                .position = {x, halfHeight, z},
+                .color = {0.7f, 0.5f, 0.3f},
+                .normal = {x, 0.0f, z},
+                .uv = {u, 1.0f},
+                .specularExponent = 16
+            });
+        }
+
+        for (uint32_t i = 0; i < segments; ++i) {
+            const uint32_t bottom1 = i * 2;
+            const uint32_t top1 = bottom1 + 1;
+            const uint32_t bottom2 = (i + 1) * 2;
+            const uint32_t top2 = bottom2 + 1;
+
+            meshData.indices.insert(meshData.indices.end(), {bottom1, bottom2, top1});
+            meshData.indices.insert(meshData.indices.end(), {top1, bottom2, top2});
+        }
+
+        const auto sideVertexCount = static_cast<uint32_t>(meshData.vertices.size());
+
+        const uint32_t bottomCenterIdx = sideVertexCount;
+        meshData.vertices.push_back({
+            .position = {0.0f, -halfHeight, 0.0f},
+            .color = {0.8f, 0.6f, 0.4f},
+            .normal = {0.0f, -1.0f, 0.0f},
+            .uv = {0.5f, 0.5f},
+            .specularExponent = 16
+        });
+
+        const uint32_t topCenterIdx = bottomCenterIdx + 1;
+        meshData.vertices.push_back({
+            .position = {0.0f, halfHeight, 0.0f},
+            .color = {0.8f, 0.6f, 0.4f},
+            .normal = {0.0f, 1.0f, 0.0f},
+            .uv = {0.5f, 0.5f},
+            .specularExponent = 16
+        });
+
+        for (uint32_t i = 0; i < segments; ++i) {
+            const float angle = 2.0f * glm::pi<float>() * static_cast<float>(i) / static_cast<float>(segments);
+            const float x = std::cos(angle);
+            const float z = std::sin(angle);
+            const float u = 0.5f + 0.5f * x;
+            const float v = 0.5f + 0.5f * z;
+
+            meshData.vertices.push_back({
+                .position = {x, -halfHeight, z},
+                .color = {0.8f, 0.6f, 0.4f},
+                .normal = {0.0f, -1.0f, 0.0f},
+                .uv = {u, v},
+                .specularExponent = 16
+            });
+
+            meshData.vertices.push_back({
+                .position = {x, halfHeight, z},
+                .color = {0.8f, 0.6f, 0.4f},
+                .normal = {0.0f, 1.0f, 0.0f},
+                .uv = {u, v},
+                .specularExponent = 16
+            });
+        }
+
+        for (uint32_t i = 0; i < segments; ++i) {
+            const uint32_t bottomIdx1 = topCenterIdx + 1 + (i * 2);
+            const uint32_t bottomIdx2 = topCenterIdx + 1 + (((i + 1) % segments) * 2);
+            const uint32_t topIdx1 = bottomIdx1 + 1;
+            const uint32_t topIdx2 = bottomIdx2 + 1;
+
+            meshData.indices.insert(meshData.indices.end(), {bottomCenterIdx, bottomIdx2, bottomIdx1});
+            meshData.indices.insert(meshData.indices.end(), {topCenterIdx, topIdx1, topIdx2});
+        }
+
+        return meshData;
+    }
 }

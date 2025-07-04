@@ -82,6 +82,8 @@ namespace Liara::Graphics
             static std::unique_ptr<Liara_Model> CreateCube(Liara_Device& device);
             static std::unique_ptr<Liara_Model> CreateSphere(Liara_Device& device, uint32_t segments = 32);
             static std::unique_ptr<Liara_Model> CreatePlane(Liara_Device& device, float size = 1.0f);
+            static std::unique_ptr<Liara_Model>
+            CreateCylinder(Liara_Device& device, float height = 1.0f, uint32_t segments = 32);
         };
 
         ~Liara_Model() = default;
