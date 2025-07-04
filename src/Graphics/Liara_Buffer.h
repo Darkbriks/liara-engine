@@ -2,10 +2,14 @@
 
 #include <vulkan/vulkan_core.h>
 
-#include <concepts>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <ranges>
 #include <span>
+#include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 #include "Liara_Device.h"
 
@@ -22,8 +26,8 @@ namespace Liara::Graphics
 
     struct BufferConfig
     {
-        VkBufferUsageFlags usage;
-        VkMemoryPropertyFlags memoryProperties;
+        VkBufferUsageFlags usage{};
+        VkMemoryPropertyFlags memoryProperties{};
         VkDeviceSize minOffsetAlignment = 1;
 
         // Predefined configurations for common buffer types
@@ -126,7 +130,7 @@ namespace Liara::Graphics
             }
 
             ~MappingGuard() {
-                if (m_Buffer) { m_Buffer->Unmap(); }
+                if (m_Buffer != nullptr) { m_Buffer->Unmap(); }
             }
 
             MappingGuard(const MappingGuard&) = delete;
@@ -136,7 +140,7 @@ namespace Liara::Graphics
 
             MappingGuard& operator=(MappingGuard&& other) noexcept {
                 if (this != &other) {
-                    if (m_Buffer) { m_Buffer->Unmap(); }
+                    if (m_Buffer != nullptr) { m_Buffer->Unmap(); }
                     m_Buffer = std::exchange(other.m_Buffer, nullptr);
                 }
                 return *this;

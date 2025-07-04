@@ -4,9 +4,13 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <span>
 #include <stb/stb_image.h>
 #include <string>
+#include <string_view>
 
 #include "Liara_Device.h"
 

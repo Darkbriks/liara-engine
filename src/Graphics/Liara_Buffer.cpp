@@ -4,13 +4,14 @@
 
 #include <vulkan/vulkan_core.h>
 
-#include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
+#include <span>
 #include <stdexcept>
+#include <utility>
 
-#include "glm/fwd.hpp"
-#include "glm/vec3.hpp"
 
 namespace Liara::Graphics
 {
