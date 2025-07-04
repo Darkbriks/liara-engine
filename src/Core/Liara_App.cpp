@@ -119,7 +119,9 @@ namespace Liara::Core
                                                                  1,
                                                                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-            uboBuffer->Map();
+            if (const auto result = uboBuffer->Map(); result != VK_SUCCESS) {
+                throw std::runtime_error("Failed to map UBO buffer");
+            }
         }
     }
 

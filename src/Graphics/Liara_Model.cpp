@@ -109,7 +109,9 @@ namespace Liara::Graphics
                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
 
-        stagingBuffer.Map();
+        if (const auto result = stagingBuffer.Map(); result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to map UBO buffer");
+        }
         stagingBuffer.WriteToBuffer(vertices.data(), bufferSize);
 
         m_VertexBuffer =
@@ -136,7 +138,9 @@ namespace Liara::Graphics
                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
 
-        stagingBuffer.Map();
+        if (const auto result = stagingBuffer.Map(); result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to map UBO buffer");
+        }
         stagingBuffer.WriteToBuffer(indices.data(), bufferSize);
 
         m_IndexBuffer =
