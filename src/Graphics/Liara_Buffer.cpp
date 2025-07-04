@@ -29,24 +29,6 @@ namespace Liara::Graphics
         CreateBuffer();
     }
 
-    // Legacy constructor
-    Liara_Buffer::Liara_Buffer(Liara_Device& device,
-                               const VkDeviceSize instanceSize,
-                               const uint32_t instanceCount,
-                               const VkBufferUsageFlags usageFlags,
-                               const VkMemoryPropertyFlags memoryPropertyFlags,
-                               const VkDeviceSize minOffsetAlignment)
-        : m_Device(device)
-        , m_InstanceCount(instanceCount)
-        , m_InstanceSize(instanceSize)
-        , m_AlignmentSize(GetAlignment(instanceSize, minOffsetAlignment))
-        , m_UsageFlags(usageFlags)
-        , m_MemoryPropertyFlags(memoryPropertyFlags)
-        , m_MinOffsetAlignment(minOffsetAlignment) {
-        m_BufferSize = m_AlignmentSize * instanceCount;
-        CreateBuffer();
-    }
-
     Liara_Buffer::Liara_Buffer(Liara_Buffer&& other) noexcept
         : m_Device(other.m_Device)
         , m_Mapped(std::exchange(other.m_Mapped, nullptr))
@@ -150,21 +132,6 @@ namespace Liara::Graphics
 
     VkDescriptorBufferInfo Liara_Buffer::DescriptorInfoForIndex(const uint32_t index) const {
         return DescriptorInfo(m_AlignmentSize, index * m_AlignmentSize);
-    }
-
-    void Liara_Buffer::WriteToBuffer(const void* data, const VkDeviceSize size, const VkDeviceSize offset) const {
-        assert(m_Mapped && "Cannot copy to unmapped buffer");
-
-        if (size == VK_WHOLE_SIZE) { std::memcpy(m_Mapped, data, m_BufferSize); }
-        else {
-            auto* memOffset = static_cast<char*>(m_Mapped);
-            memOffset += offset;
-            std::memcpy(memOffset, data, size);
-        }
-    }
-
-    void Liara_Buffer::WriteToIndex(const void* data, const int index) const {
-        WriteToBuffer(data, m_InstanceSize, index * m_AlignmentSize);
     }
 
     template void Liara_Buffer::WriteData<float>(std::span<const float>, VkDeviceSize);

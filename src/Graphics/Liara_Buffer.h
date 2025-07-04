@@ -63,17 +63,6 @@ namespace Liara::Graphics
          */
         Liara_Buffer(Liara_Device& device, VkDeviceSize size, const BufferConfig& config);
 
-        /**
-         * @brief Legacy constructor (deprecated)
-         */
-        [[deprecated("Use span-based constructor for better type safety")]]
-        Liara_Buffer(Liara_Device& device,
-                     VkDeviceSize instanceSize,
-                     uint32_t instanceCount,
-                     VkBufferUsageFlags usageFlags,
-                     VkMemoryPropertyFlags memoryPropertyFlags,
-                     VkDeviceSize minOffsetAlignment = 1);
-
         ~Liara_Buffer();
         Liara_Buffer(const Liara_Buffer&) = delete;
         Liara_Buffer& operator=(const Liara_Buffer&) = delete;
@@ -186,12 +175,6 @@ namespace Liara::Graphics
         [[nodiscard]] VkDeviceSize GetAlignmentSize() const noexcept { return m_AlignmentSize; }
         [[nodiscard]] VkBufferUsageFlags GetUsageFlags() const noexcept { return m_UsageFlags; }
         [[nodiscard]] VkMemoryPropertyFlags GetMemoryPropertyFlags() const noexcept { return m_MemoryPropertyFlags; }
-
-        [[deprecated("Use WriteData with spans")]]
-        void WriteToBuffer(const void* data, VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
-
-        [[deprecated("Use WriteToIndex with typed data")]]
-        void WriteToIndex(const void* data, int index) const;
 
     private:
         void CreateBuffer();
