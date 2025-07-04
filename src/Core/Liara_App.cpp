@@ -113,15 +113,13 @@ namespace Liara::Core
 
     void Liara_App::InitUboBuffers() {
         m_UboBuffers.resize(Graphics::Constants::MAX_FRAMES_IN_FLIGHT);
-        for (auto& uboBuffer : m_UboBuffers) {
-            uboBuffer = std::make_unique<Graphics::Liara_Buffer>(m_Device,
-                                                                 sizeof(Graphics::Ubo::GlobalUbo),
-                                                                 1,
-                                                                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-            if (const auto result = uboBuffer->Map(); result != VK_SUCCESS) {
-                throw std::runtime_error("Failed to map UBO buffer");
-            }
+        m_UboMappings.reserve(Graphics::Constants::MAX_FRAMES_IN_FLIGHT);
+
+        for (size_t i = 0; i < Graphics::Constants::MAX_FRAMES_IN_FLIGHT; ++i) {
+            m_UboBuffers[i] = std::make_unique<Graphics::Liara_Buffer>(
+                m_Device, sizeof(Graphics::Ubo::GlobalUbo), Graphics::BufferConfig::Uniform());
+
+            m_UboMappings.emplace_back(m_UboBuffers[i]->CreateMappingGuard());
         }
     }
 
@@ -169,18 +167,19 @@ namespace Liara::Core
     }
 
     void Liara_App::MasterUpdate(const FrameInfo& frameInfo) {
-        // Todo: Check if this is the right place to put this
-        Graphics::Ubo::GlobalUbo ubo{};
-        ubo.projection = m_Camera.GetProjectionMatrix();
-        ubo.view = m_Camera.GetViewMatrix();
-        ubo.inverseView = m_Camera.GetInverseViewMatrix();
+        Graphics::Ubo::GlobalUbo ubo(
+            m_Camera.GetProjectionMatrix(), m_Camera.GetViewMatrix(), m_Camera.GetInverseViewMatrix());
 
         Update(frameInfo);
         for (const auto& system : m_Systems) { system->Update(frameInfo, ubo); }
 
-        m_UboBuffers[frameInfo.frameIndex]->WriteToBuffer(&ubo);
-        if (const auto result = m_UboBuffers[frameInfo.frameIndex]->Flush(); result != VK_SUCCESS) {
-            throw std::runtime_error("Failed to flush buffer");
+        const auto& currentBuffer = m_UboBuffers[frameInfo.frameIndex];
+        currentBuffer->WriteObject(ubo);
+
+        if (!(currentBuffer->GetMemoryPropertyFlags() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+            if (const auto result = currentBuffer->Flush(); result != VK_SUCCESS) {
+                throw std::runtime_error("Failed to flush UBO buffer");
+            }
         }
     }
 

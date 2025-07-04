@@ -89,5 +89,8 @@ namespace Liara::Core
 
         // TODO: Test texture, temporary
         std::unique_ptr<Graphics::Liara_Texture> m_Texture;
+
+    private:
+        std::vector<Graphics::Liara_Buffer::MappingGuard> m_UboMappings;
     };
 }
