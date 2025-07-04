@@ -130,21 +130,31 @@ namespace Liara::Graphics
             explicit MappingGuard(Liara_Buffer& buffer,
                                   const VkDeviceSize size = VK_WHOLE_SIZE,
                                   const VkDeviceSize offset = 0)
-                : m_Buffer(buffer) {
-                if (const auto result = m_Buffer.Map(size, offset); result != VK_SUCCESS) {
+                : m_Buffer(&buffer) {
+                if (const auto result = m_Buffer->Map(size, offset); result != VK_SUCCESS) {
                     throw std::runtime_error("Failed to map buffer");
                 }
             }
 
-            ~MappingGuard() { m_Buffer.Unmap(); }
+            ~MappingGuard() {
+                if (m_Buffer) { m_Buffer->Unmap(); }
+            }
 
             MappingGuard(const MappingGuard&) = delete;
             MappingGuard& operator=(const MappingGuard&) = delete;
-            MappingGuard(MappingGuard&&) = delete;
-            MappingGuard& operator=(MappingGuard&&) = delete;
+            MappingGuard(MappingGuard&& other) noexcept
+                : m_Buffer(std::exchange(other.m_Buffer, nullptr)) {}
+
+            MappingGuard& operator=(MappingGuard&& other) noexcept {
+                if (this != &other) {
+                    if (m_Buffer) { m_Buffer->Unmap(); }
+                    m_Buffer = std::exchange(other.m_Buffer, nullptr);
+                }
+                return *this;
+            }
 
         private:
-            Liara_Buffer& m_Buffer;
+            Liara_Buffer* m_Buffer;
         };
 
         [[nodiscard]] MappingGuard CreateMappingGuard(const VkDeviceSize size = VK_WHOLE_SIZE,
@@ -224,3 +234,5 @@ namespace Liara::Graphics
         return CreateBufferFromData(device, dataSpan, config);
     }
 }
+
+#include "Liara_Buffer.tpp"  // IWYU pragma: keep
