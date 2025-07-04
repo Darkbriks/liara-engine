@@ -96,61 +96,19 @@ namespace Liara::Graphics
 
     // === CORE METHODS ===
 
-    void Liara_Model::CreateVertexBuffer(const std::span<const Vertex> vertices) {
+    void Liara_Model::CreateVertexBuffer(std::span<const Vertex> vertices) {
         m_VertexCount = static_cast<uint32_t>(vertices.size());
         assert(m_VertexCount >= 3 && "Vertex count must be at least 3!");
 
-        const VkDeviceSize bufferSize = vertices.size_bytes();
-        constexpr uint32_t vertexSize = sizeof(Vertex);
-
-        Liara_Buffer stagingBuffer{m_Device,
-                                   vertexSize,
-                                   m_VertexCount,
-                                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
-
-        if (const auto result = stagingBuffer.Map(); result != VK_SUCCESS) {
-            throw std::runtime_error("Failed to map UBO buffer");
-        }
-        stagingBuffer.WriteToBuffer(vertices.data(), bufferSize);
-
-        m_VertexBuffer =
-            std::make_unique<Liara_Buffer>(m_Device,
-                                           vertexSize,
-                                           m_VertexCount,
-                                           VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-        m_Device.CopyBuffer(stagingBuffer.GetBuffer(), m_VertexBuffer->GetBuffer(), bufferSize);
+        m_VertexBuffer = std::make_unique<Liara_Buffer>(m_Device, vertices, BufferConfig::Vertex());
     }
 
-    void Liara_Model::CreateIndexBuffer(const std::span<const uint32_t> indices) {
+    void Liara_Model::CreateIndexBuffer(std::span<const uint32_t> indices) {
         m_IndexCount = static_cast<uint32_t>(indices.size());
         m_HasIndexBuffer = m_IndexCount > 0;
         if (!m_HasIndexBuffer) { return; }
 
-        const VkDeviceSize bufferSize = indices.size_bytes();
-        constexpr uint32_t indexSize = sizeof(uint32_t);
-
-        Liara_Buffer stagingBuffer{m_Device,
-                                   indexSize,
-                                   m_IndexCount,
-                                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
-
-        if (const auto result = stagingBuffer.Map(); result != VK_SUCCESS) {
-            throw std::runtime_error("Failed to map UBO buffer");
-        }
-        stagingBuffer.WriteToBuffer(indices.data(), bufferSize);
-
-        m_IndexBuffer =
-            std::make_unique<Liara_Buffer>(m_Device,
-                                           indexSize,
-                                           m_IndexCount,
-                                           VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-        m_Device.CopyBuffer(stagingBuffer.GetBuffer(), m_IndexBuffer->GetBuffer(), bufferSize);
+        m_IndexBuffer = std::make_unique<Liara_Buffer>(m_Device, indices, BufferConfig::Index());
     }
 
     void Liara_Model::Bind(VkCommandBuffer commandBuffer) const {
