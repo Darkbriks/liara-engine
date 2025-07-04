@@ -52,9 +52,8 @@ namespace Liara::Core
 
     void Liara_App::Run() {
         // TODO: Test texture, temporary
-        auto texture = Liara::Graphics::Liara_Texture::Builder{};
-        texture.LoadTexture("assets/textures/viking_room.png", *m_SettingsManager);
-        m_Texture = std::make_unique<Graphics::Liara_Texture>(m_Device, texture, *m_SettingsManager);
+        m_Texture =
+            Graphics::Liara_Texture::CreateFromFile(m_Device, "assets/textures/viking_room.png", *m_SettingsManager);
 
         Init();
 
