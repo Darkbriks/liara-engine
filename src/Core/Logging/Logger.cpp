@@ -187,8 +187,15 @@ namespace Liara::Logging
         const auto milliseconds =
             std::chrono::duration_cast<std::chrono::milliseconds>(timestamp.time_since_epoch()) % 1000;
 
+        std::tm tm_buf{};
+#if defined(_WIN32) || defined(_WIN64)
+        gmtime_s(&tm_buf, &time_t_stamp);  // Windows
+#else
+        gmtime_r(&time_t_stamp, &tm_buf);  // Linux / macOS
+#endif
+
         std::ostringstream oss;
-        oss << std::put_time(std::gmtime(&time_t_stamp), "%Y-%m-%d %H:%M:%S");
+        oss << std::put_time(&tm_buf, "%Y-%m-%d %H:%M:%S");
         oss << "." << std::setfill('0') << std::setw(3) << milliseconds.count();
 
         return oss.str();

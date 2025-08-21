@@ -21,7 +21,7 @@ namespace Liara::Logging
             , default_level(def_level)
             , compile_level(comp_level) {}
 
-        constexpr bool IsEnabled(const LogLevel level) const noexcept {
+        constexpr bool IsEnabled(const LogLevel /*level*/) const noexcept {
             return true;  // TODO: Implement compile-time check
             // return level >= compile_level && level >= default_level;
         }
