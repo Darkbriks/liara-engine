@@ -6,6 +6,8 @@
 #include <string_view>
 
 #include "ApplicationInfo.h"
+#include "Logging/Logger.h"
+#include "Logging/LogMacros.h"
 
 #ifdef NDEBUG
     #define LIARA_BUILD_CONFIG "Release"
@@ -23,25 +25,67 @@
     #define LIARA_TARGET_PLATFORM "Unknown"
 #endif
 
+LIARA_DECLARE_LOG_CATEGORY(App, Info, Verbose);
+
 namespace Liara::Core
 {
     /**
      * @brief Template to run a Liara application with error handling
      */
     template <typename AppClass> int RunApplication(const ApplicationInfo& appInfo) {
+        Liara::Logging::Logger::Initialize("liara_engine.log");
+
+        auto& logger = Liara::Logging::Logger::GetInstance();
+        logger.SetConsoleOutput(true);
+        logger.SetFileOutput(true);
+        logger.SetColorOutput(true);
+        logger.SetTimezoneOffset(0);
+        logger.SetPrintClassName(false);
+        logger.SetPrintLocation(true);
+
+        LIARA_LOG_INFO(App,
+                       "Starting application: {} v{}.{}.{}-{}",
+                       appInfo.displayName.empty() ? appInfo.name : appInfo.displayName,
+                       appInfo.version.major,
+                       appInfo.version.minor,
+                       appInfo.version.patch,
+                       appInfo.version.prerelease.empty() ? "stable" : appInfo.version.prerelease);
+
+        LIARA_LOG_VERBOSE(App,
+                          "Application info: {}",
+                          std::format("Name: {}, Version: {}.{}.{}-{}, Organization: {}, Website: {}, Copyright: {}, "
+                                      "Build Config: {}, Target Platform: {}",
+                                      appInfo.name,
+                                      appInfo.version.major,
+                                      appInfo.version.minor,
+                                      appInfo.version.patch,
+                                      appInfo.version.prerelease,
+                                      appInfo.organization,
+                                      appInfo.website,
+                                      appInfo.copyright,
+                                      appInfo.buildConfig,
+                                      appInfo.targetPlatform));
+
+        // TEST_LOGGER();
+
+        bool result = EXIT_FAILURE;
+
         try {
             AppClass app(appInfo);
             app.Run();
-            return app.GetSettingsManager().SaveToFile("settings.cfg", true) ? EXIT_SUCCESS : EXIT_FAILURE;
+            result = app.GetSettingsManager().SaveToFile("settings.cfg", true) ? EXIT_SUCCESS : EXIT_FAILURE;
         }
         catch (const std::exception& e) {
-            std::cerr << "Application error: " << e.what() << '\n';
-            return EXIT_FAILURE;
+            LIARA_LOG_FATAL(App, "Application error: {}", e.what());
         }
         catch (...) {
-            std::cerr << "Unknown application error occurred" << '\n';
-            return EXIT_FAILURE;
+            LIARA_LOG_FATAL(App, "Unknown application error occurred");
         }
+
+        LIARA_LOG_INFO(App, "Application finished with exit code: {}", result);
+
+        Logging::Logger::Shutdown();
+        return result;
     }
 
     /**

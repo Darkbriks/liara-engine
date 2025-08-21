@@ -8,6 +8,7 @@ target_sources(LiaraEngine
         Core/Liara_SettingsManager.cpp
         Core/Liara_SignalHandler.cpp
         Core/Liara_Utils.h
+        Core/Logging/Logger.cpp
 
         Graphics/Liara_Device.cpp
         Graphics/Liara_Pipeline.cpp
@@ -39,6 +40,14 @@ target_sources(LiaraEngine
         Core/Liara_Camera.h
         Core/Liara_GameObject.h
         Core/FrameInfo.h
+
+        Core/Logging/LogLevel.h
+        Core/Logging/LogCategory.h
+        Core/Logging/LogMessage.h
+        Core/Logging/ThreadSafeQueue.h
+        Core/Logging/Logger.h
+        Core/Logging/LogMacros.h
+
         Graphics/Liara_Device.h
         Graphics/Liara_Model.h
 )

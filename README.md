@@ -36,7 +36,9 @@ The builds are automatically tested on multiple Linux distributions and Windows:
 | Linux    | [![Linux Build](https://github.com/Darkbriks/LiaraEngine_CPP_VULKAN/actions/workflows/compile-linux.yml/badge.svg)](https://github.com/Darkbriks/LiaraEngine_CPP_VULKAN/actions/workflows/compile-linux.yml)       | Ubuntu 22.04, Fedora 39, Arch Linux |
 | Windows  | [![Windows Build](https://github.com/Darkbriks/LiaraEngine_CPP_VULKAN/actions/workflows/compile-windows.yml/badge.svg)](https://github.com/Darkbriks/LiaraEngine_CPP_VULKAN/actions/workflows/compile-windows.yml) | Windows Server 2022 (MSVC)          |
 
-<!-- TODO: Demo and features (video, screenshots) -->
+## Demo
+
+*Todo: Add a video or screenshots of the demo application showcasing the engine's capabilities.*
 
 ---
 
@@ -140,6 +142,7 @@ Liara Engine
 - [x] Fix a Linux hack from v0.14
 - [x] Fix a vulkan validation layer issue (semaphore synchronization in Swapchain)
 - [x] CI/CD pipeline for Linux and Windows
+- [x] Logger
 - [ ] Migrate to C++20 features (work in progress)
 - [x] Rework of CMake build system
 - [ ] Add Catch2 for unit testing
