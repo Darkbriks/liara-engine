@@ -4,6 +4,7 @@
 #include "Core/FrameInfo.h"
 #include "Core/Liara_GameObject.h"
 #include "Core/Liara_SettingsManager.h"
+#include "Core/Logging/LogMacros.h"
 #include "Graphics/GraphicsConstants.h"
 #include "Graphics/Liara_Pipeline.h"
 #include "Graphics/Ubo/GlobalUbo.h"
