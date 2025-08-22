@@ -41,13 +41,9 @@ namespace Liara::Logging
 #endif
 
 #define LIARA_LOG_VERBOSE(Category, Format, ...) LIARA_LOG_IMPL(Category, Verbose, Format __VA_OPT__(, ) __VA_ARGS__)
-
 #define LIARA_LOG_INFO(Category, Format, ...) LIARA_LOG_IMPL(Category, Info, Format __VA_OPT__(, ) __VA_ARGS__)
-
 #define LIARA_LOG_WARNING(Category, Format, ...) LIARA_LOG_IMPL(Category, Warning, Format __VA_OPT__(, ) __VA_ARGS__)
-
 #define LIARA_LOG_ERROR(Category, Format, ...) LIARA_LOG_IMPL(Category, Error, Format __VA_OPT__(, ) __VA_ARGS__)
-
 #define LIARA_LOG_FATAL(Category, Format, ...) LIARA_LOG_IMPL(Category, Fatal, Format __VA_OPT__(, ) __VA_ARGS__)
 
 #define LOG_VERBOSE(Format, ...) LIARA_LOG_VERBOSE(::Liara::Logging::LogCore, Format __VA_OPT__(, ) __VA_ARGS__)

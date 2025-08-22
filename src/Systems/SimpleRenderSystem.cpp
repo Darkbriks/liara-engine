@@ -33,7 +33,8 @@ namespace Liara::Systems
                                            VkRenderPass renderPass,
                                            VkDescriptorSetLayout descriptorSetLayout,
                                            const Core::Liara_SettingsManager& settingsManager)
-        : m_Device(device)
+        : Liara_System("Simple Render System", {.major = 0, .minor = 4, .patch = 2, .prerelease = "dev"})
+        , m_Device(device)
         , m_SettingsManager(settingsManager) {
         CreatePipelineLayout(descriptorSetLayout);
         CreatePipeline(renderPass);

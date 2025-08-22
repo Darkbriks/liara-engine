@@ -14,7 +14,7 @@ namespace Liara::Core
         uint32_t major = 0;
         uint32_t minor = 1;
         uint32_t patch = 0;
-        std::string_view prerelease;
+        std::string_view prerelease = "";
 
         /**
          * @brief Packs version into a single uint32_t (Vulkan style)

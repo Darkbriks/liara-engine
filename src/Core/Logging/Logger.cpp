@@ -7,14 +7,18 @@
 #include <regex>
 #include <sstream>
 
-namespace Liara::Logging
+namespace Liara
 {
-
     LIARA_DEFINE_LOG_CATEGORY(LogCore, "Core", Info, Verbose);
     LIARA_DEFINE_LOG_CATEGORY(LogGraphics, "Graphics", Info, Verbose);
     LIARA_DEFINE_LOG_CATEGORY(LogVulkan, "Vulkan", Warning, Debug);
     LIARA_DEFINE_LOG_CATEGORY(LogRendering, "Rendering", Info, Verbose);
+    LIARA_DEFINE_LOG_CATEGORY(LogPlatform, "Platform", Info, Verbose);
+    LIARA_DEFINE_LOG_CATEGORY(LogSystems, "Systems", Info, Verbose);
+}
 
+namespace Liara::Logging
+{
     Logger::Logger() { m_worker_thread = std::thread(&Logger::WorkerThread, this); }
 
     Logger::~Logger() { Shutdown(); }

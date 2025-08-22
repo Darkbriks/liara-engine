@@ -19,7 +19,8 @@ namespace Liara::Systems
                              Graphics::Liara_Device& device,
                              VkRenderPass renderPass,
                              const uint32_t imageCount)
-        : m_lveDevice{device} {
+        : Liara_System("ImGui System", {.major = 0, .minor = 2, .patch = 3, .prerelease = "dev"})
+        , m_lveDevice{device} {
         // set up a descriptor pool stored on this instance
         const VkDescriptorPoolSize poolSizes[] = {
             {VK_DESCRIPTOR_TYPE_SAMPLER,                1000},

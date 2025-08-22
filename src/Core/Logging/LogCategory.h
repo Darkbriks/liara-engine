@@ -35,14 +35,23 @@ namespace Liara::Logging
         #CategoryName, Liara::Logging::LogLevel::DefaultLevel, Liara::Logging::LogLevel::CompileLevel \
     }
 
+#define LIARA_DECLARE_LOG_CATEGORY_WITH_NAME(CategoryName, Name, DefaultLevel, CompileLevel) \
+    constexpr ::Liara::Logging::LogCategory CategoryName {                                   \
+        Name, Liara::Logging::LogLevel::DefaultLevel, Liara::Logging::LogLevel::CompileLevel \
+    }
+
 #define LIARA_DEFINE_LOG_CATEGORY(CategoryName, Name, DefaultLevel, CompileLevel)            \
     const ::Liara::Logging::LogCategory CategoryName {                                       \
         Name, Liara::Logging::LogLevel::DefaultLevel, Liara::Logging::LogLevel::CompileLevel \
     }
+}
 
+namespace Liara
+{
     LIARA_DECLARE_LOG_CATEGORY_EXTERN(LogCore, Info, Verbose);
     LIARA_DECLARE_LOG_CATEGORY_EXTERN(LogGraphics, Info, Verbose);
     LIARA_DECLARE_LOG_CATEGORY_EXTERN(LogVulkan, Warning, Debug);
     LIARA_DECLARE_LOG_CATEGORY_EXTERN(LogRendering, Info, Verbose);
-
+    LIARA_DECLARE_LOG_CATEGORY_EXTERN(LogPlatform, Info, Verbose);
+    LIARA_DECLARE_LOG_CATEGORY_EXTERN(LogSystems, Info, Verbose);
 }

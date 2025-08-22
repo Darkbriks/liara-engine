@@ -25,8 +25,6 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
 
-#include <fmt/core.h>
-
 #include <ranges>
 #include <stdexcept>
 
@@ -45,7 +43,8 @@ namespace Liara::Systems
                                        VkRenderPass renderPass,
                                        VkDescriptorSetLayout descriptorSetLayout,
                                        const Core::Liara_SettingsManager& settingsManager)
-        : m_Device(device)
+        : Liara_System("Point Light System", {.major = 0, .minor = 2, .patch = 5, .prerelease = "dev"})
+        , m_Device(device)
         , m_SettingsManager(settingsManager) {
         CreatePipelineLayout(descriptorSetLayout);
         CreatePipeline(renderPass);
@@ -145,8 +144,10 @@ namespace Liara::Systems
                 m_CachedPointLights.push_back(&gameObject);
 
                 if (m_CachedPointLights.size() >= Graphics::Constants::MAX_LIGHTS) {
-                    fmt::print(
-                        stderr, "Warning: Too many point lights, limiting to {}\n", Graphics::Constants::MAX_LIGHTS);
+                    LIARA_LOG_WARNING(LogSystems,
+                                      "Too many point lights ({}), capping at {}",
+                                      m_CachedPointLights.size(),
+                                      Graphics::Constants::MAX_LIGHTS);
                     break;
                 }
             }
