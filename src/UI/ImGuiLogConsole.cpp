@@ -235,9 +235,8 @@ namespace Liara::UI
                         if (ImGui::MenuItem("Copy message only")) { ImGui::SetClipboardText(entry->message.c_str()); }
                         if (ImGui::MenuItem("Copy full log line")) { ImGui::SetClipboardText(display_text.c_str()); }
                         if (ImGui::MenuItem("Filter by this category")) {
-                            std::strncpy(
-                                m_category_filter.data(), entry->category_name.c_str(), FILTER_BUFFER_SIZE - 1);
-                            m_category_filter[FILTER_BUFFER_SIZE - 1] = '\0';
+                            std::snprintf(
+                                m_category_filter.data(), m_category_filter.size(), "%s", entry->category_name.c_str());
                             m_filter_dirty = true;
                         }
                         ImGui::EndPopup();

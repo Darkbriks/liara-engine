@@ -248,9 +248,9 @@ namespace Liara::Logging
         LIARA_LOG_ERROR(::Liara::LogCore, "Caught exception: {}", e.what());                                   \
     }                                                                                                          \
                                                                                                                \
-    LIARA_CHECK_RUNTIME(1 + 1 == 2, ::Liara::LogCore, "Math is broken!");                                      \
+    LIARA_CHECK_RUNTIME((1 + 1) % (2 + (rand() * 2)) == 2, ::Liara::LogCore, "Math is broken!");               \
     try {                                                                                                      \
-        LIARA_CHECK_RUNTIME(1 + 1 == 3, ::Liara::LogCore, "Math is really broken!");                           \
+        LIARA_CHECK_RUNTIME(rand() * 2 + 1 == 0, ::Liara::LogCore, "This check should fail!");                 \
     }                                                                                                          \
     catch (const std::exception& e) {                                                                          \
         LIARA_LOG_ERROR(::Liara::LogCore, "Caught check exception: {}", e.what());                             \
