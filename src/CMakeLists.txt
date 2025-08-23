@@ -73,7 +73,6 @@ target_link_libraries(LiaraEngine
         PUBLIC
         Vulkan::Vulkan
         SDL2::SDL2
-        fmt::fmt
         glm::glm
         PRIVATE
         tinyobjloader

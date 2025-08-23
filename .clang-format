@@ -85,7 +85,7 @@ IncludeCategories:
     Priority: 3
     SortPriority: 3
   # 4. Headers externes (Vulkan, SDL, etc.)
-  - Regex: '^<(vulkan|SDL|glm|fmt|imgui)/.*>$'
+  - Regex: '^<(vulkan|SDL|glm|imgui)/.*>$'
     Priority: 4
     SortPriority: 4
   # 5. Headers système C++

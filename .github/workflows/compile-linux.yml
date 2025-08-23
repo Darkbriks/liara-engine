@@ -27,21 +27,21 @@ jobs:
             version: "22.04"
             container: ubuntu:22.04
             pkg_manager: apt
-            packages: "sudo build-essential ninja-build file libvulkan-dev vulkan-validationlayers-dev libsdl2-dev libfmt-dev pkg-config vulkan-tools libglm-dev software-properties-common wget curl ca-certificates"
+            packages: "sudo build-essential ninja-build file libvulkan-dev vulkan-validationlayers-dev libsdl2-dev pkg-config vulkan-tools libglm-dev software-properties-common wget curl ca-certificates"
             update_cmd: "apt update && apt install -y"
             setup_compiler: "add-apt-repository ppa:ubuntu-toolchain-r/test -y && apt update && apt install -y gcc-13 g++-13 && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13"
           - name: fedora
             version: "39"
             container: fedora:39
             pkg_manager: dnf
-            packages: "gcc-c++ ninja-build vulkan-devel vulkan-validation-layers-devel SDL2-devel fmt-devel pkg-config vulkan-tools libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel wget dnf-plugins-core"
+            packages: "gcc-c++ ninja-build vulkan-devel vulkan-validation-layers-devel SDL2-devel pkg-config vulkan-tools libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel wget dnf-plugins-core"
             update_cmd: "dnf update -y && dnf install -y"
             setup_compiler: ""
           - name: archlinux
             version: "latest"
             container: archlinux:latest
             pkg_manager: pacman
-            packages: "base-devel ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf vulkan-tools glm wget shaderc"
+            packages: "base-devel ninja vulkan-devel vulkan-validation-layers sdl2 pkgconf vulkan-tools glm wget shaderc"
             update_cmd: "pacman -Syu --noconfirm"
             setup_compiler: ""
 
@@ -282,7 +282,6 @@ jobs:
             libsdl2-dev \
             libsdl2-2.0-0 \
             libvulkan1 \
-            libfmt8 \
             libglm-dev
 
       - name: Prepare AppImage structure
@@ -387,7 +386,7 @@ jobs:
       - name: Build AppImage
         run: |
           echo "=== System libraries check ==="
-          ldconfig -p | grep -E "(SDL2|vulkan|fmt)" || echo "Some libraries may be missing"
+          ldconfig -p | grep -E "(SDL2|vulkan)" || echo "Some libraries may be missing"
           
           echo "=== Running linuxdeploy ==="
           ./linuxdeploy-x86_64.AppImage \
@@ -406,12 +405,6 @@ jobs:
             if [ -n "$SDL2_LIB" ] && [ -f "$SDL2_LIB" ]; then
               cp "$SDL2_LIB" AppDir/usr/lib/
               echo "Copied SDL2: $SDL2_LIB"
-            fi
-          
-            FMT_LIB=$(ldconfig -p | grep "libfmt.so" | awk '{print $NF}' | head -1)
-            if [ -n "$FMT_LIB" ] && [ -f "$FMT_LIB" ]; then
-              cp "$FMT_LIB" AppDir/usr/lib/
-              echo "Copied fmt: $FMT_LIB"
             fi
           
             ./linuxdeploy-x86_64.AppImage \

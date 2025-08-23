@@ -34,10 +34,5 @@ set(SDL2_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
 set(SDL2_DISABLE_SDL2MAIN OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(sdl2)
 
-liara_fetch_dependency(fmt https://github.com/fmtlib/fmt.git 10.2.1)
 liara_fetch_dependency(glm https://github.com/g-truc/glm.git 1.0.1)
 liara_fetch_dependency(tinyobjloader https://github.com/tinyobjloader/tinyobjloader.git release)
-
-if(NOT TARGET fmt::fmt)
-    add_library(fmt::fmt ALIAS fmt)
-endif()

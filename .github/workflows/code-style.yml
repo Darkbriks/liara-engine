@@ -40,7 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pacman -Syu --noconfirm base-devel ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf vulkan-tools glm wget shaderc clang
+          pacman -Syu --noconfirm base-devel ninja vulkan-devel vulkan-validation-layers sdl2 pkgconf vulkan-tools glm wget shaderc clang
 
       - name: Get changed files
         id: changed-files
