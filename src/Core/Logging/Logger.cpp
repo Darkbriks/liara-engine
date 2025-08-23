@@ -7,6 +7,8 @@
 #include <regex>
 #include <sstream>
 
+#include "UI/ImGuiLogConsole.h"
+
 namespace Liara
 {
     LIARA_DEFINE_LOG_CATEGORY(LogCore, "Core", Info, Verbose);
@@ -98,6 +100,12 @@ namespace Liara::Logging
         if (instance.m_log_file.is_open()) { instance.m_log_file.close(); }
     }
 
+    void Logger::EnableImGuiConsole() {
+        if (auto& instance = GetInstance(); !instance.m_gui_console) {
+            instance.m_gui_console = std::make_unique<UI::ImGuiLogConsole>();
+        }
+    }
+
     void Logger::Log(LogMessage message) {
         if (!m_running.load()) { return; }
 
@@ -135,6 +143,11 @@ namespace Liara::Logging
             std::lock_guard<std::mutex> lock(file_mutex);
             m_log_file << formatted << std::endl;
             m_log_file.flush();
+        }
+
+        if (m_gui_console) {
+            const std::string formatted_time = FormatTimestamp(message.timestamp);
+            m_gui_console->AddLogEntry(message, formatted_time);
         }
     }
 

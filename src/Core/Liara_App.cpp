@@ -167,6 +167,7 @@ namespace Liara::Core
             m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
         m_Systems.push_back(std::make_unique<Systems::ImGuiSystem>(m_Window,
                                                                    m_Device,
+                                                                   m_ApplicationInfo,
                                                                    m_RendererManager.GetRenderer().GetRenderPass(),
                                                                    m_RendererManager.GetRenderer().GetImageCount()));
 

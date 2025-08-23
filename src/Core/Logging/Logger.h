@@ -13,6 +13,11 @@
 #include "LogMessage.h"
 #include "ThreadSafeQueue.h"
 
+namespace Liara::UI
+{
+    class ImGuiLogConsole;
+}
+
 namespace Liara::Logging
 {
 
@@ -23,6 +28,7 @@ namespace Liara::Logging
         static inline std::once_flag s_init_flag;
 
         ThreadSafeQueue<LogMessage> m_message_queue;
+        std::unique_ptr<UI::ImGuiLogConsole> m_gui_console;
         std::atomic<bool> m_running{true};
         std::thread m_worker_thread;
         std::ofstream m_log_file;
@@ -43,6 +49,7 @@ namespace Liara::Logging
         static void Rotate(const std::string& log_file_path);
         static void Initialize(const std::string& log_file_path = "engine.log");
         static void Shutdown();
+        static void EnableImGuiConsole();
 
         void SetConsoleOutput(const bool enable) noexcept { m_console_output.store(enable); }
         void SetFileOutput(const bool enable) noexcept { m_file_output.store(enable); }
@@ -57,6 +64,8 @@ namespace Liara::Logging
         int GetTimezoneOffset() const noexcept { return m_timezone_offset_hours.load(); }
         bool IsPrintClassNameEnabled() const noexcept { return m_print_class_name.load(); }
         bool IsPrintLocationEnabled() const noexcept { return m_print_position.load(); }
+        UI::ImGuiLogConsole* GetImGuiConsole() { return m_gui_console.get(); }
+        const UI::ImGuiLogConsole* GetImGuiConsole() const { return m_gui_console.get(); }
 
         void Log(LogMessage message);
 

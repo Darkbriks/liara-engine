@@ -1,7 +1,6 @@
 #include "DemoApp.h"
 
 #include "Core/ApplicationInfo.h"
-#include "Core/ImGui/ImGuiElementEngineStats.h"
 #include "Core/Liara_App.h"
 #include "Graphics/Liara_Model.h"
 #include "Listener/KeybordMovementController.h"
@@ -39,12 +38,11 @@ void DemoApp::InitSystems() {
         m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
     AddSystem(std::make_unique<Liara::Systems::PointLightSystem>(
         m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
-    auto imguiSystem = std::make_unique<Liara::Systems::ImGuiSystem>(m_Window,
-                                                                     m_Device,
-                                                                     m_RendererManager.GetRenderer().GetRenderPass(),
-                                                                     m_RendererManager.GetRenderer().GetImageCount());
-    imguiSystem->AddElement(std::make_unique<Liara::Core::ImGuiElements::EngineStats>(m_ApplicationInfo));
-    AddSystem(std::move(imguiSystem));
+    AddSystem(std::make_unique<Liara::Systems::ImGuiSystem>(m_Window,
+                                                            m_Device,
+                                                            m_ApplicationInfo,
+                                                            m_RendererManager.GetRenderer().GetRenderPass(),
+                                                            m_RendererManager.GetRenderer().GetImageCount()));
 }
 
 

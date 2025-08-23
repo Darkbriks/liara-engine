@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
-#include <iostream>
 #include <string_view>
 
 #include "ApplicationInfo.h"
@@ -33,15 +32,22 @@ namespace Liara::Core
      * @brief Template to run a Liara application with error handling
      */
     template <typename AppClass> int RunApplication(const ApplicationInfo& appInfo) {
-        Liara::Logging::Logger::Initialize("liara_engine.log");
-
         auto& logger = Liara::Logging::Logger::GetInstance();
+
+#ifndef NDEBUG
         logger.SetConsoleOutput(true);
+#else
+        logger.SetConsoleOutput(false);
+#endif
+
         logger.SetFileOutput(true);
         logger.SetColorOutput(true);
         logger.SetTimezoneOffset(0);
         logger.SetPrintClassName(false);
         logger.SetPrintLocation(true);
+
+        Liara::Logging::Logger::Initialize("liara_engine.log");
+        Liara::Logging::Logger::EnableImGuiConsole();
 
         LIARA_LOG_INFO(LogApplication,
                        "Starting application: {} v{}",
@@ -59,8 +65,6 @@ namespace Liara::Core
                                       appInfo.copyright,
                                       appInfo.buildConfig,
                                       appInfo.targetPlatform));
-
-        // TEST_LOGGER();
 
         bool result = EXIT_FAILURE;
 

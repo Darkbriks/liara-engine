@@ -28,6 +28,9 @@ target_sources(LiaraEngine
         Systems/PointLightSystem.cpp
         Systems/ImGuiSystem.cpp
 
+        UI/ImGuiEngineStats.cpp
+        UI/ImGuiLogConsole.cpp
+
         Plateform/Liara_Window.cpp
 
         Listener/KeybordMovementController.cpp

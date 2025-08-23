@@ -1,6 +1,7 @@
 #include "ImGuiSystem.h"
 
 #include "Core/FrameInfo.h"
+#include "Core/ImGui/ImGuiElementMainMenu.h"
 #include "Core/Liara_Utils.h"
 #include "Graphics/Liara_Device.h"
 
@@ -17,6 +18,7 @@ namespace Liara::Systems
 
     ImGuiSystem::ImGuiSystem(const Plateform::Liara_Window& window,
                              Graphics::Liara_Device& device,
+                             const Core::ApplicationInfo& appInfo,
                              VkRenderPass renderPass,
                              const uint32_t imageCount)
         : Liara_System("ImGui System", {.major = 0, .minor = 2, .patch = 3, .prerelease = "dev"})
@@ -86,6 +88,8 @@ namespace Liara::Systems
         // ImGui_ImplVulkan_DestroyFontUploadObjects();
 
         imguiInitialized = true;
+
+        AddElement(std::make_unique<Core::ImGuiElements::MainMenu>(appInfo));
     }
 
     ImGuiSystem::~ImGuiSystem() {
