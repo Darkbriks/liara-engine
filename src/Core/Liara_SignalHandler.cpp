@@ -1,8 +1,8 @@
 #include "Liara_SignalHandler.h"
 
-#include <fmt/core.h>
-
 #include <iostream>
+
+#include "Logging/LogMacros.h"
 
 #ifdef _WIN32
     #include <signal.h>
@@ -30,7 +30,7 @@ namespace Liara::Core
                     }
                 },
                 TRUE)) {
-            fmt::print(stderr, "Failed to set Windows console handler\n");
+            LIARA_LOG_ERROR(LogCore, "Failed to set Windows console handler");
             return false;
         }
 #else
@@ -41,12 +41,12 @@ namespace Liara::Core
         sa.sa_flags = SA_RESTART;
 
         if (sigaction(SIGINT, &sa, nullptr) == -1) {
-            fmt::print(stderr, "Failed to set SIGINT handler\n");
+            LIARA_LOG_ERROR(LogCore, "Failed to set SIGINT handler");
             return false;
         }
 
         if (sigaction(SIGTERM, &sa, nullptr) == -1) {
-            fmt::print(stderr, "Failed to set SIGTERM handler\n");
+            LIARA_LOG_ERROR(LogCore, "Failed to set SIGTERM handler");
             return false;
         }
 #endif
@@ -77,10 +77,10 @@ namespace Liara::Core
                 s_callback();
             }
             catch (const std::exception& e) {
-                fmt::print(stderr, "Error in shutdown callback: {}\n", e.what());
+                LIARA_LOG_ERROR(LogCore, "Error in shutdown callback: {}", e.what());
             }
             catch (...) {
-                fmt::print(stderr, "Unknown error in shutdown callback\n");
+                LIARA_LOG_ERROR(LogCore, "Unknown error in shutdown callback");
             }
         }
     }

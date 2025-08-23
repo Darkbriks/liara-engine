@@ -1,7 +1,5 @@
 #pragma once
 
-#include "fmt/core.h"
-
 #include <any>
 #include <cstdint>
 #include <functional>
@@ -14,6 +12,8 @@
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include "Logging/LogMacros.h"
 
 namespace Liara::Core
 {
@@ -56,7 +56,7 @@ namespace Liara::Core
             }
             catch (const std::bad_any_cast&) {
                 // Type mismatch, ignore silently
-                fmt::print("Type mismatch in observer notification for type {}\n", typeid(T).name());
+                LIARA_LOG_WARNING(LogCore, "Type mismatch in observer notification for type {}", typeid(T).name());
             }
         }
 

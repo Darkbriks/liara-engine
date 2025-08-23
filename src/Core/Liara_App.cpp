@@ -7,6 +7,7 @@
 #include "Graphics/Liara_Buffer.h"
 #include "Graphics/Liara_Texture.h"
 #include "Graphics/Ubo/GlobalUbo.h"
+#include "Graphics/VkResultToString.h"
 #include "Systems/ImGuiSystem.h"
 #include "Systems/Liara_System.h"
 #include "Systems/PointLightSystem.h"
@@ -28,6 +29,8 @@
 #include <chrono>
 #include <thread>
 
+#include "Application.h"
+#include "Logging/LogMacros.h"
 
 namespace Liara::Core
 {
@@ -48,6 +51,8 @@ namespace Liara::Core
                 .Build();
 
         m_DescriptorLayoutCache = Graphics::Descriptors::Liara_DescriptorLayoutCache::Builder(m_Device).Build();
+
+        LIARA_LOG_INFO(LogApplication, "Application created successfully");
     }
 
     void Liara_App::Run() {
@@ -58,6 +63,8 @@ namespace Liara::Core
         Init();
 
         auto currentTime = std::chrono::high_resolution_clock::now();
+
+        LIARA_LOG_INFO(LogApplication, "Starting main loop");
 
         while (!m_Window.ShouldClose() && !Liara_SignalHandler::ShouldExit()) {
             frameStats.Reset();
@@ -92,7 +99,18 @@ namespace Liara::Core
             }
         }
 
+        LIARA_LOG_INFO(LogApplication, "Main loop has ended, exiting application");
+
         Close();
+    }
+
+    void Liara_App::AddSystem(std::unique_ptr<Systems::Liara_System> system) {
+        m_Systems.push_back(std::move(system));
+        LIARA_LOG_VERBOSE(LogApplication,
+                          "System \"{}(v{})\" added successfully, total systems: {}",
+                          m_Systems.back()->Name(),
+                          m_Systems.back()->Version().ToString(),
+                          m_Systems.size());
     }
 
     void Liara_App::Init() {
@@ -102,12 +120,15 @@ namespace Liara::Core
         InitSystems();
         InitCamera();
         LateInit();
+
+        LIARA_LOG_INFO(LogApplication, "Application initialized successfully");
     }
 
     void Liara_App::InitSignalHandling() {
-        if (!Liara_SignalHandler::Initialize([this]() {})) {
-            fmt::print(stderr, "Warning: Failed to initialize signal handling\n");
+        if (!Liara_SignalHandler::Initialize([]() {})) {
+            LIARA_LOG_WARNING(LogApplication, "Failed to initialize signal handling");
         }
+        LIARA_LOG_VERBOSE(LogApplication, "Signal handling initialized successfully");
     }
 
     void Liara_App::InitUboBuffers() {
@@ -120,6 +141,8 @@ namespace Liara::Core
 
             m_UboMappings.emplace_back(m_UboBuffers[i]->CreateMappingGuard());
         }
+
+        LIARA_LOG_VERBOSE(LogApplication, "UBO buffers initialized successfully");
     }
 
     void Liara_App::InitDescriptorSets() {
@@ -133,6 +156,8 @@ namespace Liara::Core
                 .BindImage(1, &textureInfo, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
                 .Build(m_GlobalDescriptorSets[i], m_GlobalSetLayout);
         }
+
+        LIARA_LOG_VERBOSE(LogApplication, "Descriptor sets initialized successfully");
     }
 
     void Liara_App::InitSystems() {
@@ -144,9 +169,14 @@ namespace Liara::Core
                                                                    m_Device,
                                                                    m_RendererManager.GetRenderer().GetRenderPass(),
                                                                    m_RendererManager.GetRenderer().GetImageCount()));
+
+        LIARA_LOG_VERBOSE(LogApplication, "{} systems initialized successfully", m_Systems.size());
     }
 
-    void Liara_App::InitCamera() { m_Camera = Liara_Camera{}; }
+    void Liara_App::InitCamera() {
+        m_Camera = Liara_Camera{};
+        LIARA_LOG_VERBOSE(LogApplication, "Camera initialized successfully");
+    }
 
     void Liara_App::SetProjection(const float aspect) {
         // camera.SetOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
@@ -156,6 +186,8 @@ namespace Liara::Core
     void Liara_App::Close() {
         Liara_SignalHandler::Cleanup();
         vkDeviceWaitIdle(m_Device.GetDevice());
+
+        LIARA_LOG_INFO(LogApplication, "Application closed successfully");
     }
 
     void Liara_App::MasterProcessInput(const float frameTime) {
@@ -175,9 +207,10 @@ namespace Liara::Core
         const auto& currentBuffer = m_UboBuffers[frameInfo.frameIndex];
         currentBuffer->WriteObject(ubo);
 
-        if (!(currentBuffer->GetMemoryPropertyFlags() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+        if ((currentBuffer->GetMemoryPropertyFlags() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0u) {
             if (const auto result = currentBuffer->Flush(); result != VK_SUCCESS) {
-                throw std::runtime_error("Failed to flush UBO buffer");
+                LIARA_THROW_RUNTIME_ERROR(
+                    LogApplication, "Failed to flush UBO buffer: {}", Graphics::VkResultToString(result));
             }
         }
     }

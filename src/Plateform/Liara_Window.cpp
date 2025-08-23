@@ -1,6 +1,7 @@
 #include "Liara_Window.h"
 
 #include "Core/Liara_SettingsManager.h"
+#include "Core/Logging/LogMacros.h"
 
 #include <vulkan/vulkan_core.h>
 
@@ -16,23 +17,22 @@
 #include <string>
 #include <unordered_map>
 
-#include "fmt/core.h"
-
 namespace Liara::Plateform
 {
     uint8_t Liara_Window::windowCount = 0;
     std::unordered_map<uint8_t, Liara_Window*> Liara_Window::windows;
 
     std::string WindowSettings::serialize() const {
-        fmt::print("Serializing window settings: name={}, width={}, height={}, xPos={}, yPos={}, fullscreen={}, "
-                   "resizable={}\n",
-                   name,
-                   width,
-                   height,
-                   xPos,
-                   yPos,
-                   fullscreen,
-                   resizable);
+        LIARA_LOG_DEBUG(LogPlatform,
+                        "Serializing window settings: name={}, width={}, height={}, xPos={}, yPos={}, fullscreen={}, "
+                        "resizable={}",
+                        name,
+                        width,
+                        height,
+                        xPos,
+                        yPos,
+                        fullscreen,
+                        resizable);
         nlohmann::json json;
         json["name"] = name.data();
         json["width"] = width;
@@ -54,19 +54,20 @@ namespace Liara::Plateform
             yPos = json.value("yPos", 100);
             fullscreen = json.value("fullscreen", false);
             resizable = json.value("resizable", true);
-            fmt::print("Deserialized window settings: name={}, width={}, height={}, xPos={}, yPos={}, fullscreen={}, "
-                       "resizable={}\n",
-                       name,
-                       width,
-                       height,
-                       xPos,
-                       yPos,
-                       fullscreen,
-                       resizable);
+            LIARA_LOG_DEBUG(LogPlatform,
+                            "Deserialized window settings: name={}, width={}, height={}, xPos={}, yPos={}, "
+                            "fullscreen={}, resizable={}",
+                            name,
+                            width,
+                            height,
+                            xPos,
+                            yPos,
+                            fullscreen,
+                            resizable);
             return true;
         }
         catch (const nlohmann::json::parse_error& e) {
-            fmt::print(stderr, "Failed to deserialize window settings: {}\n", e.what());
+            LIARA_LOG_ERROR(LogPlatform, "Failed to deserialize window settings: {}", e.what());
             return false;
         }
     }
@@ -111,7 +112,7 @@ namespace Liara::Plateform
 
     void Liara_Window::CreateWindowSurface(VkInstance instance, VkSurfaceKHR* surface) const {
         if (SDL_Vulkan_CreateSurface(m_Window, instance, surface) != SDL_TRUE) {
-            throw std::runtime_error("Failed to create window surface!");
+            LIARA_THROW_RUNTIME_ERROR(LogPlatform, "Failed to create window surface! SDL_Error: {}", SDL_GetError());
         }
     }
 
@@ -123,7 +124,9 @@ namespace Liara::Plateform
     }
 
     void Liara_Window::InitWindow() {
-        if (SDL_Init(SDL_INIT_VIDEO) != 0) { throw std::runtime_error("Failed to initialize SDL"); }
+        if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+            LIARA_THROW_RUNTIME_ERROR(LogPlatform, "Failed to initialize SDL! SDL_Error: {}", SDL_GetError());
+        }
 
         const auto settings = m_SettingsManager.Get<WindowSettings>("window." + std::to_string(m_ID));
 
@@ -137,7 +140,7 @@ namespace Liara::Plateform
                                          settings.GetHeight(),
                                          windowFlags))
             == nullptr) {
-            throw std::runtime_error("Failed to create window! SDL_Error: " + std::string(SDL_GetError()));
+            LIARA_THROW_RUNTIME_ERROR(LogPlatform, "Failed to create SDL window! SDL_Error: {}", SDL_GetError());
         }
 
         UpdateFullscreenMode();

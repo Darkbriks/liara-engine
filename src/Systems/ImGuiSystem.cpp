@@ -42,7 +42,7 @@ namespace Liara::Systems
         poolInfo.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(poolSizes));
         poolInfo.pPoolSizes = poolSizes;
         if (vkCreateDescriptorPool(device.GetDevice(), &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS) {
-            throw std::runtime_error("failed to set up descriptor pool for imgui");
+            LIARA_THROW_RUNTIME_ERROR(LogSystems, "Failed to set up descriptor pool for imgui");
         }
 
         // Setup Dear ImGui context

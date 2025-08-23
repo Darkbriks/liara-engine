@@ -55,9 +55,8 @@ namespace Liara::Graphics::Renderers
             return nullptr;
         }
 
-        if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-            throw std::runtime_error("Failed to acquire swap chain image!");
-        }
+        LIARA_CHECK_RUNTIME(
+            result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, LogVulkan, "Failed to acquire swap chain image!");
 
         m_IsFrameStarted = true;
 
@@ -66,7 +65,7 @@ namespace Liara::Graphics::Renderers
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
         if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to begin recording command buffer!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to begin recording command buffer!");
         }
         return commandBuffer;
     }
@@ -75,7 +74,7 @@ namespace Liara::Graphics::Renderers
         assert(m_IsFrameStarted && "Can't call EndFrame while frame is not in progress");
         auto* const commandBuffer = GetCurrentCommandBuffer();
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to record command buffer!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to record command buffer!");
         }
 
         if (const auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex);
@@ -86,7 +85,7 @@ namespace Liara::Graphics::Renderers
             m_NeedsSwapChainRecreation = false;
             m_VsyncChanged = false;
         }
-        else if (result != VK_SUCCESS) { throw std::runtime_error("Failed to present swap chain image!"); }
+        else if (result != VK_SUCCESS) { LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to present swap chain image!"); }
 
         if (m_FullscreenChanged) {
             m_Window.UpdateFullscreenMode();
@@ -151,7 +150,7 @@ namespace Liara::Graphics::Renderers
 
         if (vkAllocateCommandBuffers(m_Device.GetDevice(), &commandBufferAllocInfo, m_CommandBuffers.data())
             != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate command buffers!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to allocate command buffers!");
         }
     }
 
@@ -179,9 +178,9 @@ namespace Liara::Graphics::Renderers
             const std::shared_ptr<Liara_SwapChain> oldSwapChain = std::move(m_SwapChain);
             m_SwapChain = std::make_unique<Liara_SwapChain>(m_Device, extent, oldSwapChain);
 
-            if (!oldSwapChain->CompareSwapFormat(*m_SwapChain)) {
-                throw std::runtime_error("Swap chain image or depth format has changed!");
-            }
+            LIARA_CHECK_RUNTIME(oldSwapChain->CompareSwapFormat(*m_SwapChain),
+                                LogVulkan,
+                                "Swap chain image (or depth) format has changed!");
         }
     }
 }

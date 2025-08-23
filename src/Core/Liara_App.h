@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include "Application.h"
 #include "ApplicationInfo.h"
 #include "Liara_Camera.h"
 #include "Liara_GameObject.h"
@@ -40,7 +41,7 @@ namespace Liara::Core
 
         virtual void Run();
 
-        void AddSystem(std::unique_ptr<Systems::Liara_System> system) { m_Systems.push_back(std::move(system)); }
+        void AddSystem(std::unique_ptr<Systems::Liara_System> system);
 
         Liara_SettingsManager& GetSettingsManager() const { return *m_SettingsManager; }
         const ApplicationInfo& GetApplicationInfo() const noexcept { return m_ApplicationInfo; }

@@ -25,7 +25,7 @@
     #define LIARA_TARGET_PLATFORM "Unknown"
 #endif
 
-LIARA_DECLARE_LOG_CATEGORY(App, Info, Verbose);
+LIARA_DECLARE_LOG_CATEGORY_WITH_NAME(LogApplication, "App", Info, Verbose);
 
 namespace Liara::Core
 {
@@ -43,23 +43,17 @@ namespace Liara::Core
         logger.SetPrintClassName(false);
         logger.SetPrintLocation(true);
 
-        LIARA_LOG_INFO(App,
-                       "Starting application: {} v{}.{}.{}-{}",
+        LIARA_LOG_INFO(LogApplication,
+                       "Starting application: {} v{}",
                        appInfo.displayName.empty() ? appInfo.name : appInfo.displayName,
-                       appInfo.version.major,
-                       appInfo.version.minor,
-                       appInfo.version.patch,
-                       appInfo.version.prerelease.empty() ? "stable" : appInfo.version.prerelease);
+                       appInfo.version.ToString());
 
-        LIARA_LOG_VERBOSE(App,
+        LIARA_LOG_VERBOSE(LogApplication,
                           "Application info: {}",
-                          std::format("Name: {}, Version: {}.{}.{}-{}, Organization: {}, Website: {}, Copyright: {}, "
+                          std::format("Name: {}, Description: {}, Organization: {}, Website: {}, Copyright: {}, "
                                       "Build Config: {}, Target Platform: {}",
                                       appInfo.name,
-                                      appInfo.version.major,
-                                      appInfo.version.minor,
-                                      appInfo.version.patch,
-                                      appInfo.version.prerelease,
+                                      appInfo.description,
                                       appInfo.organization,
                                       appInfo.website,
                                       appInfo.copyright,
@@ -76,13 +70,13 @@ namespace Liara::Core
             result = app.GetSettingsManager().SaveToFile("settings.cfg", true) ? EXIT_SUCCESS : EXIT_FAILURE;
         }
         catch (const std::exception& e) {
-            LIARA_LOG_FATAL(App, "Application error: {}", e.what());
+            LIARA_LOG_FATAL(LogApplication, "Application error: {}", e.what());
         }
         catch (...) {
-            LIARA_LOG_FATAL(App, "Unknown application error occurred");
+            LIARA_LOG_FATAL(LogApplication, "Unknown application error occurred");
         }
 
-        LIARA_LOG_INFO(App, "Application finished with exit code: {}", result);
+        LIARA_LOG_INFO(LogApplication, "Application finished with exit code: {}", static_cast<int>(result));
 
         Logging::Logger::Shutdown();
         return result;

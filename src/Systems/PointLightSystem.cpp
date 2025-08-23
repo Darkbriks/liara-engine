@@ -119,7 +119,7 @@ namespace Liara::Systems
         pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
         if (vkCreatePipelineLayout(m_Device.GetDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout)
             != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create pipeline layout!");
+            LIARA_THROW_RUNTIME_ERROR(LogSystems, "Failed to create pipeline layout!");
         }
     }
 

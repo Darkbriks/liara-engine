@@ -26,7 +26,7 @@ namespace Liara::Graphics
         , m_UsageFlags(config.usage)
         , m_MemoryPropertyFlags(config.memoryProperties)
         , m_MinOffsetAlignment(config.minOffsetAlignment) {
-        if (data.empty()) { throw std::invalid_argument("Data span cannot be empty"); }
+        LIARA_CHECK_ARGUMENT(!data.empty(), LogBuffer, "Data span cannot be empty");
 
         m_AlignmentSize = GetAlignment(m_InstanceSize, m_MinOffsetAlignment);
         m_BufferSize = m_AlignmentSize * m_InstanceCount;
@@ -52,7 +52,7 @@ namespace Liara::Graphics
         assert(m_Mapped && "Buffer must be mapped before writing");
 
         const VkDeviceSize dataSize = data.size_bytes();
-        if (byteOffset + dataSize > m_BufferSize) { throw std::out_of_range("Write would exceed buffer bounds"); }
+        LIARA_CHECK_OUT_OF_RANGE(byteOffset + dataSize <= m_BufferSize, LogBuffer, "Write would exceed buffer bounds");
 
         auto* dst = static_cast<std::byte*>(m_Mapped) + byteOffset;
         std::memcpy(dst, data.data(), dataSize);
@@ -97,17 +97,17 @@ namespace Liara::Graphics
     }
 
     template <GpuCompatible T> void Liara_Buffer::WriteToIndex(const T& data, const uint32_t index) {
-        if (index >= m_InstanceCount) { throw std::out_of_range("Index out of bounds"); }
+        LIARA_CHECK_OUT_OF_RANGE(index < m_InstanceCount, LogBuffer, "Index out of bounds");
         WriteObject(data, index * m_AlignmentSize);
     }
 
     template <GpuCompatible T> T& Liara_Buffer::ReadFromIndex(const uint32_t index) {
-        if (index >= m_InstanceCount) { throw std::out_of_range("Index out of bounds"); }
+        LIARA_CHECK_OUT_OF_RANGE(index < m_InstanceCount, LogBuffer, "Index out of bounds");
         return ReadObject<T>(index * m_AlignmentSize);
     }
 
     template <GpuCompatible T> const T& Liara_Buffer::ReadFromIndex(const uint32_t index) const {
-        if (index >= m_InstanceCount) { throw std::out_of_range("Index out of bounds"); }
+        LIARA_CHECK_OUT_OF_RANGE(index < m_InstanceCount, LogBuffer, "Index out of bounds");
         return ReadObject<T>(index * m_AlignmentSize);
     }
 
@@ -115,11 +115,9 @@ namespace Liara::Graphics
         static_assert(GpuCompatible<T>, "Type must be GPU compatible");
 
         if (const VkDeviceSize requiredSize = byteOffset + (sizeof(T) * count); requiredSize > m_BufferSize) {
-            throw std::out_of_range("Access would exceed buffer bounds");
+            LIARA_THROW_OUT_OF_RANGE(LogBuffer, "Access would exceed buffer bounds");
         }
 
-        if (byteOffset % alignof(T) != 0) {
-            throw std::invalid_argument("Byte offset must be aligned to type alignment");
-        }
+        LIARA_CHECK_ARGUMENT(byteOffset % alignof(T) == 0, LogBuffer, "Byte offset must be aligned to type alignment");
     }
 }

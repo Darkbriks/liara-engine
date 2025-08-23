@@ -3,7 +3,6 @@
 #include "Core/Liara_SettingsManager.h"
 #include "Plateform/Liara_Window.h"
 
-#include <fmt/core.h>
 #include <vulkan/vk_platform.h>
 #include <vulkan/vulkan_core.h>
 
@@ -24,7 +23,7 @@ namespace
                                                  VkDebugUtilsMessageTypeFlagsEXT /*messageType*/,
                                                  const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                                  void* /*pUserData*/) {
-        fmt::print(stderr, "validation layer: {}\n", pCallbackData->pMessage);
+        LIARA_LOG_WARNING(Liara::LogVulkan, "validation layer: {}", pCallbackData->pMessage);
         return VK_FALSE;
     }
 
@@ -78,7 +77,7 @@ namespace Liara::Graphics
     void Liara_Device::CreateInstance() {
 #ifndef NDEBUG
         if (!CheckValidationLayerSupport()) {
-            throw std::runtime_error("validation layers requested, but not available!");
+            LIARA_LOG_ERROR(LogVulkan, "Validation layers requested, but not available!");
         }
 #endif
 
@@ -112,7 +111,7 @@ namespace Liara::Graphics
 #endif
 
         if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create instance!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create Vulkan instance");
         }
 
         HasSdl2RequiredInstanceExtensions();
@@ -121,9 +120,9 @@ namespace Liara::Graphics
     void Liara_Device::PickPhysicalDevice() {
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
-        if (deviceCount == 0) { throw std::runtime_error("failed to find GPUs with Vulkan support!"); }
+        if (deviceCount == 0) { LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to find GPUs with Vulkan support!"); }
 
-        fmt::print("Device count: {}\n", deviceCount);
+        LIARA_LOG_VERBOSE(LogVulkan, "Device count: {}", deviceCount);
         std::vector<VkPhysicalDevice> devices(deviceCount);
         vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data());
 
@@ -134,10 +133,10 @@ namespace Liara::Graphics
             }
         }
 
-        if (m_PhysicalDevice == VK_NULL_HANDLE) { throw std::runtime_error("failed to find a suitable GPU!"); }
+        LIARA_CHECK_RUNTIME(m_PhysicalDevice != VK_NULL_HANDLE, LogVulkan, "Failed to find a suitable GPU!");
 
         vkGetPhysicalDeviceProperties(m_PhysicalDevice, &deviceProperties);
-        fmt::print("physical device: {}\n", deviceProperties.deviceName);
+        LIARA_LOG_INFO(LogVulkan, "Selected physical device: {}", deviceProperties.deviceName);
     }
 
     void Liara_Device::CreateLogicalDevice() {
@@ -184,7 +183,7 @@ namespace Liara::Graphics
 #endif
 
         if (vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create logical device!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create logical device!");
         }
 
         vkGetDeviceQueue(m_Device, indices.graphicsFamily, 0, &m_GraphicsQueue);
@@ -200,7 +199,7 @@ namespace Liara::Graphics
         poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
         if (vkCreateCommandPool(m_Device, &poolInfo, nullptr, &m_CommandPool) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create command pool!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create command pool!");
         }
     }
 
@@ -222,12 +221,12 @@ namespace Liara::Graphics
 
         if (m_SettingsManager.GetBool("texture.use_anisotropic_filtering")
             && supportedFeatures.samplerAnisotropy == 0u) {
-            fmt::print("Device does not support anisotropic filtering\n");
+            LIARA_LOG_WARNING(LogVulkan, "Device does not support anisotropic filtering, disabling it");
             return false;
         }
 
         if (m_SettingsManager.GetBool("texture.use_bindless_textures") && !CheckBindlessTextureSupport(device)) {
-            fmt::print("Device does not support bindless textures\n");
+            LIARA_LOG_WARNING(LogVulkan, "Device does not support bindless textures, disabling it");
             return false;
         }
 
@@ -249,7 +248,7 @@ namespace Liara::Graphics
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         PopulateDebugMessengerCreateInfo(createInfo);
         if (CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS) {
-            throw std::runtime_error("failed to set up debug messenger!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to set up debug messenger!");
         }
     }
 
@@ -287,7 +286,7 @@ namespace Liara::Graphics
         vkGetPhysicalDeviceFeatures2(device, &deviceFeatures2);
 
         if (descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount == VK_TRUE) { return true; }
-        fmt::print("Device does not support bindless textures\n");
+        LIARA_LOG_WARNING(LogVulkan, "Device does not support bindless textures");
         return false;
     }
 
@@ -295,13 +294,13 @@ namespace Liara::Graphics
         // Get the count
         uint32_t sdlExtensionCount = 0;
         if (SDL_Vulkan_GetInstanceExtensions(m_Window.GetWindow(), &sdlExtensionCount, nullptr) == 0u) {
-            throw std::runtime_error("Failed to get SDL Vulkan extensions");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to get the number of SDL Vulkan extensions");
         }
 
         // Get the extensions
         auto* const sdlExtensions = new const char*[sdlExtensionCount];
         if (SDL_Vulkan_GetInstanceExtensions(m_Window.GetWindow(), &sdlExtensionCount, sdlExtensions) != SDL_TRUE) {
-            throw std::runtime_error("Failed to get SDL Vulkan extensions");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to get SDL Vulkan extensions");
         }
 
         std::vector<const char*> extensions(sdlExtensions, sdlExtensions + sdlExtensionCount);
@@ -319,18 +318,19 @@ namespace Liara::Graphics
         std::vector<VkExtensionProperties> extensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-        fmt::print("available extensions:\n");
+        LIARA_LOG_DEBUG(LogVulkan, "Available Vulkan extensions:");
         std::unordered_set<std::string> available;
         for (const auto& [extensionName, specVersion] : extensions) {
-            fmt::print("\t{}\n", extensionName);
+            LIARA_LOG_DEBUG(LogVulkan, "\t{} (version: {})", extensionName, specVersion);
             available.insert(extensionName);
         }
 
-        fmt::print("required extensions:\n");
+        LIARA_LOG_DEBUG(LogVulkan, "Required Vulkan extensions:");
         const auto requiredExtensions = GetRequiredExtensions();
         for (const auto& required : requiredExtensions) {
-            fmt::print("\t{}\n", required);
-            if (!available.contains(required)) { throw std::runtime_error("Missing required glfw extension"); }
+            LIARA_LOG_DEBUG(LogVulkan, "\t{}", required);
+            LIARA_CHECK_RUNTIME(
+                available.contains(required), LogVulkan, "Missing required Vulkan extension: {}", required);
         }
     }
 
@@ -416,7 +416,7 @@ namespace Liara::Graphics
                 return format;
             }
         }
-        throw std::runtime_error("failed to find supported format!");
+        LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to find supported format!");
     }
 
     uint32_t Liara_Device::FindMemoryType(const uint32_t typeFilter, const VkMemoryPropertyFlags properties) const {
@@ -428,8 +428,7 @@ namespace Liara::Graphics
                 return i;
             }
         }
-
-        throw std::runtime_error("failed to find suitable memory type!");
+        LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to find suitable memory type!");
     }
 
     void Liara_Device::CreateBuffer(const VkDeviceSize size,
@@ -444,7 +443,7 @@ namespace Liara::Graphics
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         if (vkCreateBuffer(m_Device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create vertex buffer!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create buffer!");
         }
 
         VkMemoryRequirements memRequirements;
@@ -456,7 +455,7 @@ namespace Liara::Graphics
         allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
 
         if (vkAllocateMemory(m_Device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate vertex buffer memory!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to allocate buffer memory!");
         }
 
         vkBindBufferMemory(m_Device, buffer, bufferMemory, 0);
@@ -532,7 +531,7 @@ namespace Liara::Graphics
                                            VkImage& image,
                                            VkDeviceMemory& imageMemory) const {
         if (vkCreateImage(m_Device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create image!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create image!");
         }
 
         VkMemoryRequirements memRequirements;
@@ -544,11 +543,11 @@ namespace Liara::Graphics
         allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
 
         if (vkAllocateMemory(m_Device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate image memory!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to allocate image memory!");
         }
 
         if (vkBindImageMemory(m_Device, image, imageMemory, 0) != VK_SUCCESS) {
-            throw std::runtime_error("failed to bind image memory!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to bind image memory!");
         }
     }
 }

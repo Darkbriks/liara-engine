@@ -42,8 +42,8 @@ namespace Liara::Graphics
     std::unique_ptr<Liara_Model> Liara_Model::CreateFromData(Liara_Device& device,
                                                              const std::span<const Vertex> vertices,
                                                              const std::span<const uint32_t> indices) {
-        if (vertices.empty()) { throw std::invalid_argument("Vertices cannot be empty"); }
-        if (vertices.size() < 3) { throw std::invalid_argument("At least 3 vertices required"); }
+        LIARA_CHECK_ARGUMENT(!vertices.empty(), LogCore, "Vertices cannot be empty");
+        LIARA_CHECK_ARGUMENT(vertices.size() >= 3, LogCore, "At least 3 vertices required");
         return std::unique_ptr<Liara_Model>(new Liara_Model(device, vertices, indices));
     }
 
@@ -51,7 +51,7 @@ namespace Liara::Graphics
                                                              const std::string_view filename,
                                                              const uint32_t specularExponent) {
         const auto meshData = LoadMeshFromOBJ(filename, specularExponent);
-        if (meshData.Empty()) { throw std::runtime_error("Failed to load model from file: " + std::string(filename)); }
+        LIARA_CHECK_RUNTIME(!meshData.Empty(), LogCore, "Failed to load model from file: {}", std::string(filename));
 
         return CreateFromData(device, meshData.GetVertices(), meshData.GetIndices());
     }
@@ -165,7 +165,8 @@ namespace Liara::Graphics
         const std::string fullPath = std::string(ENGINE_DIR) + std::string(filename);
 
         if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, fullPath.c_str())) {
-            throw std::runtime_error("Failed to load OBJ file: " + warn + err);
+            LIARA_LOG_ERROR(LogCore, "Failed to load OBJ file '{}': {}", fullPath, warn + err);
+            return {};
         }
 
         MeshData meshData;

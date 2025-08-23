@@ -12,6 +12,9 @@
 #include <utility>
 
 #include "Liara_Device.h"
+#include "VkResultToString.h"
+
+LIARA_DECLARE_LOG_CATEGORY_EXTERN(LogBuffer, Info, Verbose);
 
 namespace Liara::Graphics
 {
@@ -125,7 +128,8 @@ namespace Liara::Graphics
                                   const VkDeviceSize offset = 0)
                 : m_Buffer(&buffer) {
                 if (const auto result = m_Buffer->Map(size, offset); result != VK_SUCCESS) {
-                    throw std::runtime_error("Failed to map buffer");
+                    LIARA_THROW_RUNTIME_ERROR(
+                        LogBuffer, "Failed to map buffer memory with error code: {}", VkResultToString(result));
                 }
             }
 

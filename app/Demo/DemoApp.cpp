@@ -17,18 +17,12 @@
 #include <utility>
 #include <vector>
 
-#include "fmt/core.h"
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 DemoApp::DemoApp(const Liara::Core::ApplicationInfo& appInfo)
     : Liara_App(appInfo)
     , m_Controller(*m_SettingsManager) {
-    fmt::print("Starting {} v{}\n", appInfo.GetDisplayName(), appInfo.version.ToString());
-
-    if (!appInfo.description.empty()) { fmt::print("Description: {}\n", appInfo.description); }
-
     LoadGameObjects();
 
     m_Player = std::make_unique<Liara::Core::Liara_GameObject>(Liara::Core::Liara_GameObject::CreateGameObject());

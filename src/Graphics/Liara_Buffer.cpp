@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <utility>
 
+LIARA_DEFINE_LOG_CATEGORY(LogBuffer, "Buffer", Info, Verbose);
 
 namespace Liara::Graphics
 {
@@ -22,7 +23,7 @@ namespace Liara::Graphics
         , m_UsageFlags(config.usage)
         , m_MemoryPropertyFlags(config.memoryProperties)
         , m_MinOffsetAlignment(config.minOffsetAlignment) {
-        if (size == 0) { throw std::invalid_argument("Buffer size cannot be zero"); }
+        LIARA_CHECK_ARGUMENT(size > 0, LogBuffer, "Buffer size cannot be zero");
 
         m_AlignmentSize = GetAlignment(m_InstanceSize, m_MinOffsetAlignment);
         m_BufferSize = m_AlignmentSize * m_InstanceCount;
@@ -74,7 +75,8 @@ namespace Liara::Graphics
     void Liara_Buffer::WriteBytes(const std::span<const std::byte> data, const VkDeviceSize byteOffset) const {
         assert(m_Mapped && "Buffer must be mapped before writing");
 
-        if (byteOffset + data.size() > m_BufferSize) { throw std::out_of_range("Write would exceed buffer bounds"); }
+        LIARA_CHECK_OUT_OF_RANGE(
+            byteOffset + data.size() <= m_BufferSize, LogBuffer, "Write would exceed buffer bounds");
 
         auto* dst = static_cast<std::byte*>(m_Mapped) + byteOffset;
         std::memcpy(dst, data.data(), data.size());

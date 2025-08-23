@@ -9,16 +9,20 @@
 
 #pragma once
 
-#include <array>
-#include <span>
-#include <mutex>
+#include "Graphics/GraphicsConstants.h"
+
 #include <vulkan/vulkan_core.h>
 
-#include "Graphics/GraphicsConstants.h"
+#include <array>
+#include <mutex>
+#include <span>
 
 #include "Utils/Singleton.h"
 
-namespace Liara::Core { class Liara_SettingsManager; }
+namespace Liara::Core
+{
+    class Liara_SettingsManager;
+}
 
 namespace Liara::Graphics
 {
@@ -26,14 +30,12 @@ namespace Liara::Graphics
      * @class SpecConstantRegistry
      * @brief Compile-time registry for specialization constants
      */
-    template<typename... Types>
-    class SpecConstantRegistry
+    template <typename... Types> class SpecConstantRegistry
     {
     public:
-        static void Initialize(Types... values) noexcept
-        {
+        static void Initialize(Types... values) noexcept {
             if (s_Initialized) {
-                fmt::print(stderr, "Warning: SpecConstantRegistry already initialized\n");
+                LIARA_LOG_WARNING(LogGraphics, "SpecConstantRegistry already initialized, ignoring new values");
                 return;
             }
 
@@ -43,47 +45,35 @@ namespace Liara::Graphics
             }
         }
 
-        static std::array<VkSpecializationMapEntry, sizeof...(Types)> GetMapEntries()
-        {
-            if (!s_Initialized) { throw std::runtime_error("SpecConstantRegistry not initialized"); }
+        static std::array<VkSpecializationMapEntry, sizeof...(Types)> GetMapEntries() {
+            if (!s_Initialized) { LIARA_LOG_WARNING(LogGraphics, "SpecConstantRegistry not initialized"); }
 
             std::array<VkSpecializationMapEntry, ConstantCount> entries{};
             for (size_t i = 0; i < ConstantCount; ++i) {
-                entries[i] = VkSpecializationMapEntry{
-                    .constantID = static_cast<uint32_t>(i),
-                    .offset = static_cast<uint32_t>(i * sizeof(uint32_t)),
-                    .size = sizeof(uint32_t)
-                };
+                entries[i] = VkSpecializationMapEntry{.constantID = static_cast<uint32_t>(i),
+                                                      .offset = static_cast<uint32_t>(i * sizeof(uint32_t)),
+                                                      .size = sizeof(uint32_t)};
             }
             return entries;
         }
 
-        static VkSpecializationInfo GetSpecializationInfo()
-        {
-            if (!s_Initialized) {
-                //throw std::runtime_error("SpecConstantRegistry not initialized");
-            }
+        static VkSpecializationInfo GetSpecializationInfo() {
+            if (!s_Initialized) { LIARA_LOG_WARNING(LogGraphics, "SpecConstantRegistry not initialized"); }
 
             static const auto mapEntries = GetMapEntries();
 
-            return VkSpecializationInfo{
-                .mapEntryCount = static_cast<uint32_t>(ConstantCount),
-                .pMapEntries = mapEntries.data(),
-                .dataSize = sizeof(s_Data),
-                .pData = s_Data.data()
-            };
+            return VkSpecializationInfo{.mapEntryCount = static_cast<uint32_t>(ConstantCount),
+                                        .pMapEntries = mapEntries.data(),
+                                        .dataSize = sizeof(s_Data),
+                                        .pData = s_Data.data()};
         }
 
-        static std::span<const uint32_t> GetData() noexcept
-        {
-            return std::span<const uint32_t>{s_Data};
-        }
+        static std::span<const uint32_t> GetData() noexcept { return std::span<const uint32_t>{s_Data}; }
 
         static constexpr size_t Size() noexcept { return ConstantCount; }
         static bool IsInitialized() noexcept { return s_Initialized; }
 
-        static void Reset() noexcept
-        {
+        static void Reset() noexcept {
             s_Initialized = false;
             s_Data = {};
         }
@@ -96,7 +86,7 @@ namespace Liara::Graphics
         static inline bool s_Initialized = false;
     };
 
-    using GraphicsSpecConstants = SpecConstantRegistry<uint32_t>; // MAX_LIGHTS
+    using GraphicsSpecConstants = SpecConstantRegistry<uint32_t>;  // MAX_LIGHTS
 
     /**
      * @class SpecConstant
@@ -105,13 +95,11 @@ namespace Liara::Graphics
     class SpecConstant : public Singleton<SpecConstant>
     {
     public:
-
-        void Initialize()
-        {
+        void Initialize() {
             std::lock_guard<std::mutex> lock(m_Mutex);
 
             if (m_Initialized) {
-                fmt::print(stderr, "Warning: SpecConstant already initialized\n");
+                LIARA_LOG_WARNING(LogGraphics, "SpecConstant already initialized, ignoring re-initialization");
                 return;
             }
 
@@ -119,34 +107,28 @@ namespace Liara::Graphics
             m_Initialized = true;
         }
 
-        static void InitializeGlobal()
-        {
-            GetInstance().Initialize();
-        }
+        static void InitializeGlobal() { GetInstance().Initialize(); }
 
-        static VkSpecializationInfo GetSpecializationInfo()
-        {
+        static VkSpecializationInfo GetSpecializationInfo() {
             auto& instance = GetInstance();
             std::lock_guard<std::mutex> lock(instance.m_Mutex);
 
-            if (!instance.m_Initialized) { throw std::runtime_error("SpecConstant not initialized"); }
+            if (!instance.m_Initialized) { LIARA_THROW_RUNTIME_ERROR(LogGraphics, "SpecConstant not initialized"); }
 
             return GraphicsSpecConstants::GetSpecializationInfo();
         }
 
-        static uint32_t GetMaxLights()
-        {
+        static uint32_t GetMaxLights() {
             auto& instance = GetInstance();
             std::lock_guard<std::mutex> lock(instance.m_Mutex);
 
-            if (!instance.m_Initialized) { throw std::runtime_error("SpecConstant not initialized"); }
+            if (!instance.m_Initialized) { LIARA_THROW_RUNTIME_ERROR(LogGraphics, "SpecConstant not initialized"); }
 
             const auto data = GraphicsSpecConstants::GetData();
             return data.empty() ? 10 : data[0];
         }
 
-        static bool IsInitialized()
-        {
+        static bool IsInitialized() {
             auto& instance = GetInstance();
             std::lock_guard<std::mutex> lock(instance.m_Mutex);
             return instance.m_Initialized;
