@@ -204,7 +204,7 @@ namespace Liara::Logging
 
         std::tm tmBuf{};
 #if defined(_WIN32) || defined(_WIN64)
-        gmtime_s(&tm_buf, &time_t_stamp);  // Windows
+        gmtime_s(&timeTStamp, &tmBuf);  // Windows
 #else
         gmtime_r(&timeTStamp, &tmBuf);  // Linux / macOS
 #endif
