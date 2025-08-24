@@ -1,15 +1,15 @@
 #pragma once
 
-// #ifndef LIARA_MODULES_ENABLED
-#include "Core/Logging/LogMacros.h"
-#include "Graphics/VkResultToString.h"
+#ifndef LIARA_MODULES_ENABLED
+    #include "Core/Logging/LogMacros.h"
+    #include "Graphics/VkResultToString.h"
 
-#include <vulkan/vulkan_core.h>
+    #include <vulkan/vulkan_core.h>
 
-#include <cstddef>
-#include <format>
-#include <functional>
-#include <stdexcept>
+    #include <cstddef>
+    #include <format>
+    #include <functional>
+    #include <stdexcept>
 
 namespace Liara::Core
 {
@@ -34,6 +34,6 @@ namespace Liara::Core
     [[nodiscard]] constexpr bool IsVkSuccess(VkResult res) noexcept { return res == VK_SUCCESS; }
 }
 
-// #else
-// export import liara.core.utils;
-// #endif
+#else
+export import liara.core.utils;
+#endif

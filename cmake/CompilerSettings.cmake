@@ -9,12 +9,23 @@ function(liara_set_compiler_settings target)
                     /experimental:module
                     /module:stdIfcDir ${CMAKE_BINARY_DIR}/modules
             )
-        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-            add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-modules-ts>)
+        #elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        #    target_compile_options(${target} PRIVATE
+        #            -fmodules-ts
+        #            -fmodule-mapper=${CMAKE_BINARY_DIR}/module.map
+        #    )
         elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             target_compile_options(${target} PRIVATE
-                    -fmodules-ts
-                    -Xclang -fmodules-embed-all-files
+                    -std=c++20
+                    -fmodules
+                    -fbuiltin-module-map
+                    -fimplicit-module-maps
+            )
+
+            file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/clang-modules")
+
+            target_compile_options(${target} PRIVATE
+                    -fmodules-cache-path=${CMAKE_BINARY_DIR}/clang-modules
             )
         endif()
 
@@ -24,7 +35,21 @@ function(liara_set_compiler_settings target)
         message(STATUS "Using traditional headers for ${target}")
     endif()
 
-    if(MSVC)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(${target} PRIVATE
+                -Wall -Wextra -Wpedantic -Werror
+                -Wno-unused-parameter
+                -Wno-c++98-compat
+                -Wno-c++98-compat-pedantic
+                -Wno-include-angled-in-module-purview
+                -Wno-ambiguous-macro
+        )
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(${target} PRIVATE
+                -Wall -Wextra -Wpedantic -Werror
+                -Wno-unused-parameter
+        )
+    elseif(MSVC)
         if (MSVC_VERSION LESS 1925)
             message(FATAL_ERROR
                     "LiaraEngine requires MSVC 19.25 (Visual Studio 2019 16.5) or newer "
@@ -36,11 +61,6 @@ function(liara_set_compiler_settings target)
                 /permissive-
                 /Zc:__cplusplus
                 /Zc:preprocessor
-        )
-    else()
-        target_compile_options(${target} PRIVATE
-                -Wall -Wextra -Wpedantic -Werror
-                -Wno-unused-parameter
         )
     endif()
 

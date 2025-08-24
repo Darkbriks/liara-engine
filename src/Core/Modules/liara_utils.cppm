@@ -51,6 +51,6 @@ export namespace Liara::Core {
      * @param res Vulkan result to check
      * @return true if VK_SUCCESS, false otherwise
      */
-    [[nodiscard]] constexpr bool IsVkSuccess(VkResult res) noexcept;
+    [[nodiscard]] bool IsVkSuccess(VkResult res) noexcept;
 
 }
