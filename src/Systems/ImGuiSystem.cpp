@@ -2,8 +2,13 @@
 
 #include "Core/FrameInfo.h"
 #include "Core/ImGui/ImGuiElementMainMenu.h"
-#include "Core/Liara_Utils.h"
 #include "Graphics/Liara_Device.h"
+
+#ifdef LIARA_UTILS_MODULE_AVAILABLE
+import liara.core.utils;
+#else
+    #include "Core/Liara_Utils.h"
+#endif
 
 #include <vulkan/vulkan.h>
 

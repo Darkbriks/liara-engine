@@ -1,24 +1,46 @@
 function(liara_set_compiler_settings target)
     target_compile_features(${target} PUBLIC cxx_std_20)
 
+    get_property(modules_enabled GLOBAL PROPERTY LIARA_MODULES_ENABLED)
+
+    if(modules_enabled)
+        if(MSVC)
+            target_compile_options(${target} PRIVATE
+                    /experimental:module
+                    /module:stdIfcDir ${CMAKE_BINARY_DIR}/modules
+            )
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-modules-ts>)
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+            target_compile_options(${target} PRIVATE
+                    -fmodules-ts
+                    -Xclang -fmodules-embed-all-files
+            )
+        endif()
+
+        target_compile_definitions(${target} PRIVATE LIARA_MODULES_ENABLED=1)
+        message(STATUS "Applied modules flags to ${target}")
+    else()
+        message(STATUS "Using traditional headers for ${target}")
+    endif()
+
     if(MSVC)
-        # Check minimum MSVC version (19.25 == VS2019 16.5) for __VA_OPT__ support
         if (MSVC_VERSION LESS 1925)
             message(FATAL_ERROR
                     "LiaraEngine requires MSVC 19.25 (Visual Studio 2019 16.5) or newer "
-                    "to support __VA_OPT__. Detected version: ${MSVC_VERSION}")
+                    "for __VA_OPT__ support. Detected version: ${MSVC_VERSION}")
         endif()
 
         target_compile_options(${target} PRIVATE
-                /W4 /WX                # Warnings as errors
-                /permissive-           # Strict conformance
-                /Zc:__cplusplus        # Correct __cplusplus macro
-                /Zc:preprocessor       # Enable standard conforming preprocessor (needed for __VA_OPT__)
+                /W4 /WX
+                /permissive-
+                /Zc:__cplusplus
+                /Zc:preprocessor
         )
     else()
         target_compile_options(${target} PRIVATE
                 -Wall -Wextra -Wpedantic -Werror
-                -Wno-unused-parameter  # Sometimes needed with Vulkan
+                -Wno-unused-parameter
         )
     endif()
 

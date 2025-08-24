@@ -1,6 +1,53 @@
 add_library(LiaraEngine STATIC)
 add_library(Liara::Engine ALIAS LiaraEngine)
 
+get_property(modules_enabled GLOBAL PROPERTY LIARA_MODULES_ENABLED)
+
+if(modules_enabled)
+    message(STATUS "Building LiaraEngine with C++20 modules support")
+
+    set(UTILS_MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_utils.cppm")
+    set(UTILS_MODULE_IMPL "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_utils.cpp")
+
+    if(EXISTS "${UTILS_MODULE_INTERFACE}")
+        message(STATUS "Adding liara.core.utils module with FILE_SET")
+
+        #target_sources(LiaraEngine
+        #        PUBLIC
+        #        FILE_SET CXX_MODULES FILES
+        #        ${UTILS_MODULE_INTERFACE}
+        #        PRIVATE
+        #        ${UTILS_MODULE_IMPL}
+        #)
+
+        #set_target_properties(LiaraEngine PROPERTIES
+        #        CXX_STANDARD 20
+        #        CXX_STANDARD_REQUIRED ON
+        #)
+
+        #target_compile_definitions(LiaraEngine PRIVATE
+        #        LIARA_MODULES_ENABLED=1
+        #        LIARA_UTILS_MODULE_AVAILABLE=1
+        #)
+
+        # Fall back to header-only if module support is problematic
+        target_sources(LiaraEngine PRIVATE
+                Core/Liara_Utils.h
+        )
+
+    else()
+        message(WARNING "Module interface file not found: ${UTILS_MODULE_INTERFACE}")
+        message(STATUS "Falling back to header-only mode")
+        set(modules_enabled OFF)
+    endif()
+
+else()
+    message(STATUS "Building LiaraEngine with traditional headers")
+    target_sources(LiaraEngine PRIVATE
+            Core/Liara_Utils.h
+    )
+endif()
+
 target_sources(LiaraEngine
         PRIVATE
         Core/Liara_App.cpp
