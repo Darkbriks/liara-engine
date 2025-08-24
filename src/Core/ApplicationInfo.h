@@ -31,15 +31,14 @@ namespace Liara::Core
             return result;
         }
 
-        constexpr bool operator==(const Version& other) const noexcept {
-            return major == other.major && minor == other.minor && patch == other.patch;
+        constexpr auto operator<=>(const Version& other) const noexcept {
+            if (const auto cmp = major <=> other.major; cmp != 0) return cmp;
+            if (const auto cmp = minor <=> other.minor; cmp != 0) return cmp;
+            if (const auto cmp = patch <=> other.patch; cmp != 0) return cmp;
+            return prerelease <=> other.prerelease;
         }
 
-        constexpr bool operator<(const Version& other) const noexcept {
-            if (major != other.major) return major < other.major;
-            if (minor != other.minor) return minor < other.minor;
-            return patch < other.patch;
-        }
+        constexpr bool operator==(const Version&) const noexcept = default;
     };
 
     /**

@@ -11,7 +11,5 @@ namespace Liara::Core
         (HashCombine(seed, rest), ...);
     }
 
-    [[maybe_unused]] static void CheckVkResult(const VkResult res) {
-        if (res != VK_SUCCESS) { VK_CHECK(res, "Vulkan operation failed"); }
-    }
+    [[maybe_unused]] static void CheckVkResult(const VkResult res) { VK_CHECK(res, "Vulkan operation failed"); }
 }
