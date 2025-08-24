@@ -29,8 +29,7 @@ namespace Liara::Logging
 
         ThreadSafeQueue<LogMessage> m_message_queue;
         std::unique_ptr<UI::ImGuiLogConsole> m_gui_console;
-        std::atomic<bool> m_running{true};
-        std::thread m_worker_thread;
+        std::jthread m_worker_thread;
         std::ofstream m_log_file;
 
         std::atomic<bool> m_console_output{true};
@@ -46,8 +45,8 @@ namespace Liara::Logging
         ~Logger();
 
         static Logger& GetInstance();
-        static void Rotate(const std::string& log_file_path);
-        static void Initialize(const std::string& log_file_path = "engine.log");
+        static void Rotate(const std::string& logFilePath);
+        static void Initialize(const std::string& logFilePath = "engine.log");
         static void Shutdown();
         static void EnableImGuiConsole();
 
@@ -70,11 +69,11 @@ namespace Liara::Logging
         void Log(LogMessage message);
 
     private:
-        void WorkerThread();
+        void WorkerThread(const std::stop_token& stopToken);
         void ProcessMessage(const LogMessage& message);
-        std::string FormatMessage(const LogMessage& message, bool use_color = false);
+        std::string FormatMessage(const LogMessage& message, bool useColor = false);
         std::string FormatTimestamp(const std::chrono::system_clock::time_point& timestamp);
-        std::string ExtractClassName(std::string_view function_name);
+        static std::string ExtractClassName(std::string_view functionName);
     };
 
 }
