@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_preset: [linux-debug, linux-release]
+        build_preset: [linux-debug-gcc, linux-release-gcc]
         distro:
           - name: ubuntu
             version: "22.04"
