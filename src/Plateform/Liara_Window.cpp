@@ -34,7 +34,7 @@ namespace Liara::Plateform
                         fullscreen,
                         resizable);
         nlohmann::json json;
-        json["name"] = name.data();
+        json["name"] = name;
         json["width"] = width;
         json["height"] = height;
         json["xPos"] = xPos;
@@ -77,7 +77,7 @@ namespace Liara::Plateform
         , m_ID(windowCount++) {
         windows[m_ID] = this;
         WindowSettings settings;
-        settings.name = std::string_view("Liara_Window " + std::to_string(m_ID));
+        settings.name = "Liara_Window " + std::to_string(m_ID);
         m_SettingsManager.RegisterSetting(
             "window." + std::to_string(m_ID), settings, Core::SettingFlags::DEFAULT, true);
         InitWindow();
