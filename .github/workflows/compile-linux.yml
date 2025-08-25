@@ -27,7 +27,7 @@ jobs:
             version: "22.04"
             container: ubuntu:22.04
             pkg_manager: apt
-            packages: "sudo build-essential ninja-build file libvulkan-dev vulkan-validationlayers-dev libsdl2-dev pkg-config vulkan-tools libglm-dev software-properties-common wget curl ca-certificates"
+            packages: "sudo build-essential ninja-build file unzip libvulkan-dev vulkan-validationlayers-dev libsdl2-dev pkg-config vulkan-tools libglm-dev software-properties-common wget curl ca-certificates"
             update_cmd: "apt update && apt install -y"
             setup_gcc_compiler: |
               add-apt-repository ppa:ubuntu-toolchain-r/test -y
