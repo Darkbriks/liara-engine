@@ -96,9 +96,13 @@ jobs:
         shell: cmd
         run: |
           set "target_dir="
-          if "${{ matrix.build_preset }}"=="windows-release" (
+          if "${{ matrix.build_preset }}"=="windows-release-modules" (
             set "target_dir=Release"
-          ) else if "${{ matrix.build_preset }}"=="windows-debug" (
+          ) else if "${{ matrix.build_preset }}"=="windows-release-no-modules" (
+            set "target_dir=Release"
+          ) else if "${{ matrix.build_preset }}"=="windows-debug-modules" (
+            set "target_dir=Debug"
+          ) else if "${{ matrix.build_preset }}"=="windows-debug-no-modules" (
             set "target_dir=Debug"
           ) else (
             echo "ERROR: Unknown build preset!"

@@ -3,7 +3,11 @@ module;
 #include "Core/Logging/LogMacros.h"
 #include "Graphics/VkResultToString.h"
 
+#if defined(_WIN32) || defined(_WIN64)
+export module liara.core.utils;
+#else
 module liara.core.utils;
+#endif
 
 namespace Liara::Core
 {
