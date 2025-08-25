@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_preset: [linux-debug-gcc, linux-release-gcc]
+        build_preset: [linux-debug-gcc, linux-debug-clang, linux-release-gcc, linux-release-clang]
         distro:
           - name: ubuntu
             version: "22.04"
@@ -30,21 +30,43 @@ jobs:
             pkg_manager: apt
             packages: "sudo build-essential ninja-build file libvulkan-dev vulkan-validationlayers-dev libsdl2-dev pkg-config vulkan-tools libglm-dev software-properties-common wget curl ca-certificates"
             update_cmd: "apt update && apt install -y"
-            setup_compiler: "add-apt-repository ppa:ubuntu-toolchain-r/test -y && apt update && apt install -y gcc-13 g++-13 && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13"
+            setup_compiler: |
+              if [[ "${{ matrix.build_preset }}" == *"clang"* ]]; then
+                wget https://apt.llvm.org/llvm.sh
+                chmod +x llvm.sh
+                ./llvm.sh 20
+                update-alternatives --install /usr/bin/cc cc /usr/bin/clang-20 100
+                update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-20 100
+              else
+                add-apt-repository ppa:ubuntu-toolchain-r/test -y
+                apt update
+                apt install -y gcc-13 g++-13
+                update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13
+              fi
           - name: fedora
-            version: "39"
-            container: fedora:39
+            version: "latest"
+            container: fedora:latest
             pkg_manager: dnf
             packages: "gcc-c++ ninja-build vulkan-devel vulkan-validation-layers-devel SDL2-devel pkg-config vulkan-tools libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel wget dnf-plugins-core"
             update_cmd: "dnf update -y && dnf install -y"
-            setup_compiler: ""
+            setup_compiler: |
+              if [[ "${{ matrix.build_preset }}" == *"clang"* ]]; then
+                dnf install -y clang clang-tools-extra lld
+                update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
+                update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
+              fi
           - name: archlinux
             version: "latest"
             container: archlinux:latest
             pkg_manager: pacman
             packages: "base-devel ninja vulkan-devel vulkan-validation-layers sdl2 pkgconf vulkan-tools glm wget shaderc"
             update_cmd: "pacman -Syu --noconfirm"
-            setup_compiler: ""
+            setup_compiler: |
+              if [[ "${{ matrix.build_preset }}" == *"clang"* ]]; then
+                pacman -S --noconfirm clang lld
+                update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
+                update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
+              fi
 
     container:
       image: ${{ matrix.distro.container }}
