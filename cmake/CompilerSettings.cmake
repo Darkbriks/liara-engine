@@ -5,32 +5,30 @@ function(liara_set_compiler_settings target)
 
     if(modules_enabled)
         if(MSVC)
+            if(MSVC_VERSION LESS 1929) # Visual Studio 2019 16.10
+                message(WARNING "MSVC ${MSVC_VERSION} has limited C++20 modules support. Recommended: VS 2022 17.0+")
+            endif()
+
+            file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/modules")
+
             target_compile_options(${target} PRIVATE
-                    /experimental:module
-                    /module:stdIfcDir ${CMAKE_BINARY_DIR}/modules
-                    /module:output ${CMAKE_BINARY_DIR}/modules
                     /std:c++20
-                    /module:showResolvedHeader
+                    /experimental:module
             )
 
-            set_target_properties(${target} PROPERTIES
-                    VS_USER_PROPS "${CMAKE_BINARY_DIR}/modules.props"
-            )
+            if(MSVC_VERSION GREATER_EQUAL 1930)
+                target_compile_options(${target} PRIVATE
+                        /interface
+                        /ifcOutput ${CMAKE_BINARY_DIR}/modules/
+                        /ifcSearchDir ${CMAKE_BINARY_DIR}/modules/
+                )
+            else()
+                target_compile_options(${target} PRIVATE
+                        /module:stdIfcDir ${CMAKE_BINARY_DIR}/modules
+                        /module:output ${CMAKE_BINARY_DIR}/modules
+                )
+            endif()
 
-            file(WRITE "${CMAKE_BINARY_DIR}/modules.props"
-                    "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-                    "<Project ToolsVersion=\"4.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">\n"
-                    "  <PropertyGroup>\n"
-                    "    <ModuleOutputDir>${CMAKE_BINARY_DIR}/modules</ModuleOutputDir>\n"
-                    "    <ModuleIntermediateDir>${CMAKE_BINARY_DIR}/modules/intermediate</ModuleIntermediateDir>\n"
-                    "  </PropertyGroup>\n"
-                    "</Project>\n"
-            )
-        #elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        #    target_compile_options(${target} PRIVATE
-        #            -fmodules-ts
-        #            -fmodule-mapper=${CMAKE_BINARY_DIR}/module.map
-        #    )
         elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             target_compile_options(${target} PRIVATE
                     -std=c++20
@@ -81,7 +79,6 @@ function(liara_set_compiler_settings target)
                 /permissive-
                 /Zc:__cplusplus
                 /Zc:preprocessor
-                $<$<BOOL:${modules_enabled}>:/experimental:module>
                 /utf-8
                 /MP
         )

@@ -34,7 +34,11 @@ namespace Liara::Core
     private:
         static void SignalHandler(int signal) noexcept;
 
+#ifdef _MSC_VER
+        static inline alignas(std::atomic<bool>) std::atomic<bool> s_shutdownRequested{false};
+#else
         static inline std::atomic<bool> s_shutdownRequested{false};
+#endif
         static inline ShutdownCallback s_callback{nullptr};
         static inline bool s_initialized{false};
     };

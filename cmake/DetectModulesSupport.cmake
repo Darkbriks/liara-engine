@@ -47,17 +47,19 @@ function(liara_detect_modules_support)
     # Detect compiler support
     ####################
     if(MSVC)
-        if(MSVC_VERSION GREATER_EQUAL 1936)
+        if(MSVC_VERSION GREATER_EQUAL 1936) # VS 2022 17.6+
             set(LIARA_MODULES_SUPPORTED ON)
-            message(STATUS "MSVC ${MSVC_VERSION} - full C++20 modules support detected")
-        elseif(MSVC_VERSION GREATER_EQUAL 1928)
+            message(STATUS "MSVC ${MSVC_VERSION} - stable C++20 modules support detected")
+        elseif(MSVC_VERSION GREATER_EQUAL 1932) # VS 2022 17.2+
             set(LIARA_MODULES_SUPPORTED ON)
-            message(STATUS "MSVC ${MSVC_VERSION} - experimental C++20 modules support detected")
-            message(WARNING "MSVC modules support is experimental and may be unstable")
-            message(WARNING "Consider using at least MSVC 19.36 (Visual Studio 2022 17.6) for better stability")
-            message(STATUS "Use -DLIARA_FORCE_NO_MODULES=ON to disable modules")
+            message(STATUS "MSVC ${MSVC_VERSION} - good C++20 modules support detected")
+            message(WARNING "Some edge cases may occur. Consider upgrading to VS 2022 17.6+ for best stability")
+        elseif(MSVC_VERSION GREATER_EQUAL 1929) # VS 2019 16.10+
+            set(LIARA_MODULES_SUPPORTED ON)
+            message(WARNING "MSVC ${MSVC_VERSION} - experimental C++20 modules support")
+            message(WARNING "Modules may be unstable. Consider upgrading to VS 2022 17.2+")
         else()
-            message(STATUS "MSVC ${MSVC_VERSION} detected - modules support requires at least MSVC 19.28 (Visual Studio 2019 16.8)")
+            message(STATUS "MSVC ${MSVC_VERSION} detected - modules support requires at least MSVC 19.29 (VS 2019 16.10)")
             message(STATUS "Falling back to header-only mode")
         endif()
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "20.0")

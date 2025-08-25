@@ -16,15 +16,28 @@ if(modules_enabled)
     if(EXISTS "${UTILS_MODULE_INTERFACE}")
         message(STATUS "Adding liara.core.utils module with FILE_SET")
 
-        target_sources(LiaraEngine
-                PUBLIC
-                FILE_SET CXX_MODULES FILES
-                ${UTILS_MODULE_INTERFACE}
-        )
+        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/modules")
 
-        target_sources(LiaraEngine PRIVATE
-                ${UTILS_MODULE_IMPL}
-        )
+        if(MSVC)
+            target_sources(LiaraEngine PRIVATE
+                    ${UTILS_MODULE_INTERFACE}
+                    ${UTILS_MODULE_IMPL}
+            )
+
+            set_source_files_properties(${UTILS_MODULE_INTERFACE} PROPERTIES
+                    COMPILE_FLAGS "/interface /ifcOutput ${CMAKE_BINARY_DIR}/modules/"
+            )
+        else()
+            target_sources(LiaraEngine
+                    PUBLIC
+                    FILE_SET CXX_MODULES FILES
+                    ${UTILS_MODULE_INTERFACE}
+            )
+
+            target_sources(LiaraEngine PRIVATE
+                    ${UTILS_MODULE_IMPL}
+            )
+        endif()
 
         target_compile_definitions(LiaraEngine PRIVATE
                 LIARA_MODULES_ENABLED=1
@@ -114,6 +127,12 @@ target_include_directories(LiaraEngine
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+if(modules_enabled AND MSVC)
+    target_include_directories(LiaraEngine PRIVATE
+            ${CMAKE_BINARY_DIR}/modules
+    )
+endif()
 
 target_link_libraries(LiaraEngine
         PUBLIC
