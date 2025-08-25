@@ -5,7 +5,7 @@ on:
     branches: [ main, version-* ]
     tags: [ 'v*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, version-* ]
   release:
     types: [ published, created ]
   workflow_dispatch:
@@ -35,13 +35,32 @@ jobs:
               apt install -y gcc-13 g++-13
               update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13
             setup_clang_compiler: |
-              wget https://apt.llvm.org/llvm.sh
-              chmod +x llvm.sh
-              ./llvm.sh 20
+              wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+              add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-20 main" -y
+              apt update
+              
+              apt install -y \
+                clang-20 \
+                clang++-20 \
+                lld-20 \
+                libc++-20-dev \
+                libc++abi-20-dev \
+                libstdc++-13-dev \
+                gcc-13 \
+                g++-13
+              
               update-alternatives --install /usr/bin/cc cc /usr/bin/clang-20 100
               update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-20 100
               update-alternatives --install /usr/bin/clang clang /usr/bin/clang-20 100
               update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-20 100
+              update-alternatives --install /usr/bin/ld ld /usr/bin/lld-20 100
+              
+              echo "Checking C++20 headers availability:"
+              echo '#include <format>' | clang++-20 -std=c++20 -stdlib=libc++ -x c++ -fsyntax-only - && echo "libc++ format OK" || echo "libc++ format FAILED"
+              echo '#include <format>' | clang++-20 -std=c++20 -stdlib=libstdc++ -x c++ -fsyntax-only - && echo "libstdc++ format OK" || echo "libstdc++ format FAILED"
+              
+              clang++-20 --version
+              clang++-20 -std=c++20 -stdlib=libc++ -v -E /dev/null 2>&1 | grep "Selected GCC installation" || echo "No GCC installation selected"
           - name: fedora
             version: "latest"
             container: fedora:latest
