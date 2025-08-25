@@ -23,8 +23,8 @@ function(liara_detect_modules_support)
     set(LIARA_MODULES_SUPPORTED OFF)
 
     if(MSVC)
-        if (MSVC_VERSION GREATER_EQUAL 1928)  # VS 2019 16.8+
-            set(LIARA_MODULES_SUPPORTED ON)
+    #    if (MSVC_VERSION GREATER_EQUAL 1928)  # VS 2019 16.8+
+    #        set(LIARA_MODULES_SUPPORTED ON)
             message(STATUS "MSVC modules support detected")
         endif()
     # TODO: Check if gcc is able to compile with module
