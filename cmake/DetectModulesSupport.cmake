@@ -4,23 +4,6 @@ function(liara_detect_modules_support)
     set(LIARA_MODULES_SUPPORTED OFF)
 
     ####################
-    # Temporary workaround for Ubuntu
-    ####################
-    if(UNIX AND NOT APPLE)
-        if(EXISTS "/etc/lsb-release")
-            file(READ "/etc/lsb-release" LSB_RELEASE_CONTENT)
-            if(LSB_RELEASE_CONTENT MATCHES "Ubuntu")
-                message(WARNING "Clang modules support on Ubuntu is currently broken due to missing libc++ module maps.")
-                message(WARNING "Falling back to header-only mode.")
-                message(STATUS "Use -DLIARA_FORCE_ENABLE_MODULES=ON to override if needed")
-                set_property(GLOBAL PROPERTY LIARA_MODULES_SUPPORTED OFF)
-                set_property(GLOBAL PROPERTY LIARA_MODULES_ENABLED OFF)
-                return()
-            endif()
-        endif()
-    endif()
-
-    ####################
     # Ninja version check
     ####################
     if(CMAKE_GENERATOR STREQUAL "Ninja")

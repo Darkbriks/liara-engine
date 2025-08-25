@@ -128,16 +128,6 @@ jobs:
         run: |
           ${{ matrix.distro.setup_clang_compiler }}
 
-      - name: Setup gcc compiler
-        if: contains(matrix.build_preset, 'gcc')
-        run: |
-          ${{ matrix.distro.setup_gcc_compiler }}
-
-      - name: Setup clang compiler
-        if: contains(matrix.build_preset, 'clang')
-        run: |
-          ${{ matrix.distro.setup_clang_compiler }}
-
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
         with:
