@@ -12,13 +12,19 @@ else()
     message(STATUS "Building LiaraEngine with generated headers from modules")
 endif()
 
-# Add utils module with automatic proxy generation
 liara_add_module_with_proxy(
         TARGET LiaraEngine
         MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_utils.cppm"
         MODULE_IMPL "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_utils.cpp"
         MODULE_NAME "liara.core.utils"
         HEADER_NAME "Utils"
+)
+
+liara_add_module_with_proxy(
+        TARGET LiaraEngine
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_result.cppm"
+        MODULE_NAME "liara.core.utils.result"
+        HEADER_NAME "Utils/Result"
 )
 
 target_sources(LiaraEngine

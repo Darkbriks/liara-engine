@@ -100,9 +100,14 @@ function(liara_add_module_with_proxy)
             ${ARGN}
     )
 
-    if(NOT ARG_TARGET OR NOT ARG_MODULE_INTERFACE OR NOT ARG_MODULE_IMPL OR
+    if(NOT ARG_TARGET OR NOT ARG_MODULE_INTERFACE OR
             NOT ARG_MODULE_NAME OR NOT ARG_HEADER_NAME)
         message(FATAL_ERROR "liara_add_module_with_proxy requires all parameters")
+    endif()
+
+    # Default implementation file to empty if not provided
+    if(NOT ARG_MODULE_IMPL)
+        set(ARG_MODULE_IMPL "")
     endif()
 
     get_property(modules_enabled GLOBAL PROPERTY LIARA_MODULES_ENABLED)
