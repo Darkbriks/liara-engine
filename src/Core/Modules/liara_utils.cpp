@@ -1,18 +1,27 @@
+#ifdef LIARA_MODULES_ENABLED
 module;
+#endif
 
 #include "Core/Logging/LogMacros.h"
 #include "Graphics/VkResultToString.h"
 
-#if defined(_WIN32) || defined(_WIN64)
-export module liara.core.utils;
+#ifndef LIARA_MODULES_ENABLED
+
+    #include <Liara/Utils.h>
+
 #else
+
+    #if defined(_WIN32) || defined(_WIN64)
+export module liara.core.utils;
+    #else
 module liara.core.utils;
+    #endif
+
 #endif
 
 namespace Liara::Core
 {
     void CheckVkResult(const VkResult res) {
-        LIARA_LOG_DEBUG(LogVulkan, "Using CheckVkResult from liara.core.utils module");
         VK_CHECK(res, "Vulkan operation failed with error: {}", Liara::Graphics::VkResultToString(res));
     }
 

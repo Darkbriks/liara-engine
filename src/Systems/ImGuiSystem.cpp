@@ -4,11 +4,7 @@
 #include "Core/ImGui/ImGuiElementMainMenu.h"
 #include "Graphics/Liara_Device.h"
 
-#ifdef LIARA_UTILS_MODULE_AVAILABLE
-import liara.core.utils;
-#else
-    #include "Core/Liara_Utils.h"
-#endif
+#include <Liara/Utils.h>
 
 #include <vulkan/vulkan.h>
 
