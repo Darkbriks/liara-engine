@@ -13,7 +13,6 @@ on:
 env:
   VULKAN_SDK_VERSION: "1.3.280.0"
   CMAKE_VERSION: "3.29.3"
-  # TODO: Test with gcc and clang
 
 jobs:
   build-linux:
@@ -92,12 +91,12 @@ jobs:
           ${{ matrix.distro.update_cmd }} ${{ matrix.distro.packages }}
 
       - name: Setup gcc compiler
-        if: "gcc" in matrix.build_preset
+        if: contains(matrix.build_preset, 'gcc')
         run: |
           ${{ matrix.distro.setup_gcc_compiler }}
 
       - name: Setup clang compiler
-        if: "clang" in matrix.build_preset
+        if: contains(matrix.build_preset, 'clang')
         run: |
           ${{ matrix.distro.setup_clang_compiler }}
 
