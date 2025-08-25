@@ -35,9 +35,6 @@ jobs:
               apt install -y gcc-13 g++-13
               update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13
             setup_clang_compiler: |
-              add-apt-repository ppa:ubuntu-toolchain-r/test -y
-              apt update
-              apt install -y gcc-13 g++-13
               wget https://apt.llvm.org/llvm.sh
               chmod +x llvm.sh
               ./llvm.sh 20
