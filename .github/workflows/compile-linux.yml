@@ -35,32 +35,13 @@ jobs:
               apt install -y gcc-13 g++-13
               update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13
             setup_clang_compiler: |
-              wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-              add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-20 main" -y
-              apt update
-              
-              apt install -y \
-                clang-20 \
-                clang++-20 \
-                lld-20 \
-                libc++-20-dev \
-                libc++abi-20-dev \
-                libstdc++-13-dev \
-                gcc-13 \
-                g++-13
-              
+              wget https://apt.llvm.org/llvm.sh
+              chmod +x llvm.sh
+              ./llvm.sh 20
               update-alternatives --install /usr/bin/cc cc /usr/bin/clang-20 100
               update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-20 100
               update-alternatives --install /usr/bin/clang clang /usr/bin/clang-20 100
               update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-20 100
-              update-alternatives --install /usr/bin/ld ld /usr/bin/lld-20 100
-              
-              echo "Checking C++20 headers availability:"
-              echo '#include <format>' | clang++-20 -std=c++20 -stdlib=libc++ -x c++ -fsyntax-only - && echo "libc++ format OK" || echo "libc++ format FAILED"
-              echo '#include <format>' | clang++-20 -std=c++20 -stdlib=libstdc++ -x c++ -fsyntax-only - && echo "libstdc++ format OK" || echo "libstdc++ format FAILED"
-              
-              clang++-20 --version
-              clang++-20 -std=c++20 -stdlib=libc++ -v -E /dev/null 2>&1 | grep "Selected GCC installation" || echo "No GCC installation selected"
           - name: fedora
             version: "latest"
             container: fedora:latest
@@ -267,7 +248,7 @@ jobs:
           fi
 
       - name: Prepare build artifacts
-        if: matrix.build_preset == 'linux-release' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
+        if: contains(matrix.build_preset, 'linux-release') && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
         run: |
           cd build/${{ matrix.build_preset }}/app
           mkdir -p package
@@ -290,7 +271,7 @@ jobs:
           tar -czf ../../${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_preset }}-x86_64.tar.gz -C package .
 
       - name: Upload portable archive
-        if: matrix.build_preset == 'linux-release' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
+        if: contains(matrix.build_preset, 'linux-release') && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.repository.name }}-${{ matrix.distro.name }}-${{ matrix.distro.version }}-${{ matrix.build_preset }}-${{ github.ref_name }}
@@ -299,7 +280,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Ubuntu Release build artifacts for AppImage
-        if: matrix.distro.name == 'ubuntu' && matrix.build_preset == 'linux-release' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
+        if: matrix.distro.name == 'ubuntu' && contains(matrix.build_preset, 'linux-release') && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/main'))
         uses: actions/upload-artifact@v4
         with:
           name: ubuntu-release-build-${{ github.ref_name }}

@@ -29,6 +29,23 @@
       "toolset": "host=x64"
     },
     {
+      "name": "windows-modules-base",
+      "hidden": true,
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "LIARA_ENABLE_MODULES": "ON",
+        "LIARA_FORCE_NO_MODULES": "OFF"
+      }
+    },
+    {
+      "name": "windows-no-modules-base",
+      "hidden": true,
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "LIARA_FORCE_NO_MODULES": "ON"
+      }
+    },
+    {
       "name": "linux-base",
       "hidden": true,
       "inherits": "base",
@@ -40,27 +57,55 @@
       "generator": "Ninja"
     },
     {
-      "name": "windows-debug",
-      "displayName": "Windows Debug",
-      "description": "Debug build for Windows with MSVC",
-      "inherits": "windows-base",
-      "binaryDir": "${sourceDir}/build/windows-debug",
+      "name": "windows-debug-modules",
+      "displayName": "Windows Debug (With C++20 Modules)",
+      "description": "Debug build for Windows with MSVC and C++20 modules support",
+      "inherits": "windows-modules-base",
+      "binaryDir": "${sourceDir}/build/windows-debug-modules",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "LIARA_ENABLE_VALIDATION": "ON",
-        "LIARA_BUILD_TESTS": "ON"
+        "LIARA_BUILD_TESTS": "ON",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDebugDLL"
       }
     },
     {
-      "name": "windows-release",
-      "displayName": "Windows Release",
-      "description": "Release build for Windows with MSVC",
-      "inherits": "windows-base",
-      "binaryDir": "${sourceDir}/build/windows-release",
+      "name": "windows-release-modules",
+      "displayName": "Windows Release (With C++20 Modules)",
+      "description": "Release build for Windows with MSVC and C++20 modules support",
+      "inherits": "windows-modules-base",
+      "binaryDir": "${sourceDir}/build/windows-release-modules",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "LIARA_ENABLE_VALIDATION": "OFF",
-        "LIARA_EMBED_SHADERS": "ON"
+        "LIARA_EMBED_SHADERS": "ON",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL"
+      }
+    },
+    {
+      "name": "windows-debug-no-modules",
+      "displayName": "Windows Debug (Traditional Headers)",
+      "description": "Debug build for Windows with MSVC using traditional headers",
+      "inherits": "windows-no-modules-base",
+      "binaryDir": "${sourceDir}/build/windows-debug-no-modules",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "LIARA_ENABLE_VALIDATION": "ON",
+        "LIARA_BUILD_TESTS": "ON",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDebugDLL"
+      }
+    },
+    {
+      "name": "windows-release-no-modules",
+      "displayName": "Windows Release (Traditional Headers)",
+      "description": "Release build for Windows with MSVC using traditional headers",
+      "inherits": "windows-no-modules-base",
+      "binaryDir": "${sourceDir}/build/windows-release-no-modules",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "LIARA_ENABLE_VALIDATION": "OFF",
+        "LIARA_EMBED_SHADERS": "ON",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL"
       }
     },
     {
@@ -122,13 +167,26 @@
   ],
   "buildPresets": [
     {
-      "name": "windows-debug",
-      "configurePreset": "windows-debug",
-      "jobs": 0
+      "name": "windows-debug-modules",
+      "configurePreset": "windows-debug-modules",
+      "jobs": 0,
+      "configuration": "Debug"
     },
     {
-      "name": "windows-release",
-      "configurePreset": "windows-release",
+      "name": "windows-release-modules",
+      "configurePreset": "windows-release-modules",
+      "jobs": 0,
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-debug-no-modules",
+      "configurePreset": "windows-debug-no-modules",
+      "jobs": 0,
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-release-no-modules",
+      "configurePreset": "windows-release-no-modules",
       "jobs": 0,
       "configuration": "Release"
     },
@@ -155,8 +213,17 @@
   ],
   "testPresets": [
     {
-      "name": "windows-debug",
-      "configurePreset": "windows-debug",
+      "name": "windows-debug-modules",
+      "configurePreset": "windows-debug-modules",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "windows-debug-no-modules",
+      "configurePreset": "windows-debug-no-modules",
+      "configuration": "Debug",
       "output": {
         "outputOnFailure": true
       }
