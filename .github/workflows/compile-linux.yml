@@ -346,7 +346,7 @@ jobs:
           mkdir -p AppDir/usr/share/pixmaps
           mkdir -p AppDir/usr/share/doc/${{ github.event.repository.name }}
           
-          DEMO_PATH="build-artifacts/build/${{ matrix.build_preset }}/app/Demo"
+          DEMO_PATH="build-artifacts/Demo"
           if [ ! -f "$DEMO_PATH" ]; then
             echo "ERROR: Demo executable not found at expected path: $DEMO_PATH"
             echo "Available files:"
@@ -361,12 +361,15 @@ jobs:
           echo "Testing Demo executable..."
           ldd AppDir/usr/bin/Demo || echo "Could not analyze dependencies"
           
-          if [ -d "build-artifacts/build/${{ matrix.build_preset }}/app/assets" ]; then
+          ASSETS_PATH="build-artifacts/assets"
+          if [ -d "$ASSETS_PATH" ]; then
             mkdir -p AppDir/usr/share/${{ github.event.repository.name }}/assets
-            cp -r build-artifacts/build/${{ matrix.build_preset }}/app/assets AppDir/usr/share/${{ github.event.repository.name }}/assets/
+            cp -r "$ASSETS_PATH"/* AppDir/usr/share/${{ github.event.repository.name }}/assets/
             echo "Copied assets directory"
           else
-            echo "Error: No assets directory found at build-artifacts/build/${{ matrix.build_preset }}/app/assets"
+            echo "Error: No assets directory found at expected path: $ASSETS_PATH"
+            echo "Available directories:"
+            find build-artifacts -type d -name "assets"
           fi
 
       - name: Create desktop file
