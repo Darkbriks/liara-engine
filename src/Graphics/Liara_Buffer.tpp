@@ -1,9 +1,6 @@
 #pragma once
 
 #include "Liara_Buffer.h"
-
-#include "Liara_Buffer.h"
-
 #include "Graphics/Liara_Device.h"
 
 #include <vulkan/vulkan_core.h>

@@ -40,11 +40,13 @@ namespace Liara::Logging
                     const std::regex timestampRegex(R"(\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\])");
                     if (std::smatch match; std::regex_search(firstLine, match, timestampRegex) && match.size() > 1) {
                         std::string timestamp = match[1].str();
-                        const std::string newFileName =
-                            std::format("{}.{}{}",
-                                        logFilePath.substr(0, logFilePath.find_last_of('.')),
-                                        timestamp,
-                                        logFilePath.substr(logFilePath.find_last_of('.')));
+                        const size_t dotPos = logFilePath.find_last_of('.');
+                        std::string newFileName;
+                        if (dotPos != std::string::npos) {
+                            newFileName = std::format(
+                                "{}.{}{}", logFilePath.substr(0, dotPos), timestamp, logFilePath.substr(dotPos));
+                        }
+                        else { newFileName = std::format("{}.{})", logFilePath, timestamp); }
                         std::filesystem::rename(logFilePath, newFileName);
                         std::cout << "Log file renamed to: " << newFileName << std::endl;
                     }
