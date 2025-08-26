@@ -46,9 +46,7 @@ add_custom_command(TARGET Demo POST_BUILD
 
 add_dependencies(Demo LiaraShaders)
 
-if(LIARA_EMBED_SHADERS)
-    target_link_libraries(Demo PRIVATE LiaraShadersEmbedded)
-else()
+if(NOT LIARA_EMBED_SHADERS)
     add_custom_command(TARGET Demo POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_BINARY_DIR}/shaders" "$<TARGET_FILE_DIR:Demo>/shaders"

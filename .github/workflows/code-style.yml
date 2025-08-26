@@ -40,7 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pacman -Syu --noconfirm base-devel ninja vulkan-devel vulkan-validation-layers sdl2 fmt pkgconf vulkan-tools glm wget shaderc clang
+          pacman -Syu --noconfirm base-devel ninja vulkan-devel vulkan-validation-layers sdl2 pkgconf vulkan-tools glm wget shaderc clang
 
       - name: Get changed files
         id: changed-files
@@ -116,7 +116,7 @@ jobs:
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
         with:
-          cmake-version: '3.25.3'
+          cmake-version: '3.29.3'
 
       - name: Verify CMake version
         run: cmake --version

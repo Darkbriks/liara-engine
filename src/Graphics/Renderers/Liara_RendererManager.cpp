@@ -34,7 +34,7 @@ namespace Liara::Graphics::Renderers
             case RendererType::FORWARD:
                 m_Renderer = std::make_unique<Liara_ForwardRenderer>(m_SettingsManager, m_Window, m_Device);
                 break;
-            default: throw std::runtime_error("Invalid renderer type");
+            default: LIARA_THROW_RUNTIME_ERROR(LogGraphics, "Invalid renderer type");
         }
         m_RendererType = type;
     }

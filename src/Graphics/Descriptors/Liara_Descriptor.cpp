@@ -70,7 +70,7 @@ namespace Liara::Graphics::Descriptors
 
         VkDescriptorPool descriptorPool = nullptr;
         if (vkCreateDescriptorPool(m_Device.GetDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create descriptor pool");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create descriptor pool");
         }
 
         return descriptorPool;
@@ -135,7 +135,7 @@ namespace Liara::Graphics::Descriptors
 
         VkDescriptorSetLayout layout = nullptr;
         if (vkCreateDescriptorSetLayout(m_Device.GetDevice(), info, nullptr, &layout) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create descriptor set layout");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create descriptor set layout");
         }
         m_LayoutCache[key] = layout;
         return layout;

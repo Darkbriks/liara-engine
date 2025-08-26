@@ -33,7 +33,8 @@ namespace Liara::Systems
                                            VkRenderPass renderPass,
                                            VkDescriptorSetLayout descriptorSetLayout,
                                            const Core::Liara_SettingsManager& settingsManager)
-        : m_Device(device)
+        : Liara_System("Simple Render System", {.major = 0, .minor = 4, .patch = 2, .prerelease = "dev"})
+        , m_Device(device)
         , m_SettingsManager(settingsManager) {
         CreatePipelineLayout(descriptorSetLayout);
         CreatePipeline(renderPass);
@@ -86,7 +87,7 @@ namespace Liara::Systems
         pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
         if (vkCreatePipelineLayout(m_Device.GetDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout)
             != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create pipeline layout!");
+            LIARA_THROW_RUNTIME_ERROR(LogSystems, "Failed to create pipeline layout!");
         }
     }
 

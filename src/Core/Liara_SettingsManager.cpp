@@ -43,7 +43,7 @@ namespace Liara::Core
 
         // Register application information settings
         static_assert(IsValidAppInfo({}), "DEFAULT ApplicationInfo must be valid");
-        if (!IsValidAppInfo(appInfo)) { throw std::invalid_argument("Invalid ApplicationInfo provided"); }
+        LIARA_CHECK_ARGUMENT(IsValidAppInfo(appInfo), LogCore, "Invalid ApplicationInfo provided");
 
         RegisterSetting("global.app_name", std::string(appInfo.name), SettingFlags::NONE);
         RegisterSetting("global.app_display_name", std::string(appInfo.GetDisplayName()), SettingFlags::NONE);
@@ -68,6 +68,8 @@ namespace Liara::Core
         RegisterSetting("global.engine_version",
                         VK_MAKE_VERSION(ENGINE_VERSION_MAJOR, ENGINE_VERSION_MINOR, ENGINE_VERSION_PATCH),
                         SettingFlags::NONE);
+
+        LIARA_LOG_VERBOSE(LogCore, "SettingsManager initialized with {} settings", m_Settings.size());
     }
 
     std::vector<std::string> Liara_SettingsManager::GetAllSettingNames() const {
@@ -105,7 +107,10 @@ namespace Liara::Core
                 },
                 storage.data);
 
-            if (!success) { file << "# Failed to serialize: " << name << "\n"; }
+            if (!success) {
+                file << "# Failed to serialize: " << name << "\n";
+                LIARA_LOG_WARNING(LogCore, "Failed to serialize setting '{}'", name);
+            }
         }
 
         return file.good();
@@ -132,8 +137,7 @@ namespace Liara::Core
             const std::string key = Trim(line.substr(0, eqPos));
 
             if (const std::string value = Trim(line.substr(eqPos + 1)); !DeserializeSetting(key, value)) {
-                std::fprintf(
-                    stderr, "Warning: Failed to deserialize setting '%s' at line %zu\n", key.c_str(), lineNumber);
+                LIARA_LOG_WARNING(LogCore, "Failed to deserialize setting '{}' at line {}", key, lineNumber);
             }
         }
 

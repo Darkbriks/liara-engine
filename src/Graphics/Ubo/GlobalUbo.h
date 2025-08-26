@@ -46,6 +46,11 @@ namespace Liara::Graphics::Ubo
         int numLights{0};                               ///< The number of point lights in the scene
 
         int32_t padding[3]{0, 0, 0};
+
+        GlobalUbo(const glm::mat4& projection, const glm::mat4& view, const glm::mat4& inverseView)
+            : projection(projection)
+            , view(view)
+            , inverseView(inverseView) {}
     };
 
 #if defined(_MSC_VER)

@@ -1,7 +1,6 @@
 #include "DemoApp.h"
 
 #include "Core/ApplicationInfo.h"
-#include "Core/ImGui/ImGuiElementEngineStats.h"
 #include "Core/Liara_App.h"
 #include "Graphics/Liara_Model.h"
 #include "Listener/KeybordMovementController.h"
@@ -13,13 +12,9 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/trigonometric.hpp>
 
-#include <cstddef>
 #include <memory>
 #include <utility>
 #include <vector>
-
-#include "fmt/core.h"
-#include "glm/ext/matrix_float4x4.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -27,10 +22,6 @@
 DemoApp::DemoApp(const Liara::Core::ApplicationInfo& appInfo)
     : Liara_App(appInfo)
     , m_Controller(*m_SettingsManager) {
-    fmt::print("Starting {} v{}\n", appInfo.GetDisplayName(), appInfo.version.ToString());
-
-    if (!appInfo.description.empty()) { fmt::print("Description: {}\n", appInfo.description); }
-
     LoadGameObjects();
 
     m_Player = std::make_unique<Liara::Core::Liara_GameObject>(Liara::Core::Liara_GameObject::CreateGameObject());
@@ -47,18 +38,17 @@ void DemoApp::InitSystems() {
         m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
     AddSystem(std::make_unique<Liara::Systems::PointLightSystem>(
         m_Device, m_RendererManager.GetRenderer().GetRenderPass(), m_GlobalSetLayout, *m_SettingsManager));
-    auto imguiSystem = std::make_unique<Liara::Systems::ImGuiSystem>(m_Window,
-                                                                     m_Device,
-                                                                     m_RendererManager.GetRenderer().GetRenderPass(),
-                                                                     m_RendererManager.GetRenderer().GetImageCount());
-    imguiSystem->AddElement(std::make_unique<Liara::Core::ImGuiElements::EngineStats>(m_ApplicationInfo));
-    AddSystem(std::move(imguiSystem));
+    AddSystem(std::make_unique<Liara::Systems::ImGuiSystem>(m_Window,
+                                                            m_Device,
+                                                            m_ApplicationInfo,
+                                                            m_RendererManager.GetRenderer().GetRenderPass(),
+                                                            m_RendererManager.GetRenderer().GetImageCount()));
 }
 
 
 void DemoApp::LoadGameObjects() {
     const std::shared_ptr model =
-        Liara::Graphics::Liara_Model::CreateModelFromFile(m_Device, "assets/models/viking_room.obj", 1);
+        Liara::Graphics::Liara_Model::CreateFromFile(m_Device, "assets/models/viking_room.obj", 1);
     auto vikingRoom = Liara::Core::Liara_GameObject::CreateGameObject();
     vikingRoom.model = model;
     vikingRoom.transform.position = {0.F, .75F, 0.F};

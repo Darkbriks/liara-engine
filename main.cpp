@@ -9,7 +9,7 @@ constexpr Liara::Core::ApplicationInfo appInfo = {
     .name = "DemoApp",
     .displayName = "Liara Engine Demo",
     .description = "Liara Engine capabilities demonstration application",
-    .version = {.major = 0, .minor = 2, .patch = 0, .prerelease = "beta"},
+    .version = {.major = 0, .minor = 2, .patch = 1, .prerelease = "beta"},
     .organization = "Darkbriks",
     .website = "https://github.com/Darkbriks/liara-engine",
     .copyright = "© 2025 Darkbriks",

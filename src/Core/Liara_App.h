@@ -1,23 +1,29 @@
 #pragma once
 
+#include "Graphics/Descriptors/Liara_Descriptor.h"
+#include "Graphics/Liara_Device.h"
+#include "Graphics/Liara_Texture.h"
+#include "Graphics/Renderers/Liara_RendererManager.h"
+#include "Plateform/Liara_Window.h"
+#include "Systems/Liara_System.h"
+
 #include <memory>
 
+#include "Application.h"
 #include "ApplicationInfo.h"
 #include "Liara_Camera.h"
 #include "Liara_GameObject.h"
 #include "Liara_SettingsManager.h"
-#include "Graphics/Liara_Device.h"
-#include "Graphics/Renderers/Liara_RendererManager.h"
-#include "Graphics/Liara_Texture.h"
-#include "Graphics/Descriptors/Liara_Descriptor.h"
-#include "Plateform/Liara_Window.h"
-#include "Systems/Liara_System.h"
 
-namespace Liara::Systems {
+namespace Liara::Systems
+{
     class ImGuiSystem;
 }
 
-namespace Liara::Core { struct FrameInfo; }
+namespace Liara::Core
+{
+    struct FrameInfo;
+}
 
 namespace Liara::Core
 {
@@ -26,16 +32,16 @@ namespace Liara::Core
     public:
         /**
          * @brief Constructor with application metadata
-         * @param app_info Application information and metadata
+         * @param appInfo Application information and metadata
          */
-        explicit Liara_App(const ApplicationInfo& app_info = {});
+        explicit Liara_App(const ApplicationInfo& appInfo = {});
         virtual ~Liara_App() = default;
         Liara_App(const Liara_App&) = delete;
         Liara_App& operator=(const Liara_App&) = delete;
 
         virtual void Run();
 
-        void AddSystem(std::unique_ptr<Systems::Liara_System> system) { m_Systems.push_back(std::move(system)); }
+        void AddSystem(std::unique_ptr<Systems::Liara_System> system);
 
         Liara_SettingsManager& GetSettingsManager() const { return *m_SettingsManager; }
         const ApplicationInfo& GetApplicationInfo() const noexcept { return m_ApplicationInfo; }
@@ -43,6 +49,7 @@ namespace Liara::Core
     protected:
         virtual void Init();
 
+        virtual void InitSignalHandling();
         virtual void InitUboBuffers();
         virtual void InitDescriptorSets();
         virtual void InitSystems();
@@ -60,7 +67,7 @@ namespace Liara::Core
     private:
         void MasterProcessInput(float frameTime);
         void MasterUpdate(const FrameInfo& frameInfo);
-        void MasterRender(const FrameInfo &frameInfo);
+        void MasterRender(const FrameInfo& frameInfo);
 
     protected:
         ApplicationInfo m_ApplicationInfo;
@@ -83,5 +90,8 @@ namespace Liara::Core
 
         // TODO: Test texture, temporary
         std::unique_ptr<Graphics::Liara_Texture> m_Texture;
+
+    private:
+        std::vector<Graphics::Liara_Buffer::MappingGuard> m_UboMappings;
     };
 }

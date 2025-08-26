@@ -25,7 +25,7 @@ namespace Liara::Plateform
     class WindowSettings final : public Core::ISettingSerializable
     {
     public:
-        std::string_view name = "window.default";
+        std::string name = "window.default";
         uint16_t width = 1280, height = 720;
         int xPos = 50, yPos = 50;
         bool fullscreen = false, resizable = true;
@@ -111,7 +111,7 @@ namespace Liara::Plateform
         Core::Liara_SettingsManager& m_SettingsManager;
 
         static uint8_t windowCount;                                 ///< The number of windows created
-        static std::unordered_map<uint8_t, Liara_Window*> windows;   ///< The map of windows
+        static std::unordered_map<uint8_t, Liara_Window*> windows;  ///< The map of windows
 
         SDL_Window* m_Window{};  ///< The SDL window
         const uint8_t m_ID;      ///< The unique ID of the window, for a hypothetical multiple windows support

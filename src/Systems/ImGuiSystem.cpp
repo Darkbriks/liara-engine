@@ -1,8 +1,10 @@
 #include "ImGuiSystem.h"
 
 #include "Core/FrameInfo.h"
-#include "Core/Liara_Utils.h"
+#include "Core/ImGui/ImGuiElementMainMenu.h"
 #include "Graphics/Liara_Device.h"
+
+#include <Liara/Utils.h>
 
 #include <vulkan/vulkan.h>
 
@@ -17,9 +19,11 @@ namespace Liara::Systems
 
     ImGuiSystem::ImGuiSystem(const Plateform::Liara_Window& window,
                              Graphics::Liara_Device& device,
+                             const Core::ApplicationInfo& appInfo,
                              VkRenderPass renderPass,
                              const uint32_t imageCount)
-        : m_lveDevice{device} {
+        : Liara_System("ImGui System", {.major = 0, .minor = 2, .patch = 3, .prerelease = "dev"})
+        , m_lveDevice{device} {
         // set up a descriptor pool stored on this instance
         const VkDescriptorPoolSize poolSizes[] = {
             {VK_DESCRIPTOR_TYPE_SAMPLER,                1000},
@@ -41,7 +45,7 @@ namespace Liara::Systems
         poolInfo.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(poolSizes));
         poolInfo.pPoolSizes = poolSizes;
         if (vkCreateDescriptorPool(device.GetDevice(), &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS) {
-            throw std::runtime_error("failed to set up descriptor pool for imgui");
+            LIARA_THROW_RUNTIME_ERROR(LogSystems, "Failed to set up descriptor pool for imgui");
         }
 
         // Setup Dear ImGui context
@@ -85,6 +89,8 @@ namespace Liara::Systems
         // ImGui_ImplVulkan_DestroyFontUploadObjects();
 
         imguiInitialized = true;
+
+        AddElement(std::make_unique<Core::ImGuiElements::MainMenu>(appInfo));
     }
 
     ImGuiSystem::~ImGuiSystem() {

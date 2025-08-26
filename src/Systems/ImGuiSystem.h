@@ -16,6 +16,7 @@ namespace Liara::Systems
     public:
         ImGuiSystem(const Plateform::Liara_Window& window,
                     Graphics::Liara_Device& device,
+                    const Core::ApplicationInfo& appInfo,
                     VkRenderPass renderPass,
                     uint32_t imageCount);
         ~ImGuiSystem() override;

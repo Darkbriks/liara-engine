@@ -51,9 +51,7 @@ namespace Liara::Core {
         std::shared_lock const lock(m_Mutex);
 
         const auto it = m_Settings.find(std::string(name));
-        if (it == m_Settings.end()) {
-            throw std::runtime_error("Setting not found: " + std::string(name));
-        }
+        LIARA_CHECK_RUNTIME(it != m_Settings.end(), LogCore, "Setting not found: {}", std::string(name));
 
         if constexpr (FastSettingType<T>) {
             if (auto* entry = std::get_if<Liara_FastSettingEntry<T>>(&it->second.data)) { return entry->value; }
@@ -64,8 +62,7 @@ namespace Liara::Core {
                 }
             }
         }
-
-        throw std::runtime_error("Setting type mismatch for: " + std::string(name));
+        LIARA_THROW_RUNTIME_ERROR(LogCore, "Setting type mismatch for: {}", std::string(name));
     }
 
     template <typename T> bool Liara_SettingsManager::Set(const std::string_view name, const T& value) {

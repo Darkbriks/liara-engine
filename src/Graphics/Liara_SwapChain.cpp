@@ -121,7 +121,7 @@ namespace Liara::Graphics
 
         if (vkQueueSubmit(m_Device.GetGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrame])
             != VK_SUCCESS) {
-            throw std::runtime_error("failed to submit draw command buffer!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to submit draw command buffer!");
         }
 
         VkPresentInfoKHR presentInfo{};
@@ -197,7 +197,7 @@ namespace Liara::Graphics
         createInfo.oldSwapchain = m_OldSwapChain == nullptr ? VK_NULL_HANDLE : m_OldSwapChain->m_SwapChain;
 
         if (vkCreateSwapchainKHR(m_Device.GetDevice(), &createInfo, nullptr, &m_SwapChain) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create swap chain!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create swap chain!");
         }
 
         // we only specified a minimum number of images in the swap chain, so the implementation is
@@ -229,7 +229,7 @@ namespace Liara::Graphics
             viewInfo.subresourceRange.layerCount = 1;
 
             if (vkCreateImageView(m_Device.GetDevice(), &viewInfo, nullptr, &m_SwapChainImageViews[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create texture image view!");
+                LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create image views!");
             }
         }
     }
@@ -290,7 +290,7 @@ namespace Liara::Graphics
         renderPassInfo.pDependencies = &dependency;
 
         if (vkCreateRenderPass(m_Device.GetDevice(), &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create render pass!");
+            LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create render pass!");
         }
     }
 
@@ -311,7 +311,7 @@ namespace Liara::Graphics
 
             if (vkCreateFramebuffer(m_Device.GetDevice(), &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i])
                 != VK_SUCCESS) {
-                throw std::runtime_error("failed to create framebuffer!");
+                LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create framebuffer!");
             }
         }
     }
@@ -357,7 +357,7 @@ namespace Liara::Graphics
             viewInfo.subresourceRange.layerCount = 1;
 
             if (vkCreateImageView(m_Device.GetDevice(), &viewInfo, nullptr, &m_DepthImageViews[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create texture image view!");
+                LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create texture image view!");
             }
         }
     }
@@ -383,13 +383,13 @@ namespace Liara::Graphics
                     != VK_SUCCESS
                 || vkCreateSemaphore(m_Device.GetDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i])
                        != VK_SUCCESS) {
-                throw std::runtime_error("failed to create image semaphores!");
+                LIARA_THROW_RUNTIME_ERROR(LogVulkan, "failed to create semaphores!");
             }
         }
 
         for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
             if (vkCreateFence(m_Device.GetDevice(), &fenceInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create frame fence!");
+                LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to create fences!");
             }
         }
     }

@@ -2,8 +2,8 @@
   "version": 6,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 25,
-    "patch": 0
+    "minor": 29,
+    "patch": 3
   },
   "configurePresets": [
     {
@@ -29,6 +29,23 @@
       "toolset": "host=x64"
     },
     {
+      "name": "windows-modules-base",
+      "hidden": true,
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "LIARA_ENABLE_MODULES": "ON",
+        "LIARA_FORCE_NO_MODULES": "OFF"
+      }
+    },
+    {
+      "name": "windows-no-modules-base",
+      "hidden": true,
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "LIARA_FORCE_NO_MODULES": "ON"
+      }
+    },
+    {
       "name": "linux-base",
       "hidden": true,
       "inherits": "base",
@@ -40,110 +57,180 @@
       "generator": "Ninja"
     },
     {
-      "name": "windows-debug",
-      "displayName": "Windows Debug",
-      "description": "Debug build for Windows with MSVC",
-      "inherits": "windows-base",
-      "binaryDir": "${sourceDir}/build/windows-debug",
+      "name": "windows-debug-modules",
+      "displayName": "Windows Debug (With C++20 Modules)",
+      "description": "Debug build for Windows with MSVC and C++20 modules support",
+      "inherits": "windows-modules-base",
+      "binaryDir": "${sourceDir}/build/windows-debug-modules",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "LIARA_ENABLE_VALIDATION": "ON",
-        "LIARA_BUILD_TESTS": "ON"
+        "LIARA_BUILD_TESTS": "ON",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDebugDLL"
       }
     },
     {
-      "name": "windows-release",
-      "displayName": "Windows Release",
-      "description": "Release build for Windows with MSVC",
-      "inherits": "windows-base",
-      "binaryDir": "${sourceDir}/build/windows-release",
+      "name": "windows-release-modules",
+      "displayName": "Windows Release (With C++20 Modules)",
+      "description": "Release build for Windows with MSVC and C++20 modules support",
+      "inherits": "windows-modules-base",
+      "binaryDir": "${sourceDir}/build/windows-release-modules",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "LIARA_ENABLE_VALIDATION": "OFF",
-        "LIARA_EMBED_SHADERS": "ON"
+        "LIARA_EMBED_SHADERS": "ON",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL"
       }
     },
     {
-      "name": "linux-debug",
-      "displayName": "Linux Debug",
-      "description": "Debug build for Linux with GCC/Clang",
-      "inherits": "linux-base",
-      "binaryDir": "${sourceDir}/build/linux-debug",
+      "name": "windows-debug-no-modules",
+      "displayName": "Windows Debug (Traditional Headers)",
+      "description": "Debug build for Windows with MSVC using traditional headers",
+      "inherits": "windows-no-modules-base",
+      "binaryDir": "${sourceDir}/build/windows-debug-no-modules",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "LIARA_ENABLE_VALIDATION": "ON",
+        "LIARA_BUILD_TESTS": "ON",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDebugDLL"
+      }
+    },
+    {
+      "name": "windows-release-no-modules",
+      "displayName": "Windows Release (Traditional Headers)",
+      "description": "Release build for Windows with MSVC using traditional headers",
+      "inherits": "windows-no-modules-base",
+      "binaryDir": "${sourceDir}/build/windows-release-no-modules",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "LIARA_ENABLE_VALIDATION": "OFF",
+        "LIARA_EMBED_SHADERS": "ON",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL"
+      }
+    },
+    {
+      "name": "linux-debug-gcc",
+      "displayName": "Linux Debug (GCC)",
+      "description": "Debug build for Linux with GCC",
+      "inherits": "linux-base",
+      "binaryDir": "${sourceDir}/build/linux-debug-gcc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_COMPILER": "gcc",
         "LIARA_ENABLE_VALIDATION": "ON",
         "LIARA_BUILD_TESTS": "ON"
       }
     },
     {
-      "name": "linux-release",
-      "displayName": "Linux Release",
+      "name": "linux-debug-clang",
+      "displayName": "Linux Debug (Clang)",
+      "description": "Debug build for Linux with Clang",
+      "inherits": "linux-base",
+      "binaryDir": "${sourceDir}/build/linux-debug-clang",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_COMPILER": "clang",
+        "LIARA_ENABLE_VALIDATION": "ON",
+        "LIARA_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "linux-release-gcc",
+      "displayName": "Linux Release (GCC)",
       "description": "Release build for Linux with optimizations",
       "inherits": "linux-base",
-      "binaryDir": "${sourceDir}/build/linux-release",
+      "binaryDir": "${sourceDir}/build/linux-release-gcc",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_COMPILER": "gcc",
         "LIARA_ENABLE_VALIDATION": "OFF",
         "LIARA_EMBED_SHADERS": "ON"
       }
     },
     {
-      "name": "dev",
-      "displayName": "Development",
-      "description": "Quick development build",
-      "inherits": "base",
-      "binaryDir": "${sourceDir}/build/dev",
-      "generator": "Ninja",
+      "name": "linux-release-clang",
+      "displayName": "Linux Release (Clang)",
+      "description": "Release build for Linux with Clang and optimizations",
+      "inherits": "linux-base",
+      "binaryDir": "${sourceDir}/build/linux-release-clang",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "LIARA_ENABLE_VALIDATION": "ON",
-        "LIARA_BUILD_APPS": "ON",
-        "LIARA_BUILD_TESTS": "OFF",
-        "LIARA_EMBED_SHADERS": "OFF"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_COMPILER": "clang",
+        "LIARA_ENABLE_VALIDATION": "OFF",
+        "LIARA_EMBED_SHADERS": "ON"
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "windows-debug",
-      "configurePreset": "windows-debug",
+      "name": "windows-debug-modules",
+      "configurePreset": "windows-debug-modules",
       "jobs": 0,
-      "targets": ["FirstApp", "LiaraShaders"]
+      "configuration": "Debug"
     },
     {
-      "name": "windows-release",
-      "configurePreset": "windows-release",
+      "name": "windows-release-modules",
+      "configurePreset": "windows-release-modules",
       "jobs": 0,
       "configuration": "Release"
     },
     {
-      "name": "linux-debug",
-      "configurePreset": "linux-debug",
-      "jobs": 0
-    },
-    {
-      "name": "linux-release",
-      "configurePreset": "linux-release",
-      "jobs": 0
-    },
-    {
-      "name": "dev",
-      "configurePreset": "dev",
+      "name": "windows-debug-no-modules",
+      "configurePreset": "windows-debug-no-modules",
       "jobs": 0,
-      "targets": ["FirstApp"]
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-release-no-modules",
+      "configurePreset": "windows-release-no-modules",
+      "jobs": 0,
+      "configuration": "Release"
+    },
+    {
+      "name": "linux-debug-gcc",
+      "configurePreset": "linux-debug-gcc",
+      "jobs": 0
+    },
+    {
+      "name": "linux-debug-clang",
+      "configurePreset": "linux-debug-clang",
+      "jobs": 0
+    },
+    {
+      "name": "linux-release-gcc",
+      "configurePreset": "linux-release-gcc",
+      "jobs": 0
+    },
+    {
+      "name": "linux-release-clang",
+      "configurePreset": "linux-release-clang",
+      "jobs": 0
     }
   ],
   "testPresets": [
     {
-      "name": "windows-debug",
-      "configurePreset": "windows-debug",
+      "name": "windows-debug-modules",
+      "configurePreset": "windows-debug-modules",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "windows-debug-no-modules",
+      "configurePreset": "windows-debug-no-modules",
+      "configuration": "Debug",
       "output": {
         "outputOnFailure": true
       }
     },
     {
       "name": "linux-debug",
-      "configurePreset": "linux-debug",
+      "configurePreset": "linux-debug-clang",
       "output": {
         "outputOnFailure": true
       }

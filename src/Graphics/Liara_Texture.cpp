@@ -15,8 +15,8 @@
 #include "Liara_Buffer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <fmt/core.h>
 
+#include <filesystem>
 #include <stb/stb_image.h>
 
 #ifndef ENGINE_DIR
@@ -25,65 +25,69 @@
 
 namespace Liara::Graphics
 {
-    Liara_Texture::Builder::~Builder() { stbi_image_free(pixels); }
+    std::unique_ptr<Liara_Texture>
+    Liara_Texture::CreateFromPixelData(Liara_Device& device,
+                                       const uint32_t width,
+                                       const uint32_t height,
+                                       const VkFormat format,
+                                       const std::span<const std::byte> pixelData,
+                                       const Core::Liara_SettingsManager& settingsManager) {
+        return std::unique_ptr<Liara_Texture>(
+            new Liara_Texture(device, width, height, format, pixelData, settingsManager));
+    }
 
-    void Liara_Texture::Builder::LoadTexture(const std::string& filename,
-                                             const Core::Liara_SettingsManager& settingsManager) {
-        pixels = stbi_load((std::string(ENGINE_DIR) + filename).c_str(), &width, &height, &channels, STBI_rgb_alpha);
-
-        if (pixels == nullptr) {
-            errorFlag = true;
-            fmt::print(stderr, "Failed to load texture image: {}\n", filename);
-            return;
+    std::unique_ptr<Liara_Texture> Liara_Texture::CreateFromFile(Liara_Device& device,
+                                                                 const std::string_view filename,
+                                                                 const Core::Liara_SettingsManager& settingsManager) {
+        Builder builder;
+        if (const auto result = builder.LoadTexture(std::string(filename), settingsManager);
+            result != TextureLoadResult::Success) {
+            switch (result) {
+                case TextureLoadResult::FileNotFound:
+                    LIARA_THROW_RUNTIME_ERROR(LogRendering, "Texture file not found: {}", filename);
+                case TextureLoadResult::InvalidFormat:
+                    LIARA_THROW_RUNTIME_ERROR(LogRendering, "Invalid texture format for file: {}", filename);
+                case TextureLoadResult::TooLarge:
+                    LIARA_THROW_RUNTIME_ERROR(LogRendering, "Texture file too large: {}", filename);
+                case TextureLoadResult::OutOfMemory:
+                    LIARA_THROW_RUNTIME_ERROR(LogRendering, "Out of memory while loading texture: {}", filename);
+                case TextureLoadResult::CorruptedData:
+                    LIARA_THROW_RUNTIME_ERROR(LogRendering, "Corrupted texture data in file: {}", filename);
+                default: LIARA_THROW_RUNTIME_ERROR(LogRendering, "Unknown error loading texture: {}", filename);
+            }
         }
 
-        if (static_cast<uint32_t>(std::max(width, height)) > settingsManager.GetUInt("texture.max_size")) {
-            errorFlag = true;
-            fmt::print(stderr,
-                       "Texture {} is too large: {}x{} > {}\n",
-                       filename,
-                       width,
-                       height,
-                       settingsManager.GetUInt("texture.max_size"));
-        }
+        LIARA_CHECK_RUNTIME(builder.IsValid(), LogRendering, "Failed to load texture: {}", filename);
+
+        return CreateFromPixelData(device,
+                                   static_cast<uint32_t>(builder.width),
+                                   static_cast<uint32_t>(builder.height),
+                                   builder.format,
+                                   builder.GetPixelData(),
+                                   settingsManager);
     }
 
     Liara_Texture::Liara_Texture(Liara_Device& device,
-                                 const Builder& builder,
-                                 const Core::Liara_SettingsManager& settingsManager)
-        : m_Device(device)
-        , m_SettingsManager(settingsManager) {
-        if (builder.errorFlag) {
-            fmt::print(stderr, "Failed to create texture\n");
-            return;
-        }
-
-        m_Width = builder.width;
-        m_Height = builder.height;
-        m_Format = builder.format;
-
-        m_MipLevels = m_SettingsManager.GetBool("texture.use_mipmaps")
-                          ? static_cast<uint16_t>(std::floor(std::log2(std::max(m_Width, m_Height)))) + 1
-                          : 1;
-
-        CreateTextureImage(builder.pixels);
-        CreateTextureImageView();
-        CreateTextureSampler();
-    }
-
-    Liara_Texture::Liara_Texture(Liara_Device& device,
-                                 const int width,
-                                 const int height,
+                                 const uint32_t width,
+                                 const uint32_t height,
                                  const VkFormat format,
-                                 const VkImageUsageFlags usage,
+                                 const std::span<const std::byte> pixelData,
                                  const Core::Liara_SettingsManager& settingsManager)
         : m_Device(device)
         , m_SettingsManager(settingsManager)
         , m_Width(width)
         , m_Height(height)
         , m_Format(format) {
-        CreateImage(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, usage);
+        LIARA_CHECK_RUNTIME(
+            !pixelData.empty() && width != 0 && height != 0, LogRendering, "Invalid texture parameters");
+
+        m_MipLevels = settingsManager.GetBool("texture.use_mipmaps")
+                          ? static_cast<uint16_t>(std::floor(std::log2(std::max(width, height)))) + 1
+                          : 1;
+
+        CreateTextureImage(pixelData);
         CreateTextureImageView();
+        CreateTextureSampler();
     }
 
     Liara_Texture::~Liara_Texture() {
@@ -98,26 +102,23 @@ namespace Liara::Graphics
             .sampler = m_Sampler, .imageView = m_ImageView, .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     }
 
-    void Liara_Texture::CreateTextureImage(const stbi_uc* pixels) {
-        assert(pixels && "No pixels data to create texture image");
+    void Liara_Texture::CreateTextureImage(std::span<const std::byte> pixelData) {
+        assert(!pixelData.empty() && "No pixel data to create texture image");
         assert(m_Width > 0 && m_Height > 0 && "Invalid texture size");
 
-        const VkDeviceSize imageSize = m_Width * m_Height * STBI_rgb_alpha;
+        LIARA_CHECK_ARGUMENT(pixelData.size_bytes() == static_cast<VkDeviceSize>(m_Width) * m_Height * STBI_rgb_alpha,
+                             LogRendering,
+                             "Pixel data size mismatch (expected {}, got {})",
+                             static_cast<VkDeviceSize>(m_Width) * m_Height * STBI_rgb_alpha,
+                             pixelData.size_bytes());
 
-        Liara_Buffer stagingBuffer(m_Device,
-                                   imageSize,
-                                   1,
-                                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-        stagingBuffer.Map();
-        stagingBuffer.WriteToBuffer(pixels);
+        const auto stagingBuffer = std::make_unique<Liara_Buffer>(m_Device, pixelData, BufferConfig::Staging());
 
         CreateImage(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
         TransitionImageLayout(m_Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        CopyBufferToImage(stagingBuffer.GetBuffer(), m_Image);
+        CopyBufferToImage(stagingBuffer->GetBuffer(), m_Image);
         GenerateMipmaps();
     }
 
@@ -172,7 +173,7 @@ namespace Liara::Graphics
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         }
-        else { throw std::invalid_argument("Unsupported layout transition!"); }
+        else { LIARA_THROW_RUNTIME_ERROR(LogRendering, "Unsupported layout transition!"); }
 
 
         vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
@@ -214,7 +215,7 @@ namespace Liara::Graphics
         viewInfo.subresourceRange.layerCount = 1;
 
         if (vkCreateImageView(m_Device.GetDevice(), &viewInfo, nullptr, &m_ImageView) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create texture image view!");
+            LIARA_THROW_RUNTIME_ERROR(LogRendering, "Failed to create texture image view!");
         }
     }
 
@@ -246,7 +247,7 @@ namespace Liara::Graphics
         samplerInfo.maxLod = static_cast<float>(m_MipLevels);
 
         if (vkCreateSampler(m_Device.GetDevice(), &samplerInfo, nullptr, &m_Sampler) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create texture sampler!");
+            LIARA_THROW_RUNTIME_ERROR(LogRendering, "Failed to create texture sampler!");
         }
     }
 
@@ -259,7 +260,9 @@ namespace Liara::Graphics
         vkGetPhysicalDeviceFormatProperties(m_Device.GetPhysicalDevice(), m_Format, &formatProperties);
 
         if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) == 0u) {
-            throw std::runtime_error("Texture image format does not support linear blitting!");
+            LIARA_LOG_WARNING(LogRendering,
+                              "Texture image format does not support linear blitting! Mipmaps will not be generated.");
+            return;
         }
 
         VkCommandBuffer commandBuffer = m_Device.BeginSingleTimeCommands();
@@ -356,5 +359,47 @@ namespace Liara::Graphics
                              &barrier);
 
         m_Device.EndSingleTimeCommands(commandBuffer);
+    }
+
+    Liara_Texture::TextureLoadResult
+    Liara_Texture::Builder::LoadTexture(const std::string& filename,
+                                        const Core::Liara_SettingsManager& settingsManager) {
+        pixels.reset();
+        errorFlag = false;
+        width = height = channels = 0;
+
+        const std::string fullPath = std::string(ENGINE_DIR) + filename;
+
+        if (!std::filesystem::exists(fullPath)) {
+            errorFlag = true;
+            return TextureLoadResult::FileNotFound;
+        }
+
+        stbi_uc* rawPixels = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+        if (!rawPixels) {
+            errorFlag = true;
+            LIARA_LOG_ERROR(LogRendering, "STBI load failed for {}: {}", filename, stbi_failure_reason());
+
+            const std::string stbiError = stbi_failure_reason();
+            if (stbiError.find("unsupported") != std::string::npos) { return TextureLoadResult::InvalidFormat; }
+            if (stbiError.find("corrupt") != std::string::npos) { return TextureLoadResult::CorruptedData; }
+            return TextureLoadResult::InvalidFormat;
+        }
+
+        pixels = std::unique_ptr<stbi_uc[], void (*)(void*)>{rawPixels, stbi_image_free};
+
+        if (width <= 0 || height <= 0) {
+            errorFlag = true;
+            return TextureLoadResult::InvalidFormat;
+        }
+
+        if (const uint32_t maxDimension = std::max(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+            maxDimension > settingsManager.GetUInt("texture.max_size")) {
+            errorFlag = true;
+            return TextureLoadResult::TooLarge;
+        }
+
+        return TextureLoadResult::Success;
     }
 }
