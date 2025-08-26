@@ -76,12 +76,12 @@ IncludeCategories:
   - Regex: '^(?!.*(Demo|Core|Graphics|Listener|Systems|Plateform)).*\.h$'
     Priority: 1
     SortPriority: 1
-  # 2. Headers de dépendances internes (autres modules du projet)
-  - Regex: '^"(Demo|AnyOtherApp)/.*"$'
+  # 2. Headers du projet Liara
+  - Regex: '^"(Core|Graphics|Listener|Systems|Plateform)/.*"$'
     Priority: 2
     SortPriority: 2
-  # 3. Headers du projet Liara
-  - Regex: '^"(Core|Graphics|Listener|Systems|Plateform)/.*"$'
+  # 3. Modules internes (Liara/<Module>/...)
+  - Regex: '^<Liara/*.*>$'
     Priority: 3
     SortPriority: 3
   # 4. Headers externes (Vulkan, SDL, etc.)

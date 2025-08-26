@@ -1,5 +1,31 @@
+include(ModuleFunctions)
+
 add_library(LiaraEngine STATIC)
 add_library(Liara::Engine ALIAS LiaraEngine)
+
+get_property(modules_enabled GLOBAL PROPERTY LIARA_MODULES_ENABLED)
+
+if(modules_enabled)
+    message(STATUS "Building LiaraEngine with C++20 modules support")
+    set_target_properties(LiaraEngine PROPERTIES CXX_SCAN_FOR_MODULES ON)
+else()
+    message(STATUS "Building LiaraEngine with generated headers from modules")
+endif()
+
+liara_add_module_with_proxy(
+        TARGET LiaraEngine
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_utils.cppm"
+        MODULE_IMPL "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_utils.cpp"
+        MODULE_NAME "liara.core.utils"
+        HEADER_NAME "Utils"
+)
+
+liara_add_module_with_proxy(
+        TARGET LiaraEngine
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_result.cppm"
+        MODULE_NAME "liara.core.utils.result"
+        HEADER_NAME "Utils/Result"
+)
 
 target_sources(LiaraEngine
         PRIVATE
@@ -7,7 +33,6 @@ target_sources(LiaraEngine
         Core/Liara_Camera.cpp
         Core/Liara_SettingsManager.cpp
         Core/Liara_SignalHandler.cpp
-        Core/Liara_Utils.h
         Core/Logging/Logger.cpp
 
         Graphics/Liara_Device.cpp
@@ -68,6 +93,12 @@ target_include_directories(LiaraEngine
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+if(modules_enabled AND MSVC)
+    target_include_directories(LiaraEngine PRIVATE
+            ${CMAKE_BINARY_DIR}/modules
+    )
+endif()
 
 target_link_libraries(LiaraEngine
         PUBLIC

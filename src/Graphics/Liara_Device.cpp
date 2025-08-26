@@ -81,11 +81,14 @@ namespace Liara::Graphics
         }
 #endif
 
+        const std::string appName = m_SettingsManager.GetString("global.app_name");
+        const std::string engineName = m_SettingsManager.GetString("global.engine_name");
+
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = m_SettingsManager.GetString("global.app_name").c_str();
+        appInfo.pApplicationName = appName.c_str();
         appInfo.applicationVersion = m_SettingsManager.GetUInt("global.app_version");
-        appInfo.pEngineName = m_SettingsManager.GetString("global.engine_name").c_str();
+        appInfo.pEngineName = engineName.c_str();
         appInfo.engineVersion = m_SettingsManager.GetUInt("global.engine_version");
         appInfo.apiVersion = VK_API_VERSION_1_3;
 

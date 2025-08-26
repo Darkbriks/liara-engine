@@ -1,9 +1,10 @@
 #include "Liara_Model.h"
 
 #include "Core/FrameInfo.h"
-#include "Core/Liara_Utils.h"
 #include "Graphics/Liara_Buffer.h"
 #include "Graphics/Liara_Device.h"
+
+#include <Liara/Utils.h>
 
 #include <vulkan/vulkan_core.h>
 

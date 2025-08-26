@@ -1,12 +1,15 @@
-#pragma once
+module;
 
 #include <functional>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <string>
 
-namespace Liara::Core
+export module liara.core.utils.result;
+
+export namespace Liara::Core
 {
     class BadResultAccess final : public std::runtime_error
     {
@@ -21,7 +24,8 @@ namespace Liara::Core
      * @tparam T Type of the value in case of success
      * @tparam E Type of the error in case of failure
      */
-    template <typename T, typename E = int> class Result
+    template <typename T, typename E = int>
+    class Result
     {
     private:
         std::optional<T> m_value;
@@ -121,27 +125,31 @@ namespace Liara::Core
 
         [[nodiscard]] constexpr T* operator->() noexcept { return &m_value.value(); }
 
-        template <typename U> [[nodiscard]] constexpr T ValueOr(U&& defaultValue) const& {
+        template <typename U>
+        [[nodiscard]] constexpr T ValueOr(U&& defaultValue) const& {
             return HasValue() ? Value() : static_cast<T>(std::forward<U>(defaultValue));
         }
 
-        template <typename U> [[nodiscard]] constexpr T ValueOr(U&& defaultValue) && {
+        template <typename U>
+        [[nodiscard]] constexpr T ValueOr(U&& defaultValue) && {
             return HasValue() ? std::move(Value()) : static_cast<T>(std::forward<U>(defaultValue));
         }
     };
 
-    template <typename T, typename E = void> [[nodiscard]] constexpr auto Ok(T&& value) -> Result<std::decay_t<T>, E> {
+    template <typename T, typename E = void>
+    [[nodiscard]] constexpr auto Ok(T&& value) -> Result<std::decay_t<T>, E> {
         return Result<std::decay_t<T>, E>(std::forward<T>(value));
     }
 
-    template <typename E, typename T = void> [[nodiscard]] constexpr auto Err(E&& error) -> Result<T, std::decay_t<E>> {
+    template <typename E, typename T = void>
+    [[nodiscard]] constexpr auto Err(E&& error) -> Result<T, std::decay_t<E>> {
         return Result<T, std::decay_t<E>>(std::forward<E>(error));
     }
 
     template <typename T, typename E>
     [[nodiscard]] constexpr bool operator==(const Result<T, E>& lhs, const Result<T, E>& rhs) {
         if (lhs.HasValue() && rhs.HasValue()) { return lhs.Value() == rhs.Value(); }
-        if (lhs.has_error() && rhs.has_error()) { return lhs.Error() == rhs.Error(); }
+        if (lhs.HasError() && rhs.HasError()) { return lhs.Error() == rhs.Error(); }
         return false;
     }
 

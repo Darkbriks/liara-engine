@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.29)
 
 set(ENGINE_NAME "LiaraEngine")
 set(ENGINE_VERSION_MAJOR 0)
@@ -16,6 +16,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+include(DetectModulesSupport)
+liara_detect_modules_support()
+
 include(CompilerSettings)
 include(Dependencies)
 
