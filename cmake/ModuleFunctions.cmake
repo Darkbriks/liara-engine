@@ -27,7 +27,7 @@ function(liara_generate_header_from_module)
             -DOUTPUT_HEADER=${ARG_OUTPUT_HEADER}
             -DMODULE_NAME=${ARG_MODULE_NAME}
             -P ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/ExecuteHeaderGeneration.cmake
-            DEPENDS "${ARG_MODULE_INTERFACE}"
+            DEPENDS "${ARG_MODULE_FILE}"
             COMMENT "Generating header ${ARG_OUTPUT_HEADER} from module ${ARG_MODULE_FILE}"
             VERBATIM
     )
