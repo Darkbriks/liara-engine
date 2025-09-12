@@ -2,6 +2,8 @@
 
 #include "Graphics/Liara_Device.h"
 
+#include <Liara/PathResolver.h>
+
 #include <vulkan/vulkan_core.h>
 
 #include <cassert>
@@ -14,10 +16,6 @@
 #include "Liara_Model.h"
 #include "Liara_ShaderLoader.h"
 #include "SpecConstant/SpecializationConstant.h"
-
-#ifndef ENGINE_DIR
-    #define ENGINE_DIR "./"
-#endif
 
 namespace Liara::Graphics
 {
@@ -124,10 +122,26 @@ namespace Liara::Graphics
     }
 
     std::vector<char> Liara_Pipeline::ReadFile(const std::string& filepath) {
-        const std::string enginePath = ENGINE_DIR + filepath;
-        std::ifstream file{enginePath, std::ios::ate | std::ios::binary};
+        std::filesystem::path resolvedPath;
 
-        LIARA_CHECK_RUNTIME(file.is_open(), LogGraphics, "Failed to open file: {}", enginePath);
+        try {
+            // Déterminer le type de fichier automatiquement
+            if (filepath.starts_with("shaders/")) {
+                auto shaderName = filepath.substr(8);
+                resolvedPath = Core::PathResolver::ResolveShaderPath(shaderName);
+            }
+            else if (filepath.find(".spv") != std::string::npos || filepath.find(".vert") != std::string::npos
+                     || filepath.find(".frag") != std::string::npos) {
+                resolvedPath = Core::PathResolver::ResolveShaderPath(filepath);
+            }
+            else { resolvedPath = Core::PathResolver::ResolveAssetPath(filepath); }
+        }
+        catch (const std::exception& e) {
+            LIARA_THROW_RUNTIME_ERROR(LogGraphics, "Failed to resolve file path '{}': {}", filepath, e.what());
+        }
+
+        std::ifstream file{resolvedPath, std::ios::ate | std::ios::binary};
+        LIARA_CHECK_RUNTIME(file.is_open(), LogGraphics, "Failed to open file: {}", resolvedPath.string());
 
         const size_t fileSize = file.tellg();
         std::vector<char> buffer(fileSize);

@@ -1,11 +1,9 @@
 #include "Liara_ShaderLoader.h"
 
+#include <Liara/PathResolver.h>
+
 #include <algorithm>
 #include <fstream>
-
-#ifndef ENGINE_DIR
-    #define ENGINE_DIR "./"
-#endif
 
 namespace Liara::Graphics
 {
@@ -16,9 +14,13 @@ namespace Liara::Graphics
             return Core::Ok<ShaderData, ShaderLoadError>(ShaderData(span.begin(), span.end()));
         }
 #endif
-
-        const auto shaderPath = std::filesystem::path(ENGINE_DIR) / "shaders" / shaderName;
-        return LoadShaderFromFile(shaderPath);
+        try {
+            const auto shaderPath = Liara::Core::PathResolver::ResolveShaderPath(shaderName);
+            return LoadShaderFromFile(shaderPath);
+        }
+        catch (const std::exception&) {
+            return Core::Err<ShaderLoadError, ShaderData>(ShaderLoadError::FileNotFound);
+        }
     }
 
 #ifdef LIARA_EMBED_SHADERS

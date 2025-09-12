@@ -27,6 +27,14 @@ liara_add_module_with_proxy(
         HEADER_NAME "Utils/Result"
 )
 
+liara_add_module_with_proxy(
+        TARGET LiaraEngine
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/path_resolver.cppm"
+        MODULE_IMPL "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/path_resolver.cpp"
+        MODULE_NAME "liara.core.path_resolver"
+        HEADER_NAME "PathResolver"
+)
+
 target_sources(LiaraEngine
         PRIVATE
         Core/Liara_App.cpp

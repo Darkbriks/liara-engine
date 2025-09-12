@@ -34,7 +34,7 @@ foreach(LINE ${MODULE_LINES})
             continue()
         endif()
 
-        if(STRIPPED_LINE MATCHES "^#include")
+        if(STRIPPED_LINE MATCHES "^#")
             string(APPEND HEADER_CONTENT "${LINE}\n")
             continue()
         endif()

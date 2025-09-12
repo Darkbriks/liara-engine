@@ -3,6 +3,8 @@
 #include "Core/Liara_SettingsManager.h"
 #include "Graphics/Liara_Device.h"
 
+#include <Liara/PathResolver.h>
+
 #include <vulkan/vulkan_core.h>
 
 #include <algorithm>
@@ -19,9 +21,6 @@
 #include <filesystem>
 #include <stb/stb_image.h>
 
-#ifndef ENGINE_DIR
-    #define ENGINE_DIR "./"
-#endif
 
 namespace Liara::Graphics
 {
@@ -368,16 +367,19 @@ namespace Liara::Graphics
         errorFlag = false;
         width = height = channels = 0;
 
-        const std::string fullPath = std::string(ENGINE_DIR) + filename;
-
-        if (!std::filesystem::exists(fullPath)) {
+        std::filesystem::path fullPath;
+        try {
+            fullPath = Core::PathResolver::ResolveAssetPath(filename);
+        }
+        catch (const std::exception&) {
+            LIARA_LOG_ERROR(LogRendering, "Asset file not found: {}", filename);
             errorFlag = true;
             return TextureLoadResult::FileNotFound;
         }
 
         stbi_uc* rawPixels = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
-        if (!rawPixels) {
+        if (rawPixels == nullptr) {
             errorFlag = true;
             LIARA_LOG_ERROR(LogRendering, "STBI load failed for {}: {}", filename, stbi_failure_reason());
 
