@@ -301,12 +301,10 @@ namespace Liara::Graphics
         }
 
         // Get the extensions
-        auto* const sdlExtensions = new const char*[sdlExtensionCount];
-        if (SDL_Vulkan_GetInstanceExtensions(m_Window.GetWindow(), &sdlExtensionCount, sdlExtensions) != SDL_TRUE) {
+        std::vector<const char*> extensions(sdlExtensionCount);
+        if (SDL_Vulkan_GetInstanceExtensions(m_Window.GetWindow(), &sdlExtensionCount, extensions.data()) != SDL_TRUE) {
             LIARA_THROW_RUNTIME_ERROR(LogVulkan, "Failed to get SDL Vulkan extensions");
         }
-
-        std::vector<const char*> extensions(sdlExtensions, sdlExtensions + sdlExtensionCount);
 
 #ifndef NDEBUG
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);

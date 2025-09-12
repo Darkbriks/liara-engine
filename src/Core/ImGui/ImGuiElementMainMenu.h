@@ -15,7 +15,7 @@ namespace Liara::Core::ImGuiElements
     public:
         explicit MainMenu(const ApplicationInfo& appInfo)
             : m_app_info(appInfo)
-            , m_engine_stats_element(new UI::ImGuiEngineStats(m_app_info)) {}
+            , m_engine_stats_element(std::make_unique<UI::ImGuiEngineStats>(m_app_info)) {}
 
         ~MainMenu() override = default;
 
@@ -64,7 +64,7 @@ namespace Liara::Core::ImGuiElements
         bool m_show_engine_stats{false};
 
         const ApplicationInfo& m_app_info;
-        UI::ImGuiEngineStats* m_engine_stats_element{nullptr};
+        std::unique_ptr<UI::ImGuiEngineStats> m_engine_stats_element;
 
         static void TestLogMessages() { TEST_LOGGER(); }
     };
