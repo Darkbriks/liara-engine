@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Liara_SettingsManager.h"
 #include "Liara_SettingSerializer.h"
 
 #include <any>
@@ -42,8 +41,20 @@ namespace Liara::Core {
             m_Settings[std::string(name)] =
                 Liara_SettingStorage(Liara_FastSettingEntry<std::decay_t<T>>(std::forward<T>(defaultValue), flags));
         } else {
-            m_Settings[std::string(name)] = Liara_SettingStorage(Liara_FlexibleSettingEntry(
-                std::make_any<T>(std::forward<T>(defaultValue)), std::hash<std::string>{}(typeid(T).name()), flags));
+            std::shared_ptr<ISettingSerializable> serializablePtr = nullptr;
+            // Try to see if T is derived from ISettingSerializable
+            if constexpr (std::is_base_of_v<ISettingSerializable, std::decay_t<T>>) {
+                serializablePtr = std::make_shared<std::decay_t<T>>(std::forward<T>(defaultValue));
+                m_Settings[std::string(name)] = Liara_SettingStorage(
+                    Liara_FlexibleSettingEntry(Liara_FlexibleSettingEntry(std::make_any<T>(std::forward<T>(defaultValue)),
+                                              std::hash<std::string>{}(typeid(T).name()),
+                                              flags,
+                                              serializablePtr)));
+            } else {
+                m_Settings[std::string(name)] = Liara_SettingStorage(
+                    Liara_FlexibleSettingEntry(std::make_any<T>(std::forward<T>(defaultValue)),
+                    std::hash<std::string>{}(typeid(T).name()), flags));
+            }
         }
     }
 
@@ -156,6 +167,10 @@ namespace Liara::Core {
             ValueType newValue;
             if (SettingSerializer<ValueType>::deserialize(value, newValue)) {
                 entry.value = newValue;
+
+                const std::any anyValue = newValue;
+                for (const auto& observer : entry.observers) { observer->Notify(anyValue); }
+
                 return true;
             }
         }

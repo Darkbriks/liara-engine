@@ -28,10 +28,10 @@ namespace Liara::Graphics::Renderers
 
         settingsManager.Subscribe<Plateform::WindowSettings>("window." + std::to_string(window.GetID()),
                                                              [this](const Plateform::WindowSettings& settings) {
-                                                                 if (settings.wasResized) {
+                                                                 if (settings.WasResized()) {
                                                                      m_NeedsSwapChainRecreation = true;
                                                                  }
-                                                                 if (settings.wasFullscreenChanged) {
+                                                                 if (settings.WasFullscreenChanged()) {
                                                                      m_FullscreenChanged = true;
                                                                  }
                                                              });

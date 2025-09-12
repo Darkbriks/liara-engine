@@ -147,13 +147,10 @@ namespace Liara::Core
     bool Liara_SettingsManager::SerializeFlexibleEntry(std::ofstream& file,
                                                        const std::string& name,
                                                        const Liara_FlexibleSettingEntry& entry) {
-        // TODO: Check why cast to ISettingSerializable fails
-        // Si l'entrée est sérialisable, utiliser la méthode de sérialisation
-        if (const auto* const serializable = std::any_cast<ISettingSerializable*>(&entry.value)) {
-            file << name << "=" << (*serializable)->serialize() << "\n";
+        if (entry.serializablePtr) {
+            file << name << "=" << entry.serializablePtr->serialize() << "\n";
             return true;
         }
-
         return false;
     }
 
@@ -179,9 +176,14 @@ namespace Liara::Core
 
     bool Liara_SettingsManager::DeserializeFlexibleEntry(const Liara_FlexibleSettingEntry& entry,
                                                          const std::string& value) {
-        // TODO: Check why cast to ISettingSerializable fails
-        if (const auto* serializable = std::any_cast<ISettingSerializable*>(&entry.value)) {
-            return (*serializable)->deserialize(value);
+        if (entry.serializablePtr) {
+            const bool result = entry.serializablePtr->deserialize(value);
+
+            if (result) {
+                const std::any anyValue = entry.value;
+                for (const auto& observer : entry.observers) { observer->Notify(anyValue); }
+            }
+            return result;
         }
         return false;
     }

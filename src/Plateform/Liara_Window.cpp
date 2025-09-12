@@ -23,16 +23,6 @@ namespace Liara::Plateform
     std::unordered_map<uint8_t, Liara_Window*> Liara_Window::windows;
 
     std::string WindowSettings::serialize() const {
-        LIARA_LOG_DEBUG(LogPlatform,
-                        "Serializing window settings: name={}, width={}, height={}, xPos={}, yPos={}, fullscreen={}, "
-                        "resizable={}",
-                        name,
-                        width,
-                        height,
-                        xPos,
-                        yPos,
-                        fullscreen,
-                        resizable);
         nlohmann::json json;
         json["name"] = name;
         json["width"] = width;
@@ -54,16 +44,7 @@ namespace Liara::Plateform
             yPos = json.value("yPos", 100);
             fullscreen = json.value("fullscreen", false);
             resizable = json.value("resizable", true);
-            LIARA_LOG_DEBUG(LogPlatform,
-                            "Deserialized window settings: name={}, width={}, height={}, xPos={}, yPos={}, "
-                            "fullscreen={}, resizable={}",
-                            name,
-                            width,
-                            height,
-                            xPos,
-                            yPos,
-                            fullscreen,
-                            resizable);
+            justLoaded = true;
             return true;
         }
         catch (const nlohmann::json::parse_error& e) {
@@ -77,7 +58,7 @@ namespace Liara::Plateform
         , m_ID(windowCount++) {
         windows[m_ID] = this;
         WindowSettings settings;
-        settings.name = "Liara_Window " + std::to_string(m_ID);
+        settings.SetName("Liara_Window " + std::to_string(m_ID));
         m_SettingsManager.RegisterSetting(
             "window." + std::to_string(m_ID), settings, Core::SettingFlags::DEFAULT, true);
         InitWindow();
@@ -91,7 +72,7 @@ namespace Liara::Plateform
 
     VkExtent2D Liara_Window::GetExtent() const {
         const auto settings = m_SettingsManager.Get<WindowSettings>("window." + std::to_string(m_ID));
-        return {static_cast<uint32_t>(settings.width), static_cast<uint32_t>(settings.height)};
+        return {static_cast<uint32_t>(settings.GetWidth()), static_cast<uint32_t>(settings.GetHeight())};
     }
 
     void Liara_Window::ResizeWindow() const {
@@ -101,7 +82,7 @@ namespace Liara::Plateform
 
     void Liara_Window::UpdateFullscreenMode() const {
         if (const auto settings = m_SettingsManager.Get<WindowSettings>("window." + std::to_string(m_ID));
-            settings.fullscreen) {
+            settings.IsFullscreen()) {
             SDL_SetWindowFullscreen(m_Window, SDL_WINDOW_FULLSCREEN_DESKTOP);
         }
         else {
@@ -131,9 +112,9 @@ namespace Liara::Plateform
         const auto settings = m_SettingsManager.Get<WindowSettings>("window." + std::to_string(m_ID));
 
         uint32_t windowFlags = SDL_WINDOW_VULKAN;
-        if (settings.resizable) { windowFlags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE; }
+        if (settings.IsResizable()) { windowFlags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE; }
 
-        if ((m_Window = SDL_CreateWindow(settings.name.data(),
+        if ((m_Window = SDL_CreateWindow(settings.GetName().data(),
                                          settings.GetXPos(),
                                          settings.GetYPos(),
                                          settings.GetWidth(),

@@ -24,21 +24,29 @@ namespace Liara::Plateform
 {
     class WindowSettings final : public Core::ISettingSerializable
     {
-    public:
+    private:
         std::string name = "window.default";
         uint16_t width = 1280, height = 720;
         int xPos = 50, yPos = 50;
         bool fullscreen = false, resizable = true;
         bool wasResized = false, wasFullscreenChanged = false;
+        // Flag to indicate that the settings were just loaded from file,
+        // so the window creation code can handle it properly
+        bool justLoaded = false;
 
-
+    public:
+        [[nodiscard]] std::string GetName() const { return name; }
         [[nodiscard]] uint16_t GetWidth() const { return width; }
         [[nodiscard]] uint16_t GetHeight() const { return height; }
         [[nodiscard]] int GetXPos() const { return xPos; }
         [[nodiscard]] int GetYPos() const { return yPos; }
         [[nodiscard]] bool IsFullscreen() const { return fullscreen; }
         [[nodiscard]] bool IsResizable() const { return resizable; }
+        [[nodiscard]] bool WasResized() const { return wasResized; }
+        [[nodiscard]] bool WasFullscreenChanged() const { return wasFullscreenChanged; }
+        [[nodiscard]] bool WasJustLoaded() const { return justLoaded; }
 
+        void SetName(const std::string& newName) { name = newName; }
         void SetWidth(const uint16_t newWidth) {
             width = newWidth;
             wasResized = true;
@@ -57,6 +65,7 @@ namespace Liara::Plateform
         }
 
         void ResetFlags() { wasResized = wasFullscreenChanged = false; }
+        void ClearJustLoadedFlag() { justLoaded = false; }
 
         [[nodiscard]] std::string serialize() const override;
         bool deserialize(std::string_view data) override;
