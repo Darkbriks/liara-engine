@@ -6,18 +6,23 @@ module;
 
 #include <filesystem>
 
+#ifdef _WIN32
+    #include <windows.h>
+#elif defined(__linux__)
+    #include <climits>
+    #include <unistd.h>
+#endif
+
+#include <cstdlib>
+
 #ifndef LIARA_MODULES_ENABLED
-
     #include <Liara/PathResolver.h>
-
 #else
-
     #if defined(_WIN32) || defined(_WIN64)
 export module liara.core.path_resolver;
     #else
 module liara.core.path_resolver;
     #endif
-
 #endif
 
 namespace Liara::Core
@@ -100,8 +105,8 @@ namespace Liara::Core
                     break;
 
                 case Environment::Development:
-                    assets = root / "app/assets";
-                    shaders = root / "app/shaders";
+                    assets = root / "app" / "assets";
+                    shaders = root / "app" / "shaders";
                     break;
 
                 case Environment::Standalone:

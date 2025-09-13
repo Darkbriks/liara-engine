@@ -39,6 +39,16 @@ foreach(LINE ${MODULE_LINES})
             continue()
         endif()
 
+        if(STRIPPED_LINE MATCHES "^#include <")
+            string(APPEND HEADER_CONTENT "${LINE}\n")
+            continue()
+        endif()
+
+        if(STRIPPED_LINE MATCHES "^#(ifdef|ifndef|if|elif|else|endif|define|undef)")
+            string(APPEND HEADER_CONTENT "${LINE}\n")
+            continue()
+        endif()
+
         if(STRIPPED_LINE MATCHES "^export module " OR STRIPPED_LINE MATCHES "^module ")
             set(IN_GLOBAL_FRAGMENT FALSE)
             set(IN_MODULE_PURVIEW TRUE)

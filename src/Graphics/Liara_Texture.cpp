@@ -377,7 +377,7 @@ namespace Liara::Graphics
             return TextureLoadResult::FileNotFound;
         }
 
-        stbi_uc* rawPixels = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+        stbi_uc* rawPixels = stbi_load(fullPath.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
         if (rawPixels == nullptr) {
             errorFlag = true;

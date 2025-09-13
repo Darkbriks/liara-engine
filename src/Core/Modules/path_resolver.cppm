@@ -2,10 +2,19 @@ module;
 
 #include <filesystem>
 #include <string_view>
+#include <string>
 
 #ifdef _WIN32
 #include <windows.h>
+#ifndef PATH_MAX
+#define PATH_MAX MAX_PATH
+#endif
 #elif defined(__linux__)
+#include <unistd.h>
+#include <climits>
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 #endif
 
 export module liara.core.path_resolver;
