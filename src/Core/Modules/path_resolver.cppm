@@ -3,6 +3,7 @@ module;
 #include <filesystem>
 #include <string_view>
 #include <string>
+#include <cstdint>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -21,6 +22,14 @@ export module liara.core.path_resolver;
 
 export namespace Liara::Core {
 
+/// Types d'environnement d'exécution
+enum class Environment : std::uint8_t {
+    Development,    ///< Environnement de développement (build directory)
+    AppImage,       ///< Application empaquetée en AppImage
+    Standalone,     ///< Exécutable standalone classique
+    Unknown         ///< Environnement non déterminé
+};
+
 /**
  * @brief Résolveur de chemins cross-platform avec support AppImage
  *
@@ -29,14 +38,6 @@ export namespace Liara::Core {
  */
 class PathResolver {
 public:
-    /// Types d'environnement d'exécution
-    enum class Environment : std::uint8_t {
-        Development,    ///< Environnement de développement (build directory)
-        AppImage,       ///< Application empaquetée en AppImage
-        Standalone,     ///< Exécutable standalone classique
-        Unknown         ///< Environnement non déterminé
-    };
-
     /**
      * @brief Résout le chemin vers un asset
      * @param relativePath Chemin relatif de l'asset

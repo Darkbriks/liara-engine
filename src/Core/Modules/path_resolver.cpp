@@ -4,6 +4,7 @@ module;
 
 #include "Core/Logging/LogMacros.h"
 
+#include <cstdlib>
 #include <filesystem>
 
 #ifdef _WIN32
@@ -12,8 +13,6 @@ module;
     #include <climits>
     #include <unistd.h>
 #endif
-
-#include <cstdlib>
 
 #ifndef LIARA_MODULES_ENABLED
     #include <Liara/PathResolver.h>
@@ -40,7 +39,8 @@ namespace Liara::Core
         auto fullPath = cache.assets / relativePath;
 
         if (!std::filesystem::exists(fullPath)) [[unlikely]] {
-            LIARA_THROW_RUNTIME_ERROR(LogCore, "Asset file not found: {}", fullPath.string());
+            const std::string pathStr = fullPath.string();
+            LIARA_THROW_RUNTIME_ERROR(LogCore, "Asset file not found: {}", pathStr);
         }
 
         return fullPath;
@@ -53,7 +53,8 @@ namespace Liara::Core
         auto fullPath = cache.shaders / shaderName;
 
         if (!std::filesystem::exists(fullPath)) [[unlikely]] {
-            LIARA_THROW_RUNTIME_ERROR(LogCore, "Shader file not found: {}", fullPath.string());
+            const std::string pathStr = fullPath.string();
+            LIARA_THROW_RUNTIME_ERROR(LogCore, "Shader file not found: {}", pathStr);
         }
 
         return fullPath;
@@ -79,7 +80,7 @@ namespace Liara::Core
         return cache.shaders;
     }
 
-    PathResolver::Environment PathResolver::GetEnvironment() noexcept {
+    Environment PathResolver::GetEnvironment() noexcept {
         const auto& cache = GetCache();
         if (!cache.initialized) [[unlikely]] { InitializeCache(); }
         return cache.environment;
@@ -92,43 +93,45 @@ namespace Liara::Core
     }
 
     void PathResolver::InitializeCache() noexcept {
-        auto& [root, assets, shaders, environment, initialized] = GetCache();
+        auto& cache = GetCache();
 
         try {
-            environment = DetectEnvironment();
-            root = DetermineRootPath(environment);
+            cache.environment = DetectEnvironment();
+            cache.root = DetermineRootPath(cache.environment);
 
-            switch (environment) {
+            switch (cache.environment) {
                 case Environment::AppImage:
-                    assets = root / "share" / "liara-engine" / "assets";
-                    shaders = root / "share" / "liara-engine" / "shaders";
+                    cache.assets = cache.root / "share" / "liara-engine" / "assets";
+                    cache.shaders = cache.root / "share" / "liara-engine" / "shaders";
                     break;
 
                 case Environment::Development:
-                    assets = root / "app" / "assets";
-                    shaders = root / "app" / "shaders";
+                    cache.assets = cache.root / "app" / "assets";
+                    cache.shaders = cache.root / "app" / "shaders";
                     break;
 
                 case Environment::Standalone:
                 default:
-                    assets = root / "assets";
-                    shaders = root / "shaders";
+                    cache.assets = cache.root / "assets";
+                    cache.shaders = cache.root / "shaders";
                     break;
             }
 
-            initialized = true;
+            cache.initialized = true;
         }
         catch (...) {
             // Fallback en cas d'erreur : utiliser le répertoire courant
-            root = std::filesystem::current_path();
-            assets = root / "assets";
-            shaders = root / "shaders";
-            environment = Environment::Unknown;
-            initialized = true;
+            cache.root = std::filesystem::current_path();
+            cache.assets = cache.root / "assets";
+            cache.shaders = cache.root / "shaders";
+            cache.environment = Environment::Unknown;
+            cache.initialized = true;
+
+            LIARA_LOG_WARNING(LogCore, "PathResolver initialization failed, using fallback paths");
         }
     }
 
-    PathResolver::Environment PathResolver::DetectEnvironment() noexcept {
+    Environment PathResolver::DetectEnvironment() noexcept {
         // 1. Vérifier AppImage via variables d'environnement
         if (!GetEnvVar("APPDIR").empty() && !GetEnvVar("APPIMAGE").empty()) { return Environment::AppImage; }
 
@@ -157,7 +160,7 @@ namespace Liara::Core
     std::filesystem::path PathResolver::GetExecutablePath() {
 #ifdef _WIN32
         wchar_t buffer[MAX_PATH];
-        DWORD size = GetModuleFileNameW(nullptr, buffer, MAX_PATH);
+        const DWORD size = GetModuleFileNameW(nullptr, buffer, MAX_PATH);
         if (size == 0 || size == MAX_PATH) {
             LIARA_THROW_RUNTIME_ERROR(LogCore, "Failed to get executable path on Windows");
         }
@@ -168,7 +171,7 @@ namespace Liara::Core
         const ssize_t size = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
         if (size == -1) { LIARA_THROW_RUNTIME_ERROR(LogCore, "Failed to get executable path on Linux"); }
         buffer[size] = '\0';
-        return {buffer};
+        return std::filesystem::path(buffer);
 
 #else
     #error "Unsupported platform for PathResolver::GetExecutablePath()"
@@ -178,7 +181,7 @@ namespace Liara::Core
     std::filesystem::path PathResolver::DetermineRootPath(const Environment env) {
         switch (env) {
             case Environment::AppImage: {
-                if (const auto appDir = GetEnvVar("APPDIR"); !appDir.empty()) { return appDir; }
+                if (const auto appDir = GetEnvVar("APPDIR"); !appDir.empty()) { return std::filesystem::path(appDir); }
                 // Fallback : essayer de déduire depuis l'exécutable
                 const auto execPath = GetExecutablePath();
                 return execPath.parent_path().parent_path();  // Remonter de usr/bin vers racine
@@ -208,7 +211,7 @@ namespace Liara::Core
         }
         return {};
 #else
-        if (const char* val = std::getenv(name)) { return {val}; }
+        if (const char* val = std::getenv(name)) { return std::string(val); }
         return {};
 #endif
     }
