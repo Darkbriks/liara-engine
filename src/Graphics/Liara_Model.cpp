@@ -160,7 +160,7 @@ namespace Liara::Graphics
         std::string warn;
         std::string err;
 
-        const std::string fullPath = Core::PathResolver::ResolveAssetPath(filename);
+        const std::string fullPath = Core::PathResolver::ResolveAssetPath(filename).string();
 
         if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, fullPath.c_str())) {
             LIARA_LOG_ERROR(LogCore, "Failed to load OBJ file '{}': {}", fullPath, warn + err);

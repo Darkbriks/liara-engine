@@ -18,7 +18,6 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 
-#include <filesystem>
 #include <stb/stb_image.h>
 
 

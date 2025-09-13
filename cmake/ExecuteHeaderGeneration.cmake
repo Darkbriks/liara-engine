@@ -23,10 +23,12 @@ set(IN_GLOBAL_FRAGMENT TRUE)
 set(IN_MODULE_PURVIEW FALSE)
 set(COPY_EVERYTHING FALSE)
 
-string(REPLACE ";" "|~|;" MODULE_LINES_INTERMEDIARY "${MODULE_CONTENT}")
+string(REPLACE ";" "@@SEMICOLON@@" MODULE_LINES_INTERMEDIARY "${MODULE_CONTENT}")
 string(REPLACE "\n" ";" MODULE_LINES "${MODULE_LINES_INTERMEDIARY}")
 
 foreach(LINE ${MODULE_LINES})
+    string(REPLACE "@@SEMICOLON@@" ";" LINE "${LINE}")
+
     string(STRIP "${LINE}" STRIPPED_LINE)
 
     if(IN_GLOBAL_FRAGMENT)
@@ -39,20 +41,11 @@ foreach(LINE ${MODULE_LINES})
             continue()
         endif()
 
-        if(STRIPPED_LINE MATCHES "^#include <")
-            string(APPEND HEADER_CONTENT "${LINE}\n")
-            continue()
-        endif()
-
-        if(STRIPPED_LINE MATCHES "^#(ifdef|ifndef|if|elif|else|endif|define|undef)")
-            string(APPEND HEADER_CONTENT "${LINE}\n")
-            continue()
-        endif()
-
         if(STRIPPED_LINE MATCHES "^export module " OR STRIPPED_LINE MATCHES "^module ")
             set(IN_GLOBAL_FRAGMENT FALSE)
             set(IN_MODULE_PURVIEW TRUE)
-            string(APPEND HEADER_CONTENT "\n// Module: ${STRIPPED_LINE}\n\n")
+            string(REGEX REPLACE "^export " "" CLEAN_MODULE_LINE "${STRIPPED_LINE}")
+            string(APPEND HEADER_CONTENT "\n// Module: ${CLEAN_MODULE_LINE}\n\n")
             continue()
         endif()
         continue()
@@ -69,8 +62,6 @@ foreach(LINE ${MODULE_LINES})
     endif()
 
     if(COPY_EVERYTHING)
-        string(REPLACE "|~|" ";" LINE "${LINE}")
-
         if(STRIPPED_LINE MATCHES "^export ")
             string(REGEX REPLACE "^export " "" CLEANED_LINE "${LINE}")
             string(APPEND HEADER_CONTENT "${CLEANED_LINE}\n")
