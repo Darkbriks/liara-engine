@@ -98,6 +98,8 @@ private:
     static Environment DetectEnvironment() noexcept;
     static std::filesystem::path GetExecutablePath();
     static std::filesystem::path DetermineRootPath(Environment env);
+
+    [[nodiscard]] static std::string GetEnvVar(const char* name) noexcept;
 };
 
 }

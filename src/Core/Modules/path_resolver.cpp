@@ -125,9 +125,7 @@ namespace Liara::Core
 
     PathResolver::Environment PathResolver::DetectEnvironment() noexcept {
         // 1. Vérifier AppImage via variables d'environnement
-        if (const char* appDir = std::getenv("APPDIR"); appDir != nullptr) {
-            if (const char* appImage = std::getenv("APPIMAGE"); appImage != nullptr) { return Environment::AppImage; }
-        }
+        if (!GetEnvVar("APPDIR").empty() && !GetEnvVar("APPIMAGE").empty()) { return Environment::AppImage; }
 
         // 2. Vérifier AppImage via nom d'exécutable
         try {
@@ -145,7 +143,7 @@ namespace Liara::Core
             }
         }
         catch (...) {
-            // Ignore les erreurs de détection
+            LIARA_LOG_WARNING(LogCore, "Failed to detect execution environment");
         }
 
         return Environment::Standalone;
@@ -175,7 +173,7 @@ namespace Liara::Core
     std::filesystem::path PathResolver::DetermineRootPath(const Environment env) {
         switch (env) {
             case Environment::AppImage: {
-                if (const char* appDir = std::getenv("APPDIR")) { return {appDir}; }
+                if (const auto appDir = GetEnvVar("APPDIR"); !appDir.empty()) { return appDir; }
                 // Fallback : essayer de déduire depuis l'exécutable
                 const auto execPath = GetExecutablePath();
                 return execPath.parent_path().parent_path();  // Remonter de usr/bin vers racine
@@ -194,4 +192,19 @@ namespace Liara::Core
         }
     }
 
+    std::string PathResolver::GetEnvVar(const char* name) noexcept {
+#ifdef _WIN32
+        char* buffer = nullptr;
+        size_t len = 0;
+        if (_dupenv_s(&buffer, &len, name) == 0 && buffer != nullptr) {
+            std::string value(buffer);
+            free(buffer);
+            return value;
+        }
+        return {};
+#else
+        if (const char* val = std::getenv(name)) { return {val}; }
+        return {};
+#endif
+    }
 }
