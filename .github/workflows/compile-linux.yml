@@ -31,7 +31,7 @@ jobs:
             version: "22.04"
             container: ubuntu:22.04
             pkg_manager: apt
-            packages: "sudo build-essential ninja-build file unzip libvulkan-dev vulkan-validationlayers-dev libsdl2-dev pkg-config vulkan-tools libglm-dev software-properties-common wget curl ca-certificates"
+            packages: "sudo build-essential ninja-build file unzip libvulkan-dev vulkan-validationlayers-dev libsdl2-dev pkg-config vulkan-tools libglm-dev software-properties-common wget curl ca-certificates libc++-dev libc++abi-dev"
             update_cmd: "apt update && apt install -y"
             setup_gcc_compiler: |
               add-apt-repository ppa:ubuntu-toolchain-r/test -y
@@ -61,18 +61,19 @@ jobs:
             version: "latest"
             container: fedora:latest
             pkg_manager: dnf
-            packages: "gcc-c++ ninja-build file vulkan-devel vulkan-validation-layers-devel SDL2-devel pkg-config vulkan-tools libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel wget dnf-plugins-core"
+            packages: "gcc-c++ ninja-build file vulkan-devel vulkan-validation-layers-devel SDL2-devel pkg-config vulkan-tools libX11-devel libXext-devel alsa-lib-devel pulseaudio-libs-devel glm-devel wget dnf-plugins-core libcxx-devel libcxxabi-devel"
             update_cmd: "dnf update -y && dnf install -y"
             setup_gcc_compiler: ""
             setup_clang_compiler: |
               dnf install -y clang clang-tools-extra lld
               update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
               update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
+
           - name: archlinux
             version: "latest"
             container: archlinux:latest
             pkg_manager: pacman
-            packages: "base-devel ninja vulkan-devel vulkan-validation-layers sdl2 pkgconf vulkan-tools glm wget shaderc"
+            packages: "base-devel ninja vulkan-devel vulkan-validation-layers sdl2 pkgconf vulkan-tools glm wget shaderc libc++ libc++abi"
             update_cmd: "pacman -Syu --noconfirm"
             setup_gcc_compiler: ""
             setup_clang_compiler: |

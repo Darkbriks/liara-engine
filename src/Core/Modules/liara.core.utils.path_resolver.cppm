@@ -6,7 +6,6 @@ module;
 #include <string_view>
 #include <string>
 #include <cstdint>
-#include <unistd.h>
 
 #ifdef _WIN32
 #include <windows.h>
