@@ -14,25 +14,23 @@ endif()
 
 liara_add_module_with_proxy(
         TARGET LiaraEngine
-        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_utils.cppm"
-        MODULE_IMPL "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_utils.cpp"
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara.core.utils.cppm"
         MODULE_NAME "liara.core.utils"
         HEADER_NAME "Utils"
 )
 
 liara_add_module_with_proxy(
         TARGET LiaraEngine
-        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_result.cppm"
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara.core.utils.result.cppm"
         MODULE_NAME "liara.core.utils.result"
         HEADER_NAME "Utils/Result"
 )
 
 liara_add_module_with_proxy(
         TARGET LiaraEngine
-        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/path_resolver.cppm"
-        MODULE_IMPL "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/path_resolver.cpp"
-        MODULE_NAME "liara.core.path_resolver"
-        HEADER_NAME "PathResolver"
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara.core.utils.path_resolver.cppm"
+        MODULE_NAME "liara.core.utils.path_resolver"
+        HEADER_NAME "Utils/PathResolver"
 )
 
 target_sources(LiaraEngine

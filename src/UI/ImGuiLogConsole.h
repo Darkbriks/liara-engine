@@ -13,6 +13,12 @@
 
 #include "imgui.h"
 
+#ifdef LIARA_MODULES_ENABLED
+import <sstream>;
+#else
+    #include <sstream>
+#endif
+
 namespace Liara::UI
 {
     struct GuiLogEntry

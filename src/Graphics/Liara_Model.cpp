@@ -4,8 +4,8 @@
 #include "Graphics/Liara_Buffer.h"
 #include "Graphics/Liara_Device.h"
 
-#include <Liara/PathResolver.h>
 #include <Liara/Utils.h>
+#include <Liara/Utils/PathResolver.h>
 
 #include <vulkan/vulkan_core.h>
 

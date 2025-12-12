@@ -1,6 +1,6 @@
 #include "Liara_ShaderLoader.h"
 
-#include <Liara/PathResolver.h>
+#include <Liara/Utils/PathResolver.h>
 
 #include <algorithm>
 #include <fstream>

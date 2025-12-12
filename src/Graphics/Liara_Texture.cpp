@@ -3,7 +3,7 @@
 #include "Core/Liara_SettingsManager.h"
 #include "Graphics/Liara_Device.h"
 
-#include <Liara/PathResolver.h>
+#include <Liara/Utils/PathResolver.h>
 
 #include <vulkan/vulkan_core.h>
 
