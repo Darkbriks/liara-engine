@@ -41,6 +41,36 @@ foreach(LINE ${MODULE_LINES})
             continue()
         endif()
 
+        if(STRIPPED_LINE MATCHES "^import [a-zA-Z0-9_.]+;")
+            string(REGEX REPLACE "^import " "" IMPORT_LINE "${STRIPPED_LINE}")
+            string(REGEX REPLACE ";$" "" IMPORT_CLEAN "${IMPORT_LINE}")
+            string(REPLACE "." ";" IMPORT_PARTS "${IMPORT_CLEAN}") # ; is interpreted as list separator in CMake
+
+            set(FINAL_PATH "")
+            foreach(PART IN LISTS IMPORT_PARTS)
+                string(REPLACE "_" ";" SUBPARTS "${PART}")
+                set(PASCAL_PART "")
+
+                foreach(SUB IN LISTS SUBPARTS)
+                    string(SUBSTRING "${SUB}" 0 1 FIRST_CHAR)
+                    string(SUBSTRING "${SUB}" 1 -1 REST)
+                    string(TOUPPER "${FIRST_CHAR}" FIRST_CHAR)
+                    string(CONCAT PASCAL_PART "${PASCAL_PART}${FIRST_CHAR}${REST}")
+                endforeach()
+
+                if(FINAL_PATH STREQUAL "")
+                    set(FINAL_PATH "${PASCAL_PART}")
+                else()
+                    string(APPEND FINAL_PATH "/${PASCAL_PART}")
+                endif()
+            endforeach()
+
+            string(APPEND FINAL_PATH ".h")
+            string(APPEND HEADER_CONTENT "#include \"${FINAL_PATH}\"\n")
+            continue()
+        endif()
+
+
         if(STRIPPED_LINE MATCHES "^export module " OR STRIPPED_LINE MATCHES "^module ")
             set(IN_GLOBAL_FRAGMENT FALSE)
             set(IN_MODULE_PURVIEW TRUE)
