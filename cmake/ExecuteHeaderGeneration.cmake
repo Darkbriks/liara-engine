@@ -41,6 +41,19 @@ foreach(LINE ${MODULE_LINES})
             continue()
         endif()
 
+
+        if(STRIPPED_LINE MATCHES "^export module " OR STRIPPED_LINE MATCHES "^module ")
+            set(IN_GLOBAL_FRAGMENT FALSE)
+            set(IN_MODULE_PURVIEW TRUE)
+            string(REGEX REPLACE "^export " "" CLEAN_MODULE_LINE "${STRIPPED_LINE}")
+            string(APPEND HEADER_CONTENT "\n// Module: ${CLEAN_MODULE_LINE}\n\n")
+            continue()
+        endif()
+        continue()
+    endif()
+
+    if(IN_MODULE_PURVIEW AND NOT COPY_EVERYTHING)
+
         if(STRIPPED_LINE MATCHES "^import [a-zA-Z0-9_.]+;")
             string(REGEX REPLACE "^import " "" IMPORT_LINE "${STRIPPED_LINE}")
             string(REGEX REPLACE ";$" "" IMPORT_CLEAN "${IMPORT_LINE}")
@@ -70,18 +83,6 @@ foreach(LINE ${MODULE_LINES})
             continue()
         endif()
 
-
-        if(STRIPPED_LINE MATCHES "^export module " OR STRIPPED_LINE MATCHES "^module ")
-            set(IN_GLOBAL_FRAGMENT FALSE)
-            set(IN_MODULE_PURVIEW TRUE)
-            string(REGEX REPLACE "^export " "" CLEAN_MODULE_LINE "${STRIPPED_LINE}")
-            string(APPEND HEADER_CONTENT "\n// Module: ${CLEAN_MODULE_LINE}\n\n")
-            continue()
-        endif()
-        continue()
-    endif()
-
-    if(IN_MODULE_PURVIEW AND NOT COPY_EVERYTHING)
         if(STRIPPED_LINE MATCHES "^export namespace ")
             set(COPY_EVERYTHING TRUE)
             string(REGEX REPLACE "^export " "" NAMESPACE_LINE "${LINE}")
