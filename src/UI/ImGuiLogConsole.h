@@ -8,16 +8,11 @@
 #include <array>
 #include <atomic>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include "imgui.h"
-
-#ifdef LIARA_MODULES_ENABLED
-import <sstream>;
-#else
-    #include <sstream>
-#endif
 
 namespace Liara::UI
 {

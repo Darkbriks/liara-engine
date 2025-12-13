@@ -33,7 +33,6 @@ function(liara_set_compiler_settings target)
             target_compile_options(${target} PRIVATE
                     -std=c++20
                     -stdlib=libc++
-                    -fmodules
             )
 
             target_link_options(${target} PRIVATE
