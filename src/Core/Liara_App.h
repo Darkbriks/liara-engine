@@ -7,10 +7,11 @@
 #include "Plateform/Liara_Window.h"
 #include "Systems/Liara_System.h"
 
+#include <Liara/Core/ApplicationInfo.h>
+
 #include <memory>
 
 #include "Application.h"
-#include "ApplicationInfo.h"
 #include "Liara_Camera.h"
 #include "Liara_GameObject.h"
 #include "Liara_SettingsManager.h"

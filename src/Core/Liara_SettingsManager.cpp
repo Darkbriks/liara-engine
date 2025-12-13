@@ -1,10 +1,10 @@
 #include "Liara_SettingsManager.h"
 
+#include <Liara/Core/ApplicationInfo.h>
+
 #include <vulkan/vulkan_core.h>
 
 #include <any>
-#include <cstddef>
-#include <cstdio>
 #include <fstream>
 #include <ranges>
 #include <shared_mutex>
@@ -14,7 +14,6 @@
 #include <variant>
 #include <vector>
 
-#include "ApplicationInfo.h"
 #include "Config.h"
 #include "Liara_SettingSerializer.h"
 
@@ -43,7 +42,7 @@ namespace Liara::Core
 
         // Register application information settings
         static_assert(IsValidAppInfo({}), "DEFAULT ApplicationInfo must be valid");
-        LIARA_CHECK_ARGUMENT(IsValidAppInfo(appInfo), LogCore, "Invalid ApplicationInfo provided");
+        LIARA_CHECK_ARGUMENT(appInfo.IsValid(), LogCore, "Invalid ApplicationInfo provided");
 
         RegisterSetting("global.app_name", std::string(appInfo.name), SettingFlags::NONE);
         RegisterSetting("global.app_display_name", std::string(appInfo.GetDisplayName()), SettingFlags::NONE);

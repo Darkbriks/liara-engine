@@ -1,5 +1,6 @@
 #pragma once
-#include "Core/ApplicationInfo.h"
+
+#include <Liara/Core/Version.h>
 
 namespace Liara::Core
 {

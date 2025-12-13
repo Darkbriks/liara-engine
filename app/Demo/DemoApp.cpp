@@ -1,6 +1,5 @@
 #include "DemoApp.h"
 
-#include "Core/ApplicationInfo.h"
 #include "Core/Liara_App.h"
 #include "Graphics/Liara_Model.h"
 #include "Listener/KeybordMovementController.h"

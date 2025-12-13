@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Liara/Core/ApplicationInfo.h>
+
 #include <any>
 #include <cstdint>
 #include <functional>
@@ -18,7 +20,6 @@
 namespace Liara::Core
 {
     class ISettingSerializable;
-    struct ApplicationInfo;
 
     enum class SettingFlags : uint8_t
     {

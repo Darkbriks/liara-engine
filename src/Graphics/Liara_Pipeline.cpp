@@ -2,7 +2,7 @@
 
 #include "Graphics/Liara_Device.h"
 
-#include <Liara/Utils/PathResolver.h>
+#include <Liara/Core/Utils/PathResolver.h>
 
 #include <vulkan/vulkan_core.h>
 

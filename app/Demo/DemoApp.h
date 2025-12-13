@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Core/ApplicationInfo.h"
 #include "Core/Liara_App.h"
 #include "Core/Liara_GameObject.h"
 #include "Listener/KeybordMovementController.h"
+
+#include <Liara/Core/ApplicationInfo.h>
 
 #include <memory>
 

@@ -1,6 +1,5 @@
 #include "Liara_App.h"
 
-#include "Core/ApplicationInfo.h"
 #include "Core/Liara_SignalHandler.h"
 #include "Graphics/Descriptors/Liara_Descriptor.h"
 #include "Graphics/GraphicsConstants.h"
@@ -12,6 +11,8 @@
 #include "Systems/Liara_System.h"
 #include "Systems/PointLightSystem.h"
 #include "Systems/SimpleRenderSystem.h"
+
+#include <Liara/Core/ApplicationInfo.h>
 
 #include <vulkan/vulkan_core.h>
 
