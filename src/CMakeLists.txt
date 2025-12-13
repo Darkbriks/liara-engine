@@ -132,7 +132,13 @@ target_include_directories(LiaraEngine PRIVATE
 )
 
 if(WIN32)
-    target_compile_definitions(LiaraEngine PRIVATE LIARA_PLATFORM_WINDOWS)
+    target_compile_definitions(LiaraEngine
+        PRIVATE
+            LIARA_PLATFORM_WINDOWS
+        PUBLIC
+            NOMINMAX
+            WIN32_LEAN_AND_MEAN
+    )
 elseif(UNIX)
     target_compile_definitions(LiaraEngine PRIVATE LIARA_PLATFORM_UNIX)
 endif()
