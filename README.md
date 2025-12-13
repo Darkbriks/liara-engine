@@ -266,6 +266,7 @@ Liara Engine v0.17
 - [x] Rework of specialization constants
 - [x] Fix a Linux hack from v0.14
 - [x] Fix a vulkan validation layer issue (semaphore synchronization in Swapchain)
+- [x] Fix AppImage generation
 - [x] Multi-threaded logging system with ImGui console
 - [x] CI/CD pipeline for Linux and Windows
 - [x] Improved CMake build system
@@ -276,11 +277,11 @@ Liara Engine v0.17
 - [ ] C++20 modules support (optional)
   - [x] MSVC
   - [x] Clang
-  - [ ] GCC (temporarily disabled due to stability issues)
+  - [x] GCC (temporarily disabled due to stability issues)
   - [ ] Migrate some core systems to modules
     - [x] Liara_Utils.h
-    - [ ] Result.h
-    - [ ] ApplicationInfo.h
+    - [x] Result.h
+    - [x] ApplicationInfo.h
     - [ ] Logger
 - [ ] Add Catch2 for unit testing
 

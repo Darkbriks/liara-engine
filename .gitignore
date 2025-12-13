@@ -3,3 +3,5 @@
 /shaders/*.spv
 /documentation/
 .env.cmake
+.idea
+.vscode
