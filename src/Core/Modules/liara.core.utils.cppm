@@ -47,7 +47,7 @@ export namespace Liara::Core {
      * @brief Check Vulkan result and throw if not VK_SUCCESS
      * @param res Vulkan result to check
      */
-    [[maybe_unused]] void CheckVkResult(VkResult res) {
+    [[maybe_unused]] inline void CheckVkResult(VkResult res) {
         VK_CHECK(res, "Vulkan operation failed with error: {}", Liara::Graphics::VkResultToString(res));
     }
 
@@ -56,5 +56,5 @@ export namespace Liara::Core {
      * @param res Vulkan result to check
      * @return true if VK_SUCCESS, false otherwise
      */
-    [[nodiscard]] bool IsVkSuccess(VkResult res) noexcept { return res == VK_SUCCESS; }
+    [[nodiscard]] inline bool IsVkSuccess(VkResult res) noexcept { return res == VK_SUCCESS; }
 }

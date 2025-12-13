@@ -39,6 +39,14 @@ function(liara_set_compiler_settings target)
             )
 
             file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/clang-modules")
+
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            target_compile_options(${target} PRIVATE
+                    -std=c++20
+                    -fmodules-ts
+            )
+
+            file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/gcc-modules")
         endif()
 
         target_compile_definitions(${target} PRIVATE
