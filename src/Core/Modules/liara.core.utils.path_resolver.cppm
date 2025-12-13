@@ -164,8 +164,8 @@ export namespace Liara::Core {
 
                 switch (cache.environment) {
                     case Environment::AppImage:
-                        cache.assets = cache.root / "share" / "liara-engine" / "assets";
-                        cache.shaders = cache.root / "share" / "liara-engine" / "shaders";
+                        cache.assets = cache.root / "usr" / "share" / "liara-engine" / "assets";
+                        cache.shaders = cache.root / "usr" / "share" / "liara-engine" / "shaders";
                         break;
 
                     case Environment::Development:
