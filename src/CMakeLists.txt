@@ -6,10 +6,6 @@ add_library(Liara::Engine ALIAS LiaraEngine)
 get_property(modules_enabled GLOBAL PROPERTY LIARA_MODULES_ENABLED)
 
 if(modules_enabled)
-    set_target_properties(LiaraEngine PROPERTIES
-            CXX_SCAN_FOR_MODULES ON
-            CXX_MODULE_STD OFF
-    )
     message(STATUS "Building LiaraEngine with C++20 modules support")
 else()
     message(STATUS "Building LiaraEngine with generated headers from modules")

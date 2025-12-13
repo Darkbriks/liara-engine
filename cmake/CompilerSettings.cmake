@@ -32,13 +32,10 @@ function(liara_set_compiler_settings target)
         elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             target_compile_options(${target} PRIVATE
                     -std=c++20
-                    -stdlib=libc++
             )
 
             target_link_options(${target} PRIVATE
-                    -stdlib=libc++
-                    -lc++
-                    -lc++abi
+                    -lstdc++
             )
 
             file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/clang-modules")
