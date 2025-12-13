@@ -1,11 +1,11 @@
 module;
 
-import liara.core.version;
-
 #include <string>
 #include <string_view>
 
 export module liara.core.application_info;
+
+import liara.core.version;
 
 export namespace Liara::Core
 {
