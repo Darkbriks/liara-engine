@@ -178,8 +178,8 @@ namespace Liara::Core
         if (entry.serializablePtr) {
             const bool result = entry.serializablePtr->deserialize(value);
 
-            if (result) {
-                const std::any anyValue = entry.value;
+            if (result && entry.createAnyFromSerializable) {
+                const std::any anyValue = entry.createAnyFromSerializable();
                 for (const auto& observer : entry.observers) { observer->Notify(anyValue); }
             }
             return result;
