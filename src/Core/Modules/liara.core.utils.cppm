@@ -1,8 +1,12 @@
 module;
 
+#include "Core/Logging/LogMacros.h"
+#include "Graphics/VkResultToString.h"
+
 #include <functional>
-#include <vulkan/vulkan_core.h>
 #include <cstddef>
+
+#include <vulkan/vulkan_core.h>
 
 export module liara.core.utils;
 
@@ -32,7 +36,7 @@ export namespace Liara::Core {
      * @param args Values to hash
      * @return Combined hash value
      */
-    template<typename... Args>
+    template <typename... Args>
     constexpr std::size_t MakeHash(const Args&... args) {
         std::size_t seed = 0;
         HashCombine(seed, args...);
@@ -43,14 +47,14 @@ export namespace Liara::Core {
      * @brief Check Vulkan result and throw if not VK_SUCCESS
      * @param res Vulkan result to check
      */
-    [[maybe_unused]]
-    void CheckVkResult(VkResult res);
+    [[maybe_unused]] inline void CheckVkResult(VkResult res) {
+        VK_CHECK(res, "Vulkan operation failed with error: {}", Liara::Graphics::VkResultToString(res));
+    }
 
     /**
      * @brief Safe Vulkan result checker that doesn't throw
      * @param res Vulkan result to check
      * @return true if VK_SUCCESS, false otherwise
      */
-    [[nodiscard]] bool IsVkSuccess(VkResult res) noexcept;
-
+    [[nodiscard]] inline bool IsVkSuccess(VkResult res) noexcept { return res == VK_SUCCESS; }
 }

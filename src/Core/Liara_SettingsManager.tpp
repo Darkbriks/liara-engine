@@ -37,28 +37,39 @@ namespace Liara::Core {
         std::unique_lock const lock(m_Mutex);
         if (!overwrite && m_Settings.contains(std::string(name))) { return; }
 
-        if constexpr (FastSettingType<std::decay_t<T> >) {
+        if constexpr (FastSettingType<std::decay_t<T>>) {
             m_Settings[std::string(name)] =
                 Liara_SettingStorage(Liara_FastSettingEntry<std::decay_t<T>>(std::forward<T>(defaultValue), flags));
         } else {
-            std::shared_ptr<ISettingSerializable> serializablePtr = nullptr;
-            // Try to see if T is derived from ISettingSerializable
             if constexpr (std::is_base_of_v<ISettingSerializable, std::decay_t<T>>) {
-                serializablePtr = std::make_shared<std::decay_t<T>>(std::forward<T>(defaultValue));
+                // If the type is serializable, we don't use std::any to store the value, but a pointer to the serializable object
+                // This avoids copies and sync issues.
+                auto serializablePtr = std::make_shared<std::decay_t<T>>(std::forward<T>(defaultValue));
+
+                // Lambda to create std::any from the serializablePtr when needed
+                auto anyCreator = [serializablePtr]() -> std::any {
+                    return std::make_any<std::decay_t<T>>(*serializablePtr);
+                };
+
                 m_Settings[std::string(name)] = Liara_SettingStorage(
-                    Liara_FlexibleSettingEntry(Liara_FlexibleSettingEntry(std::make_any<T>(std::forward<T>(defaultValue)),
-                                              std::hash<std::string>{}(typeid(T).name()),
-                                              flags,
-                                              serializablePtr)));
+                    Liara_FlexibleSettingEntry(
+                        std::any{}, // Empty, value is in serializablePtr
+                        std::hash<std::string>{}(typeid(T).name()),
+                        flags,
+                        serializablePtr,
+                        anyCreator));
             } else {
                 m_Settings[std::string(name)] = Liara_SettingStorage(
-                    Liara_FlexibleSettingEntry(std::make_any<T>(std::forward<T>(defaultValue)),
-                    std::hash<std::string>{}(typeid(T).name()), flags));
+                    Liara_FlexibleSettingEntry(
+                        std::make_any<T>(std::forward<T>(defaultValue)),
+                        std::hash<std::string>{}(typeid(T).name()),
+                        flags));
             }
         }
     }
 
-    template <typename T> [[nodiscard]] T Liara_SettingsManager::Get(const std::string_view name) const {
+    template <typename T>
+    [[nodiscard]] T Liara_SettingsManager::Get(const std::string_view name) const {
         std::shared_lock const lock(m_Mutex);
 
         const auto it = m_Settings.find(std::string(name));
@@ -69,6 +80,16 @@ namespace Liara::Core {
         } else {
             if (const auto* entry = std::get_if<Liara_FlexibleSettingEntry>(&it->second.data)) {
                 if (entry->typeHash == std::hash<std::string>{}(typeid(T).name())) {
+
+                    // If the setting is serializable, we need to get the value from the serializablePtr
+                    if (entry->serializablePtr) {
+                        if (auto* typed = dynamic_cast<T*>(entry->serializablePtr.get())) {
+                            return *typed;
+                        }
+                        LIARA_THROW_RUNTIME_ERROR(LogCore,  "Failed to cast serializable setting '{}' to requested type", std::string(name));
+                    }
+
+                    // Else, return the value stored in std::any
                     return std::any_cast<T>(entry->value);
                 }
             }
@@ -76,7 +97,8 @@ namespace Liara::Core {
         LIARA_THROW_RUNTIME_ERROR(LogCore, "Setting type mismatch for: {}", std::string(name));
     }
 
-    template <typename T> bool Liara_SettingsManager::Set(const std::string_view name, const T& value) {
+    template <typename T>
+    bool Liara_SettingsManager::Set(const std::string_view name, const T& value) {
         std::unique_lock lock(m_Mutex);
 
         const auto it = m_Settings.find(std::string(name));
@@ -84,7 +106,7 @@ namespace Liara::Core {
 
         // Vérification des flags et du type + mise à jour
         bool success = false;
-        std::vector<std::unique_ptr<Liara_ISettingObserver>>* observers = nullptr;
+        std::vector<std::unique_ptr<Liara_ISettingObserver>> const* observers = nullptr;
 
         if constexpr (FastSettingType<T>) {
             if (auto* entry = std::get_if<Liara_FastSettingEntry<T>>(&it->second.data)) {
@@ -98,9 +120,20 @@ namespace Liara::Core {
             if (auto* entry = std::get_if<Liara_FlexibleSettingEntry>(&it->second.data)) {
                 if (static_cast<uint32_t>(entry->flags) & static_cast<uint32_t>(SettingFlags::RUNTIME_MODIFIABLE)
                     && entry->typeHash == std::hash<std::string>{}(typeid(T).name())) {
-                    entry->value = value;
-                    observers = &entry->observers;
-                    success = true;
+
+                    if (entry->serializablePtr) {
+                        // If the setting is serializable, we need to set the value in the serializablePtr
+                        if (auto* typed = dynamic_cast<T*>(entry->serializablePtr.get())) {
+                            *typed = value;
+                            observers = &entry->observers;
+                            success = true;
+                        }
+                    } else {
+                        // Else, we proceed to a normal update
+                        entry->value = value;
+                        observers = &entry->observers;
+                        success = true;
+                    }
                 }
             }
         }

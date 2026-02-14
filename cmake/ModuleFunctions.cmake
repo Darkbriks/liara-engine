@@ -100,8 +100,7 @@ function(liara_add_module_with_proxy)
             ${ARGN}
     )
 
-    if(NOT ARG_TARGET OR NOT ARG_MODULE_INTERFACE OR
-            NOT ARG_MODULE_NAME OR NOT ARG_HEADER_NAME)
+    if(NOT ARG_TARGET OR NOT ARG_MODULE_INTERFACE OR NOT ARG_MODULE_NAME OR NOT ARG_HEADER_NAME)
         message(FATAL_ERROR "liara_add_module_with_proxy requires all parameters")
     endif()
 
@@ -135,7 +134,9 @@ function(liara_add_module_with_proxy)
             target_sources(${ARG_TARGET}
                     PUBLIC FILE_SET CXX_MODULES FILES ${ARG_MODULE_INTERFACE}
             )
-            target_sources(${ARG_TARGET} PRIVATE ${ARG_MODULE_IMPL})
+            if(ARG_MODULE_IMPL)
+                target_sources(${ARG_TARGET} PRIVATE ${ARG_MODULE_IMPL})
+            endif()
         endif()
 
         # Generate proxy header that imports the module

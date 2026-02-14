@@ -4,7 +4,8 @@
 #include "Graphics/Liara_Buffer.h"
 #include "Graphics/Liara_Device.h"
 
-#include <Liara/Utils.h>
+#include <Liara/Core/Utils.h>
+#include <Liara/Core/Utils/PathResolver.h>
 
 #include <vulkan/vulkan_core.h>
 
@@ -23,10 +24,6 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
-
-#ifndef ENGINE_DIR
-    #define ENGINE_DIR "./"
-#endif
 
 template <> struct std::hash<Liara::Graphics::Liara_Model::Vertex>
 {
@@ -163,7 +160,7 @@ namespace Liara::Graphics
         std::string warn;
         std::string err;
 
-        const std::string fullPath = std::string(ENGINE_DIR) + std::string(filename);
+        const std::string fullPath = Core::PathResolver::ResolveAssetPath(filename).string();
 
         if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, fullPath.c_str())) {
             LIARA_LOG_ERROR(LogCore, "Failed to load OBJ file '{}': {}", fullPath, warn + err);

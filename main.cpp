@@ -1,9 +1,10 @@
 #include <SDL.h>
 
-#include "Demo/DemoApp.h"
-
 #include "Core/Application.h"
-#include "Core/ApplicationInfo.h"
+
+#include <Liara/Core/ApplicationInfo.h>
+
+#include "Demo/DemoApp.h"
 
 constexpr Liara::Core::ApplicationInfo appInfo = {
     .name = "DemoApp",

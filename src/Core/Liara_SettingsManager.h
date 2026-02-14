@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Liara/Core/ApplicationInfo.h>
+
 #include <any>
 #include <cstdint>
 #include <functional>
@@ -18,7 +20,6 @@
 namespace Liara::Core
 {
     class ISettingSerializable;
-    struct ApplicationInfo;
 
     enum class SettingFlags : uint8_t
     {
@@ -90,6 +91,8 @@ namespace Liara::Core
             std::shared_ptr<ISettingSerializable> serializablePtr;  // Optional, for serialization
             std::vector<std::unique_ptr<Liara_ISettingObserver>> observers;
 
+            std::function<std::any()> createAnyFromSerializable;
+
             explicit Liara_FlexibleSettingEntry(std::any defaultValue,
                                                 const SettingFlags settingFlags = SettingFlags::DEFAULT,
                                                 const std::shared_ptr<ISettingSerializable>& serializable = nullptr)
@@ -97,6 +100,7 @@ namespace Liara::Core
                 , flags(settingFlags)
                 , typeHash(value.type().hash_code())
                 , serializablePtr(serializable) {}
+
             explicit Liara_FlexibleSettingEntry(std::any defaultValue,
                                                 const size_t typeHash,
                                                 const SettingFlags settingFlags = SettingFlags::DEFAULT,
@@ -105,6 +109,17 @@ namespace Liara::Core
                 , flags(settingFlags)
                 , typeHash(typeHash)
                 , serializablePtr(serializable) {}
+
+            explicit Liara_FlexibleSettingEntry(std::any defaultValue,
+                                                const size_t typeHash,
+                                                const SettingFlags settingFlags,
+                                                const std::shared_ptr<ISettingSerializable>& serializable,
+                                                std::function<std::any()> createAnyFunc)
+                : value(std::move(defaultValue))
+                , flags(settingFlags)
+                , typeHash(typeHash)
+                , serializablePtr(serializable)
+                , createAnyFromSerializable(std::move(createAnyFunc)) {}
         };
 
         // Container unifié

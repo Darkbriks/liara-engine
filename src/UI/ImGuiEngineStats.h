@@ -1,10 +1,11 @@
 #pragma once
 
+#include <Liara/Core/ApplicationInfo.h>
+
 namespace Liara
 {
     namespace Core
     {
-        struct ApplicationInfo;
         struct FrameInfo;
     }
 

@@ -8,6 +8,7 @@
 #include <array>
 #include <atomic>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <vector>
 

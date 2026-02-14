@@ -7,24 +7,43 @@ get_property(modules_enabled GLOBAL PROPERTY LIARA_MODULES_ENABLED)
 
 if(modules_enabled)
     message(STATUS "Building LiaraEngine with C++20 modules support")
-    set_target_properties(LiaraEngine PROPERTIES CXX_SCAN_FOR_MODULES ON)
 else()
     message(STATUS "Building LiaraEngine with generated headers from modules")
 endif()
 
 liara_add_module_with_proxy(
         TARGET LiaraEngine
-        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_utils.cppm"
-        MODULE_IMPL "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_utils.cpp"
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara.core.utils.cppm"
         MODULE_NAME "liara.core.utils"
-        HEADER_NAME "Utils"
+        HEADER_NAME "Core/Utils"
 )
 
 liara_add_module_with_proxy(
         TARGET LiaraEngine
-        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara_result.cppm"
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara.core.utils.result.cppm"
         MODULE_NAME "liara.core.utils.result"
-        HEADER_NAME "Utils/Result"
+        HEADER_NAME "Core/Utils/Result"
+)
+
+liara_add_module_with_proxy(
+        TARGET LiaraEngine
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara.core.utils.path_resolver.cppm"
+        MODULE_NAME "liara.core.utils.path_resolver"
+        HEADER_NAME "Core/Utils/PathResolver"
+)
+
+liara_add_module_with_proxy(
+        TARGET LiaraEngine
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara.core.version.cppm"
+        MODULE_NAME "liara.core.version"
+        HEADER_NAME "Core/Version"
+)
+
+liara_add_module_with_proxy(
+        TARGET LiaraEngine
+        MODULE_INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Core/Modules/liara.core.application_info.cppm"
+        MODULE_NAME "liara.core.application_info"
+        HEADER_NAME "Core/ApplicationInfo"
 )
 
 target_sources(LiaraEngine
@@ -127,7 +146,13 @@ target_include_directories(LiaraEngine PRIVATE
 )
 
 if(WIN32)
-    target_compile_definitions(LiaraEngine PRIVATE LIARA_PLATFORM_WINDOWS)
+    target_compile_definitions(LiaraEngine
+        PRIVATE
+            LIARA_PLATFORM_WINDOWS
+        PUBLIC
+            NOMINMAX
+            WIN32_LEAN_AND_MEAN
+    )
 elseif(UNIX)
     target_compile_definitions(LiaraEngine PRIVATE LIARA_PLATFORM_UNIX)
 endif()

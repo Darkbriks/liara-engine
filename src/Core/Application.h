@@ -1,10 +1,12 @@
 #pragma once
+
+#include <Liara/Core/ApplicationInfo.h>
+
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <string_view>
 
-#include "ApplicationInfo.h"
 #include "Logging/Logger.h"
 #include "Logging/LogMacros.h"
 

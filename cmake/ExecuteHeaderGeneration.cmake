@@ -23,10 +23,12 @@ set(IN_GLOBAL_FRAGMENT TRUE)
 set(IN_MODULE_PURVIEW FALSE)
 set(COPY_EVERYTHING FALSE)
 
-string(REPLACE ";" "|~|;" MODULE_LINES_INTERMEDIARY "${MODULE_CONTENT}")
+string(REPLACE ";" "@@SEMICOLON@@" MODULE_LINES_INTERMEDIARY "${MODULE_CONTENT}")
 string(REPLACE "\n" ";" MODULE_LINES "${MODULE_LINES_INTERMEDIARY}")
 
 foreach(LINE ${MODULE_LINES})
+    string(REPLACE "@@SEMICOLON@@" ";" LINE "${LINE}")
+
     string(STRIP "${LINE}" STRIPPED_LINE)
 
     if(IN_GLOBAL_FRAGMENT)
@@ -34,21 +36,53 @@ foreach(LINE ${MODULE_LINES})
             continue()
         endif()
 
-        if(STRIPPED_LINE MATCHES "^#include")
+        if(STRIPPED_LINE MATCHES "^#")
             string(APPEND HEADER_CONTENT "${LINE}\n")
             continue()
         endif()
 
+
         if(STRIPPED_LINE MATCHES "^export module " OR STRIPPED_LINE MATCHES "^module ")
             set(IN_GLOBAL_FRAGMENT FALSE)
             set(IN_MODULE_PURVIEW TRUE)
-            string(APPEND HEADER_CONTENT "\n// Module: ${STRIPPED_LINE}\n\n")
+            string(REGEX REPLACE "^export " "" CLEAN_MODULE_LINE "${STRIPPED_LINE}")
+            string(APPEND HEADER_CONTENT "\n// Module: ${CLEAN_MODULE_LINE}\n\n")
             continue()
         endif()
         continue()
     endif()
 
     if(IN_MODULE_PURVIEW AND NOT COPY_EVERYTHING)
+
+        if(STRIPPED_LINE MATCHES "^import [a-zA-Z0-9_.]+;")
+            string(REGEX REPLACE "^import " "" IMPORT_LINE "${STRIPPED_LINE}")
+            string(REGEX REPLACE ";$" "" IMPORT_CLEAN "${IMPORT_LINE}")
+            string(REPLACE "." ";" IMPORT_PARTS "${IMPORT_CLEAN}") # ; is interpreted as list separator in CMake
+
+            set(FINAL_PATH "")
+            foreach(PART IN LISTS IMPORT_PARTS)
+                string(REPLACE "_" ";" SUBPARTS "${PART}")
+                set(PASCAL_PART "")
+
+                foreach(SUB IN LISTS SUBPARTS)
+                    string(SUBSTRING "${SUB}" 0 1 FIRST_CHAR)
+                    string(SUBSTRING "${SUB}" 1 -1 REST)
+                    string(TOUPPER "${FIRST_CHAR}" FIRST_CHAR)
+                    string(CONCAT PASCAL_PART "${PASCAL_PART}${FIRST_CHAR}${REST}")
+                endforeach()
+
+                if(FINAL_PATH STREQUAL "")
+                    set(FINAL_PATH "${PASCAL_PART}")
+                else()
+                    string(APPEND FINAL_PATH "/${PASCAL_PART}")
+                endif()
+            endforeach()
+
+            string(APPEND FINAL_PATH ".h")
+            string(APPEND HEADER_CONTENT "#include \"${FINAL_PATH}\"\n")
+            continue()
+        endif()
+
         if(STRIPPED_LINE MATCHES "^export namespace ")
             set(COPY_EVERYTHING TRUE)
             string(REGEX REPLACE "^export " "" NAMESPACE_LINE "${LINE}")
@@ -59,8 +93,6 @@ foreach(LINE ${MODULE_LINES})
     endif()
 
     if(COPY_EVERYTHING)
-        string(REPLACE "|~|" ";" LINE "${LINE}")
-
         if(STRIPPED_LINE MATCHES "^export ")
             string(REGEX REPLACE "^export " "" CLEANED_LINE "${LINE}")
             string(APPEND HEADER_CONTENT "${CLEANED_LINE}\n")
